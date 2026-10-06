@@ -15,7 +15,7 @@ import { Pilot } from './ai/pilot.js';
 import { Director } from './missions/director.js';
 import { CameraRig, CAMERA_IDS } from './camera/cameras.js';
 import { Recorder } from './replay/replay.js';
-import { clamp, lerp, DEG, smoothstep } from './util/math.js';
+import { clamp, lerp, DEG, smoothstep, wrapPi } from './util/math.js';
 import { Settings } from './settings/settings.js';
 import { Save } from './save/save.js';
 
@@ -259,6 +259,7 @@ export class Game {
     let tImpact = 99; if (f.airborne) for (let t = 0.4; t <= 5; t += 0.4) { _v.copy(f.pos).addScaledVector(f.vel, t); if (_v.y < this.world.groundY(_v.x, _v.z) + 25) { tImpact = t; break; } }
     this.pullUp = f.airborne && tImpact < 1.5 + 3 * d.warning && f.vspeed < -10;
     const input = { ...inp };
+    if (inp.mouseAim && !locked && this.state !== 'dead') this.applyMouseAim(input, inp.mouseAim);
     if (this.state === 'takeoff') { input.throttleSet = 1; }
     if (d.groundAssist && S.flightMode !== 'EXPERT' && f.airborne && tImpact < 1.8 && !locked) { input.pitch = Math.max(input.pitch, clamp((1.8 - tImpact) * 0.9, 0, 1)); input.roll *= 0.4; if (!this.autoPull) { this.autoPull = true; this.hud.centerMsg('AUTO PULL-UP', 1.2, 'warn'); } } else this.autoPull = false;
     const assistBonus = d.assistBonus + (S.assistLevel - 0.5) * 0.4;
@@ -272,10 +273,41 @@ export class Game {
     this.model.group.position.copy(f.pos); this.model.group.quaternion.copy(f.quat);
     this.model.setControls({ pitch: f.ctrl.pitch, roll: f.ctrl.roll, yaw: f.ctrl.yaw, brake: f.ctrl.brake, throttle: f.throttle }, this.time);
     // engine trail
-    if (f.throttle > 0.15 && Math.random() < 0.5) for (const sx of [-0.5, 0.5]) { _v.set(sx, 0, 9.5).applyQuaternion(f.quat).add(f.pos); this.particles.fire(_v, f.vel.clone().multiplyScalar(0.25), 1.6 + f.throttle * 1.4, 0.18); }
+    if (f.throttle > 0.15 && Math.random() < 0.35) for (const sx of [-0.5, 0.5]) { _v.set(sx, 0, 9.5).applyQuaternion(f.quat).add(f.pos); this.particles.fire(_v, f.vel.clone().multiplyScalar(0.25), 0.8 + f.throttle * 0.7, 0.16); }
     if (f.agl < 120 && f.speed > 60 && this.world.hasSea && gy <= 0.01) { _v.copy(f.pos); _v.y = 0.5; if (Math.random() < 0.6) this.particles.smokePuff(_v, new THREE.Vector3(0, 3, 0), 12, 2.5, 0.15); }
     // map boundary
     this.boundary = this.director.outsideT;
+  }
+
+  /**
+   * Mouse aim: the cursor offset from screen centre is an angular demand in WORLD axes (horizontal = heading change,
+   * vertical = pitch change, cursor up = nose up). The target direction is resolved in the body frame: its up component
+   * drives pitch and its right component drives the rudder (which keeps a banked turn level), while roll banks into the turn.
+   */
+  applyMouseAim(input, m) {
+    const k = clamp(m.sens, 0.5, 2), f = this.flight;
+    const nx = clamp(m.x * 1.5, -1, 1) * k, ny = clamp(-m.y * 1.5, -1, 1) * k;
+    const hd = f.heading * DEG + clamp(nx, -1, 1) * 60 * DEG, th = clamp(f.pitchDeg * DEG + clamp(ny, -1, 1) * 45 * DEG, -80 * DEG, 80 * DEG);
+    const T = _v.set(Math.sin(hd) * Math.cos(th), Math.sin(th), -Math.cos(hd) * Math.cos(th));
+    const L = T.applyQuaternion(_q.copy(f.quat).invert());
+    const bankRight = -f.bankDeg * DEG, want = clamp(nx, -1, 1) * 70 * DEG, err = wrapPi(want - bankRight);
+    const idle = Math.abs(nx) < 0.02 && Math.abs(ny) < 0.02;
+    input.roll = clamp(input.roll + (idle && Math.abs(bankRight) < 0.05 ? 0 : clamp(err * 2.4, -1, 1)), -1, 1);
+    // command each axis relative to its own authority, then scale both together so the pitch:yaw ratio (which keeps the turn level) survives saturation
+    let cq = (L.y * 1.7) / this.ac.stats.pitchRate, cr = (L.x * 1.7) / this.ac.stats.yawRate; const sat = Math.max(1, Math.abs(cq), Math.abs(cr)); cq /= sat; cr /= sat;
+    input.pitch = clamp(input.pitch + cq * m.inv, -1, 1);
+    input.yaw = clamp(input.yaw + cr, -1, 1);
+    this.mouseAimPx = { x: (m.x * 0.5 + 0.5) * innerWidth, y: (m.y * 0.5 + 0.5) * innerHeight };
+  }
+  fireHint() {
+    const r = this.radar, sel = r.selected, p = this.player; if (!p.alive) return '';
+    if (p.missilesLeft <= 0) return 'NO MISSILES — USE CANNON';
+    if (!sel) return r.contacts.some((k) => k.visible) ? 'T: SELECT TARGET' : '';
+    const k = r.selectedContact();
+    if (!sel.identified) return k && k.range > 7500 ? 'CLOSE TO 7 KM — THEN HOLD I TO IDENTIFY' : r.locked ? 'LOCKED — HOLD I TO IDENTIFY (ROE)' : 'HOLD I: IDENTIFY  ·  KEEP NOSE ON TARGET TO LOCK';
+    if (sel.side !== 'hostile') return 'FRIENDLY — DO NOT FIRE';
+    if (!r.locked) return r.severity > 0.85 ? 'RADAR JAMMED — NO LOCK' : k && k.range > r.lockRange ? 'OUT OF MISSILE RANGE' : 'KEEP NOSE ON TARGET TO LOCK';
+    return 'F / RIGHT CLICK: FIRE MISSILE';
   }
 
   updateAI(dt) {
@@ -317,7 +349,7 @@ export class Game {
     const r = this.radar; if (locked) return;
     if (inp.cycle) { const t = r.cycle(); this.audio.play(t ? 'lock' : 'denied'); this.idProgress = 0; if (t) this.hud.centerMsg(`TRACKING ${t.identified ? t.callsign : 'UNKNOWN CONTACT'}`, 1.1); }
     if (!r.selected && this.settings.targetAssist) {
-      const c = r.contacts.filter((k) => k.visible && k.off < 55 * DEG)[0]; if (c) { r.selected = c.entity; r.lockProgress = 0; this.hud.centerMsg('CONTACT — PRESS T TO SWITCH, HOLD I TO IDENTIFY', 2.4, 'warn'); this.audio.play('lock'); }
+      const c = r.contacts.filter((k) => k.visible && k.off < 55 * DEG && !(k.entity.identified && k.entity.side !== 'hostile'))[0]; if (c) { r.selected = c.entity; r.lockProgress = 0; this.hud.centerMsg('CONTACT — PRESS T TO SWITCH, HOLD I TO IDENTIFY', 2.4, 'warn'); this.audio.play('lock'); }
     }
     const c = r.selectedContact();
     if (inp.identify && c && c.visible && c.range < 7500 && c.off < 36 * DEG && !c.entity.identified) {
@@ -416,8 +448,9 @@ export class Game {
     const hud = {
       player: this.player, flight: this.flight, camera: this.camera, radar: this.radar, weapons: this.weapons, director: this.director, diff: this.diffData, camMode: this.camRig.override ? 'cine' : this.camRig.mode,
       incoming: inc, missionTime: this.missionTime, missileStatus: this.missileHud, ammo: this.ammo, hpFrac: this.player.hp / this.player.maxHp, pullUp: this.pullUp, boundary: this.boundary,
-      idProgress: this.idProgress, waypoint: wp, mouseFlight: !!this.mouseFlight, stick: this.input.stick, hudHidden: this.hudHidden || !!this.cine?.def.locked || this.state === 'dead'
+      idProgress: this.idProgress, waypoint: wp, mouseFlight: !!this.mouseFlight, mouseAim: this.mouseFlight && !this.cine ? this.mouseAimPx : null, fireHint: this.fireHint(), hudHidden: this.hudHidden || !!this.cine?.def.locked || this.state === 'dead'
     };
+    document.body.classList.toggle('aim-mouse', !!this.mouseFlight && !this.paused && !this.ended);
     this.hud.update(dt, hud); this.lastHud = hud;
   }
   currentWaypoint(cur) {
@@ -427,6 +460,7 @@ export class Game {
   }
 
   dispose() {
+    document.body.classList.remove('aim-mouse');
     this.hud.show(false); this.hud.cinematic(false); this.comms.clear(); this.audio.setEngine(false); this.audio.setAmbience('off'); this.input.setMouseFlight(false);
     this.input.enabled = false; window.speechSynthesis?.cancel?.();
     this.scene.traverse((o) => { o.geometry?.dispose?.(); if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { m.map?.dispose?.(); m.dispose?.(); }); });

@@ -74,8 +74,8 @@ export function buildFighter(paint = { body: '#8f8a7a', accent: '#2f6b3a', trim:
   const glowMeshes = [], nozzleGeo = new THREE.CylinderGeometry(0.46, 0.58, 1.3, 14, 1, true); nozzleGeo.rotateX(Math.PI / 2);
   for (const sx of [-1, 1]) {
     const n = new THREE.Mesh(nozzleGeo, dark); n.position.set(sx * 0.5, 0, 8.0); g.add(n);
-    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.42, 4, 12, 1, true), additive(new THREE.Color(...glow), 0.85));
-    cone.geometry.rotateX(Math.PI / 2); cone.geometry.translate(0, 0, 2.2); cone.position.set(sx * 0.5, 0, 8.5); g.add(cone);
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.36, 2.6, 12, 1, true), additive(new THREE.Color(...glow), 0.85));
+    cone.geometry.rotateX(Math.PI / 2); cone.geometry.translate(0, 0, 1.4); cone.position.set(sx * 0.5, 0, 8.5); g.add(cone);
     const core = new THREE.Mesh(new THREE.SphereGeometry(0.4, 10, 8), additive(new THREE.Color(1, 0.9, 0.7), 0.9)); core.position.set(sx * 0.5, 0, 8.45); g.add(core);
     glowMeshes.push({ cone, core });
   }

@@ -26,7 +26,7 @@ export class CameraRig {
     let tp = _a, look = _b, up = _up.copy(UP), fovT = 62, lamP = Math.min(lam, 14), lamR = lam;
     const P = p.pos, mode = this.override ? 'override' : this.mode;
     switch (mode) {
-      case 'chase': { const d = 24 + f.speed * 0.025 + this.kick * 6; tp.set(0, 5.2 - clamp(f.g, -2, 6) * 0.1, d).applyQuaternion(this.rq).add(P); look.set(0, 1.4, -90).applyQuaternion(this.rq).add(P); up.lerp(_q.copy(this.rq) && new THREE.Vector3(0, 1, 0).applyQuaternion(this.rq), 0.3); fovT = 62 + clamp(f.speed - 200, 0, 250) * 0.045 + (f.afterburner ? 3 : 0); break; }
+      case 'chase': { const d = 30 + f.speed * 0.03 + this.kick * 6; tp.set(0, 7 - clamp(f.g, -2, 6) * 0.1, d).applyQuaternion(this.rq).add(P); look.set(0, 4, -130).applyQuaternion(this.rq).add(P); up.lerp(_q.copy(this.rq) && new THREE.Vector3(0, 1, 0).applyQuaternion(this.rq), 0.3); fovT = 60 + clamp(f.speed - 200, 0, 250) * 0.03; break; }
       case 'close': { tp.set(0, 3.2, 14 + this.kick * 3).applyQuaternion(this.rq).add(P); look.set(0, 1.2, -70).applyQuaternion(this.rq).add(P); up.lerp(new THREE.Vector3(0, 1, 0).applyQuaternion(this.rq), 0.45); fovT = 66; break; }
       case 'cockpit': { tp.set(0, 1.12 - clamp(f.g - 1, -2, 6) * 0.012, -3.1).applyQuaternion(p.quat).add(P); look.set(0, 1.12, -60).applyQuaternion(p.quat).add(P).addScaledVector(new THREE.Vector3(1, 0, 0).applyQuaternion(p.quat), (c.look?.x || 0) * 25); up.set(0, 1, 0).applyQuaternion(p.quat); fovT = 78 + clamp(f.speed - 200, 0, 250) * 0.02; lamP = 80; lamR = 40; break; }
       case 'wing': { tp.set(15, 1.6, 3).applyQuaternion(p.quat).add(P); look.set(0, 0.4, -3).applyQuaternion(p.quat).add(P); up.set(0, 1, 0).applyQuaternion(p.quat); fovT = 58; lamP = 40; lamR = 20; break; }

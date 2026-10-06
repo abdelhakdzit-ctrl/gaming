@@ -34,8 +34,9 @@ export class Radar {
       let c = this.byId.get(e.id);
       if (!c) { c = { entity: e, off: 0, range, az: 0, el: 0, cls: 'unknown', quality: 1, stale: false, lastSeen: 0, hidden: 0, jx: 0, jy: 0 }; this.byId.set(e.id, c); }
       c.hidden -= dt;
-      if (this.severity > 0 && Math.random() < this.severity * dt * 1.3) c.hidden = rand(0.3, 1.4);
-      const vis = range < lim && c.hidden <= 0;
+      if (this.severity > 0 && Math.random() < this.severity * dt * 1.3) c.hidden = rand(0.2, 0.8);
+      let vis = range < lim && c.hidden <= 0;
+      if (!vis && e === this.selected && range < lim && this.lockProgress > 0.3) vis = true; // lock memory through jamming dropouts
       c.range = range; c.off = off; c.inCone = inCone; c.az = Math.atan2(_l.x, -_l.z); c.el = Math.atan2(_l.y, Math.hypot(_l.x, _l.z));
       c.closure = -world.normalize().dot(e.vel.clone().sub(player.vel));
       if (vis) { c.lastSeen = 0; c.stale = false; c.quality = clamp(1 - this.severity * 0.7 - (range / lim) * 0.35, 0.15, 1); } else { c.lastSeen += dt; c.stale = true; c.quality = Math.max(0, 0.5 - c.lastSeen * 0.2); }
@@ -52,8 +53,8 @@ export class Radar {
     if (!sel || !this.selected.alive || (!sel.visible && sel.lastSeen > 2.5)) { this.selected = null; this.lockProgress = 0; this.locked = false; }
     if (this.selected) {
       const c = sel, cone = this.lockCone * (opts.targetAssist ? 1.35 : 1);
-      const ok = c.visible && c.off < cone && c.range < this.lockRange && this.severity < 0.65;
-      const need = 1.1 * diff.missile.playerLockTime * (0.55 + 0.45 * smoothstep(1500, this.lockRange, c.range));
+      const ok = c.visible && c.off < cone && c.range < this.lockRange && this.severity < 0.9;
+      const need = 1.1 * diff.missile.playerLockTime * (0.55 + 0.45 * smoothstep(1500, this.lockRange, c.range)) * (1 + this.severity * 1.2);
       if (ok) { this.lockProgress = Math.min(1, this.lockProgress + dt / need); this.lostTimer = 0; }
       else { this.lostTimer += dt; this.lockProgress = Math.max(0, this.lockProgress - dt / 0.6); if (this.lostTimer > 0.7) this.locked = false; }
       if (this.lockProgress >= 1) this.locked = true;
@@ -62,7 +63,8 @@ export class Radar {
   }
 
   cycle() {
-    const list = this.contacts.filter((c) => c.visible).sort((a, b) => a.off - b.off);
+    const vis = this.contacts.filter((c) => c.visible), foes = vis.filter((k) => !(k.entity.identified && k.entity.side !== 'hostile'));
+    const list = (foes.length ? foes : vis).sort((a, b) => a.off - b.off);
     if (!list.length) { this.selected = null; return null; }
     const i = list.findIndex((c) => c.entity === this.selected);
     this.selected = list[(i + 1) % list.length].entity; this.lockProgress = 0; this.locked = false; this.idProgress = 0;

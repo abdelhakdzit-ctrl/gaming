@@ -1,7 +1,7 @@
 import { clamp } from '../util/math.js';
 
 // Keyboard + mouse + gamepad -> one normalised control frame per poll().
-// Keys: S/Down pull up, W/Up push, A/D roll, Q/E yaw, Shift/Ctrl throttle, Space gun, F missile, X flares,
+// Keys: W/Up nose up, S/Down nose down, A/D roll, Q/E yaw, Shift/Ctrl throttle, Space gun, F missile, X flares,
 // T cycle target, I identify (hold), B airbrake, C camera, 1-8 direct camera, M mouse-flight, Esc/P pause.
 export class Input {
   constructor(canvasEl, settings) {
@@ -39,7 +39,7 @@ export class Input {
     const s = this.settings, dz = s.deadzone ?? 0.08, sens = s.sensitivity ?? 1, inv = s.invertY ? -1 : 1;
     const out = { pitch: 0, roll: 0, yaw: 0, throttleDelta: 0, throttleSet: undefined, brake: false, fire: false, missile: false, flare: false, cycle: false, identify: false, camera: 0, cameraDirect: -1, pause: false, mouseToggle: false, hudToggle: false, look: { x: 0, y: 0 } };
     // keyboard
-    const kp = (this.down('KeyS', 'ArrowDown') ? 1 : 0) - (this.down('KeyW', 'ArrowUp') ? 1 : 0);
+    const kp = (this.down('KeyW', 'ArrowUp') ? 1 : 0) - (this.down('KeyS', 'ArrowDown') ? 1 : 0);
     const kr = (this.down('KeyD', 'ArrowRight') ? 1 : 0) - (this.down('KeyA', 'ArrowLeft') ? 1 : 0);
     const ky = (this.down('KeyE') ? 1 : 0) - (this.down('KeyQ') ? 1 : 0);
     const ramp = (cur, tgt) => { const rate = tgt === 0 ? 5 : (Math.sign(tgt) !== Math.sign(cur) && cur !== 0 ? 9 : 2.6); const d = tgt - cur; return Math.abs(d) <= rate * dt ? tgt : cur + Math.sign(d) * rate * dt; };
@@ -60,14 +60,8 @@ export class Input {
     out.pause = this.was('Escape') || this.was('KeyP'); out.mouseToggle = this.was('KeyM'); out.hudToggle = this.was('KeyH');
     out.look.x = (this.down('ArrowRight') ? 1 : 0) - (this.down('ArrowLeft') ? 1 : 0);
     // mouse (virtual stick)
-    if (this.mouseFlight) {
-      // mouse position relative to screen centre acts as the stick; small dead area in the middle
-      const mx = this.mouse.x, my = this.mouse.y, dz2 = 0.06;
-      const sh = (v) => { const a = Math.abs(v); return a < dz2 ? 0 : Math.sign(v) * Math.min(1, (a - dz2) / (0.8 - dz2)); };
-      const ex = (v) => Math.sign(v) * (0.3 * Math.abs(v) + 0.7 * v * v);
-      this.stick.x = ex(sh(mx)) * sens; this.stick.y = ex(sh(my)) * sens * inv;
-      out.roll = clamp(out.roll + this.stick.x, -1, 1); out.pitch = clamp(out.pitch + this.stick.y, -1, 1);
-    }
+    // mouse flight: the cursor offset from the screen centre is the aim demand (resolved in Game against the camera FOV)
+    out.mouseAim = this.mouseFlight ? { x: clamp(this.mouse.x, -1, 1), y: clamp(this.mouse.y, -1, 1), sens, inv } : null;
     out.look.dx = this.mouse.dx; out.look.dy = this.mouse.dy; this.mouse.dx = this.mouse.dy = 0;
     // gamepad
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -76,7 +70,7 @@ export class Input {
     if (p) {
       const ax = (i) => { const v = p.axes[i] || 0; return Math.abs(v) < dz ? 0 : Math.sign(v) * (Math.abs(v) - dz) / (1 - dz); };
       const b = (i) => !!p.buttons[i]?.pressed, bp = (i) => b(i) && !this.padPrev[i];
-      const gx = ax(0) * sens, gy = ax(1) * sens * inv, gyaw = ax(2);
+      const gx = ax(0) * sens, gy = -ax(1) * sens * inv, gyaw = ax(2);
       if (gx || gy || gyaw) this.lastDevice = 'gamepad';
       out.roll = clamp(out.roll + gx, -1, 1); out.pitch = clamp(out.pitch + gy, -1, 1); out.yaw = clamp(out.yaw + gyaw, -1, 1);
       out.throttleDelta += (b(12) ? 1 : 0) - (b(13) ? 1 : 0);

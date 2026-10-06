@@ -25,7 +25,7 @@ Airbase → Cockpit → Takeoff → Mission 01 *First Contact* (radar uncertaint
 Also: Free Flight (region, aircraft, time, weather, difficulty, targets), 8 Challenges, Replay viewer, Settings, Extras, Pause.
 
 ### Controls
-`S/↓` pull up · `W/↑` push · `A/D` roll · `Q/E` yaw · `Shift/Ctrl` or wheel throttle · `Space`/click cannon ·
+`W/↑` nose up · `S/↓` nose down · mouse = aim cursor (up = nose up) · `A/D` roll · `Q/E` yaw · `Shift/Ctrl` or wheel throttle · `Space`/click cannon ·
 `T` select/cycle radar target (keep it in the radar cone to **LOCK**) · `I` hold to **identify** · `F`/right-click missile · `X` flares · `B` airbrake ·
 `C` or `1-8` cameras · `M` mouse flight · `H` HUD · `Esc`/`P` pause. Gamepad is supported (see Extras → Controls).
 

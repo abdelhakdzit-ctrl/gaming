@@ -159,8 +159,10 @@ export class Hud {
     this.drawContacts(g, S, cam, nose, cx, cy, u, focal, minimal);
     // ---- missile warning arrows
     if (threat > 0) this.drawIncoming(g, S, cx, cy, u, threat);
-    // ---- mouse flight stick
-    if (S.mouseFlight) { const r = 38 * u, mx = cx, my = H - 150 * u; g.globalAlpha = 0.6; g.beginPath(); g.arc(mx, my, r, 0, 6.283); g.stroke(); g.beginPath(); g.arc(mx + S.stick.x * r, my + S.stick.y * r, 5 * u, 0, 6.283); g.fill(); g.globalAlpha = 1; }
+    // ---- mouse aim cursor + line from the nose marker
+    if (S.mouseAim) { const mx = S.mouseAim.x, my = S.mouseAim.y, r = 15 * u; g.save(); g.globalAlpha = 0.85; g.strokeStyle = '#ffffff'; g.fillStyle = '#ffffff'; g.shadowColor = '#000'; g.shadowBlur = 3;
+      if (nose.front) { g.globalAlpha = 0.25; g.beginPath(); g.moveTo(nose.x, nose.y); g.lineTo(mx, my); g.stroke(); g.globalAlpha = 0.9; }
+      g.beginPath(); g.arc(mx, my, r, 0, 6.283); g.moveTo(mx - r * 1.6, my); g.lineTo(mx - r * 0.5, my); g.moveTo(mx + r * 1.6, my); g.lineTo(mx + r * 0.5, my); g.moveTo(mx, my - r * 1.6); g.lineTo(mx, my - r * 0.5); g.moveTo(mx, my + r * 1.6); g.lineTo(mx, my + r * 0.5); g.stroke(); g.restore(); }
     g.shadowBlur = 0;
   }
 
@@ -210,6 +212,7 @@ export class Hud {
     const p = S.player, st = S.missileStatus, W = S.weapons;
     g.textAlign = 'center';
     const colr = { MOUNTED: this.theme, READY: '#ffcf3d', LOCKED: '#ff5348', LAUNCHED: '#7fdcff', EMPTY: '#8a8f94' }[st] || this.theme;
+    if (S.fireHint) { g.save(); g.fillStyle = S.fireHint.startsWith('F /') ? '#ff5348' : '#ffcf3d'; g.shadowColor = g.fillStyle; g.font = `${Math.round(14 * u)}px "Share Tech Mono", ui-monospace, monospace`; g.fillText(S.fireHint, cx, y - 56 * u); g.restore(); }
     g.save(); g.fillStyle = colr; g.shadowColor = colr; g.font = `bold ${Math.round(18 * u)}px "Share Tech Mono", ui-monospace, monospace`;
     const blink = st === 'LOCKED' && Math.floor(this.t * 6) % 2 === 0;
     g.globalAlpha = blink ? 0.55 : 1; g.fillText(`MISSILE STATUS: ${st}`, cx, y - 28 * u); g.restore();
