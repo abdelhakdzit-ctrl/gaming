@@ -103,7 +103,7 @@ export function buildFighter(paint = { body: '#8f8a7a', accent: '#2f6b3a', trim:
       rud.r.rotation.y = rud.l.rotation.y = -yaw * 0.45;
       brake.rotation.x = -br * 1.0;
       const k = 0.25 + throttle * 0.95, fl = 0.9 + Math.sin(t * 60) * 0.08;
-      for (const { cone, core } of glowMeshes) { cone.scale.set(k, k, k * fl * (0.4 + throttle)); cone.material.opacity = 0.25 + throttle * 0.6; core.scale.setScalar(0.5 + throttle * 0.8); }
+      for (const { cone, core } of glowMeshes) { cone.scale.set(k * 0.7, k * 0.7, k * fl * (0.25 + throttle * 0.55)); cone.material.opacity = 0.12 + throttle * 0.28; core.scale.setScalar(0.4 + throttle * 0.45); core.material.opacity = 0.35 + throttle * 0.3; }
     },
     setMissilesMounted(n) { missiles.forEach((m, i) => { m.visible = i < n; }); },
     setPaint(p) { body.color.set(p.body); accent.color.set(p.accent); trim.color.set(p.trim); },

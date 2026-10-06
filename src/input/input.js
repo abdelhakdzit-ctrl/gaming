@@ -20,11 +20,11 @@ export class Input {
     window.addEventListener('mousemove', (e) => {
       if (!this.enabled) return;
       this.mouse.dx += e.movementX || 0; this.mouse.dy += e.movementY || 0;
+      this.mouse.x = (e.clientX / innerWidth) * 2 - 1; this.mouse.y = (e.clientY / innerHeight) * 2 - 1;
     });
     window.addEventListener('mousedown', (e) => {
       if (!this.enabled || e.target.closest?.('.ui-block')) return;
       if (e.button === 0) this.mouse.left = true; if (e.button === 2) this.mouse.right = true;
-      if (this.mouseFlight && document.pointerLockElement !== canvasEl) canvasEl.requestPointerLock?.();
     });
     window.addEventListener('mouseup', (e) => { if (e.button === 0) this.mouse.left = false; if (e.button === 2) this.mouse.right = false; });
     window.addEventListener('contextmenu', (e) => { if (this.enabled) e.preventDefault(); });
@@ -33,7 +33,7 @@ export class Input {
   was(code) { return this.pressed.has(code); }
   down(...codes) { return codes.some((c) => this.keys.has(c)); }
 
-  setMouseFlight(v) { this.mouseFlight = v; if (!v && document.pointerLockElement) document.exitPointerLock(); this.stick.x = this.stick.y = 0; }
+  setMouseFlight(v) { this.mouseFlight = v; this.stick.x = this.stick.y = 0; }
 
   poll(dt) {
     const s = this.settings, dz = s.deadzone ?? 0.08, sens = s.sensitivity ?? 1, inv = s.invertY ? -1 : 1;
@@ -61,9 +61,11 @@ export class Input {
     out.look.x = (this.down('ArrowRight') ? 1 : 0) - (this.down('ArrowLeft') ? 1 : 0);
     // mouse (virtual stick)
     if (this.mouseFlight) {
-      this.stick.x = clamp(this.stick.x + this.mouse.dx * 0.0045 * sens, -1, 1);
-      this.stick.y = clamp(this.stick.y + this.mouse.dy * 0.0045 * sens * inv, -1, 1);
-      this.stick.x *= Math.exp(-dt * 0.9); this.stick.y *= Math.exp(-dt * 0.9);
+      // mouse position relative to screen centre acts as the stick; small dead area in the middle
+      const mx = this.mouse.x, my = this.mouse.y, dz2 = 0.06;
+      const sh = (v) => { const a = Math.abs(v); return a < dz2 ? 0 : Math.sign(v) * Math.min(1, (a - dz2) / (0.8 - dz2)); };
+      const ex = (v) => Math.sign(v) * (0.3 * Math.abs(v) + 0.7 * v * v);
+      this.stick.x = ex(sh(mx)) * sens; this.stick.y = ex(sh(my)) * sens * inv;
       out.roll = clamp(out.roll + this.stick.x, -1, 1); out.pitch = clamp(out.pitch + this.stick.y, -1, 1);
     }
     out.look.dx = this.mouse.dx; out.look.dy = this.mouse.dy; this.mouse.dx = this.mouse.dy = 0;

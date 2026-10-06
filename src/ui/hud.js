@@ -100,7 +100,7 @@ export class Hud {
   // projection into the active camera: returns {x,y,on(screen),front}
   project(cam, p, out = {}) {
     _v.copy(p).applyMatrix4(cam.matrixWorldInverse); out.front = _v.z < -0.5;
-    if (!out.front) { out.x = out.y = -9999; out.on = false; return out; }
+    if (!out.front) { out.x = this.W / 2 + _v.x * 1000; out.y = this.H / 2 - _v.y * 1000; out.on = false; return out; }
     _v.applyMatrix4(cam.projectionMatrix); out.x = (_v.x * 0.5 + 0.5) * this.W; out.y = (-_v.y * 0.5 + 0.5) * this.H;
     out.on = out.x > 0 && out.x < this.W && out.y > 0 && out.y < this.H; return out;
   }
@@ -223,12 +223,12 @@ export class Hud {
     g.textAlign = 'center';
     for (const c of radar.contacts) {
       const e = c.entity, isSel = e === sel; if (c.stale && !isSel && c.lastSeen > 1.4) continue;
-      const pr = this.project(cam, e.pos, tmp); if (!pr.front) continue;
+      const pr = this.project(cam, e.pos, tmp);
       const colr = { hostile: pal.hostile, friendly: pal.friend, unknown: pal.unknown }[c.cls]; g.strokeStyle = colr; g.fillStyle = colr; g.shadowColor = colr;
       g.globalAlpha = c.stale ? 0.4 : clamp(0.35 + c.quality, 0.4, 1);
       const rpx = clamp((e.radius * 1.6 * focal) / Math.max(c.range, 50), 15 * u, 140 * u), jx = c.jx * W(this.W), jy = c.jy * W(this.W);
       let x = pr.x + jx, y = pr.y + jy;
-      if (!pr.on) { if (isSel) this.edgeArrow(g, x, y, colr, u); continue; }
+      if (!pr.on) { if (!c.stale || isSel) this.edgeArrow(g, x, y, colr, u, isSel, c.range); continue; }
       if (!isSel) {
         if (minimal && c.range > 3500) continue;
         const s = 8 * u; g.beginPath();
@@ -257,9 +257,9 @@ export class Hud {
     }
     g.globalAlpha = 1; g.strokeStyle = this.theme; g.fillStyle = this.theme; g.shadowColor = this.theme;
   }
-  edgeArrow(g, x, y, colr, u) {
-    const cx = this.W / 2, cy = this.H / 2, a = Math.atan2(y - cy, x - cx), r = Math.min(this.W, this.H) * 0.4;
-    g.save(); g.translate(cx + Math.cos(a) * r, cy + Math.sin(a) * r); g.rotate(a); g.beginPath(); g.moveTo(14 * u, 0); g.lineTo(-8 * u, -9 * u); g.lineTo(-8 * u, 9 * u); g.closePath(); g.fill(); g.restore();
+  edgeArrow(g, x, y, colr, u, sel, range) {
+    const cx = this.W / 2, cy = this.H / 2, a = Math.atan2(y - cy, x - cx), r = Math.min(this.W, this.H) * 0.42, k = sel ? 1.3 : 0.9;
+    g.save(); g.translate(cx + Math.cos(a) * r, cy + Math.sin(a) * r); g.rotate(a); g.beginPath(); g.moveTo(14 * u * k, 0); g.lineTo(-8 * u * k, -9 * u * k); g.lineTo(-8 * u * k, 9 * u * k); g.closePath(); g.fill(); g.rotate(-a); g.font = `${Math.round(11 * u)}px ui-monospace, monospace`; g.textAlign = 'center'; g.fillText((range / 1000).toFixed(1), 0, 20 * u); g.restore();
   }
   drawIncoming(g, S, cx, cy, u, threat) {
     const p = S.player; _q.copy(p.quat).invert();

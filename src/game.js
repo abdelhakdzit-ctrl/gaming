@@ -249,7 +249,7 @@ export class Game {
     if (inp.mouseToggle) { this.mouseFlight = !this.mouseFlight; this.input.setMouseFlight(this.mouseFlight); this.hud.toast(this.mouseFlight ? 'MOUSE FLIGHT ON (click to capture)' : 'MOUSE FLIGHT OFF'); }
     if (inp.hudToggle) this.hudHidden = !this.hudHidden;
     if (inp.pause) this.app.togglePause();
-    if (this.mouseFlight === undefined) { this.mouseFlight = !!this.settings.mouseFlight; this.input.setMouseFlight(this.mouseFlight); }
+    if (this.mouseFlight === undefined) { this.mouseFlight = !!this.settings.mouseControl; this.input.setMouseFlight(this.mouseFlight); }
   }
 
   updatePlayer(dt, inp, locked) {
@@ -316,6 +316,9 @@ export class Game {
   updateTargeting(dt, inp, locked) {
     const r = this.radar; if (locked) return;
     if (inp.cycle) { const t = r.cycle(); this.audio.play(t ? 'lock' : 'denied'); this.idProgress = 0; if (t) this.hud.centerMsg(`TRACKING ${t.identified ? t.callsign : 'UNKNOWN CONTACT'}`, 1.1); }
+    if (!r.selected && this.settings.targetAssist) {
+      const c = r.contacts.filter((k) => k.visible && k.off < 55 * DEG)[0]; if (c) { r.selected = c.entity; r.lockProgress = 0; this.hud.centerMsg('CONTACT — PRESS T TO SWITCH, HOLD I TO IDENTIFY', 2.4, 'warn'); this.audio.play('lock'); }
+    }
     const c = r.selectedContact();
     if (inp.identify && c && c.visible && c.range < 7500 && c.off < 36 * DEG && !c.entity.identified) {
       this.idProgress = Math.min(1, this.idProgress + dt / (1.9 * clamp(c.range / 3000, 0.4, 1.6)));

@@ -3,7 +3,7 @@ import { clamp, damp, lerp, rand } from '../util/math.js';
 
 export const CAMERA_IDS = ['chase', 'cockpit', 'close', 'missile', 'wing', 'tactical', 'cinematic', 'free'];
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _up = new THREE.Vector3();
-const UP = new THREE.Vector3(0, 1, 0);
+const UP = new THREE.Vector3(0, 1, 0), _v0 = new THREE.Vector3(), _off = new THREE.Vector3();
 
 /** Camera director: eight modes, smooth blends between them, shake and scripted overrides. */
 export class CameraRig {
@@ -11,7 +11,7 @@ export class CameraRig {
     this.camera = camera; this.mode = 'chase'; this.blend = 1; this.rq = new THREE.Quaternion(); this.trauma = 0;
     this.pos = new THREE.Vector3(); this.quat = new THREE.Quaternion(); this.fov = 62; this.override = null; this.free = { yaw: 0.6, pitch: 0.2, r: 45 };
     this.cine = { t: 99, kind: 0, pt: new THREE.Vector3(), ang: 0 }; this.kick = 0; this.settings = { shake: true, reducedMotion: false };
-    this.init = false; this.time = 0;
+    this.init = false; this.time = 0; this.off = new THREE.Vector3(); this.lastMode = null;
   }
   setMode(id) { if (id !== this.mode) { this.mode = id; this.blend = 0; this.cine.t = 99; } }
   addTrauma(v) { this.trauma = Math.min(1, this.trauma + v); }
@@ -23,7 +23,7 @@ export class CameraRig {
     const { p, f } = c; this.time += dt; this.blend = Math.min(1, this.blend + dt / 0.9);
     const lam = lerp(3.2, 60, this.blend * this.blend);
     this.rq.slerp(p.quat, 1 - Math.exp(-5.5 * dt));
-    let tp = _a, look = _b, up = _up.copy(UP), fovT = 62, lamP = lam, lamR = lam;
+    let tp = _a, look = _b, up = _up.copy(UP), fovT = 62, lamP = Math.min(lam, 14), lamR = lam;
     const P = p.pos, mode = this.override ? 'override' : this.mode;
     switch (mode) {
       case 'chase': { const d = 24 + f.speed * 0.025 + this.kick * 6; tp.set(0, 5.2 - clamp(f.g, -2, 6) * 0.1, d).applyQuaternion(this.rq).add(P); look.set(0, 1.4, -90).applyQuaternion(this.rq).add(P); up.lerp(_q.copy(this.rq) && new THREE.Vector3(0, 1, 0).applyQuaternion(this.rq), 0.3); fovT = 62 + clamp(f.speed - 200, 0, 250) * 0.045 + (f.afterburner ? 3 : 0); break; }
@@ -57,7 +57,12 @@ export class CameraRig {
       case 'override': { const o = this.override; tp.copy(o.pos); look.copy(o.look); fovT = o.fov || 50; lamP = o.snap ? 90 : 8; lamR = o.snap ? 90 : 8; if (o.up) up.copy(o.up); break; }
     }
     // pose
-    if (!this.init) { this.pos.copy(tp); this.init = true; } else { this.pos.x = damp(this.pos.x, tp.x, lamP, dt); this.pos.y = damp(this.pos.y, tp.y, lamP, dt); this.pos.z = damp(this.pos.z, tp.z, lamP, dt); }
+    // smooth the offset from a moving reference so speed and frame-time jitter cannot make the view stutter
+    const ref = mode === 'override' ? _v0.set(0, 0, 0) : mode === 'missile' ? look : P;
+    _off.copy(tp).sub(ref);
+    if (!this.init || this.lastMode !== mode) { this.off.copy(_off); this.init = true; this.lastMode = mode; }
+    else { this.off.x = damp(this.off.x, _off.x, lamP, dt); this.off.y = damp(this.off.y, _off.y, lamP, dt); this.off.z = damp(this.off.z, _off.z, lamP, dt); }
+    this.pos.copy(ref).add(this.off);
     _m.lookAt(this.pos, look, up); _q.setFromRotationMatrix(_m);
     if (this.quat.lengthSq() < 0.5 || this.blend === 0 && !this._q0) { this.quat.copy(_q); this._q0 = true; }
     this.quat.slerp(_q, 1 - Math.exp(-lamR * dt));
@@ -65,7 +70,7 @@ export class CameraRig {
     this.kick = Math.max(0, this.kick - dt * 3);
     // shake
     this.trauma = Math.max(0, this.trauma - dt * 1.5);
-    const amb = Math.max(0, (c.buffet || 0)) * 0.12 + (f.afterburner ? 0.03 : 0) + (f.speed > f.stats.maxSpeed * 0.95 ? 0.05 : 0);
+    const amb = Math.max(0, (c.buffet || 0)) * 0.1 + (f.speed > f.stats.maxSpeed * 1.02 ? 0.04 : 0);
     const sh = this.settings.shake && !this.settings.reducedMotion ? Math.min(1, this.trauma * this.trauma + amb) : 0;
     this.camera.position.copy(this.pos);
     this.camera.quaternion.copy(this.quat);

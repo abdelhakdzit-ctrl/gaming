@@ -224,7 +224,7 @@ export class Screens {
     this.tab = tab; this.from = from; const s = Settings.s;
     const rows = {
       gameplay: [['Difficulty', seg('set_difficulty', DIFFS.map((x) => [x, x]), s.difficulty)], ['Flight mode', seg('set_flightMode', [['ASSISTED', 'ASSISTED'], ['NORMAL', 'NORMAL'], ['EXPERT', 'EXPERT']], s.flightMode)], ['Assist level', slider('assistLevel', s.assistLevel)], ['Auto-level', tog('tog_autoLevel', s.autoLevel)], ['Target assist', tog('tog_targetAssist', s.targetAssist)]],
-      controls: [['Sensitivity', slider('sensitivity', s.sensitivity, 0.4, 2.2, 0.05)], ['Invert Y', tog('tog_invertY', s.invertY)], ['Dead zone', slider('deadzone', s.deadzone, 0, 0.4, 0.01)], ['Mouse flight', tog('tog_mouseFlight', s.mouseFlight)]],
+      controls: [['Sensitivity', slider('sensitivity', s.sensitivity, 0.4, 2.2, 0.05)], ['Invert Y', tog('tog_invertY', s.invertY)], ['Dead zone', slider('deadzone', s.deadzone, 0, 0.4, 0.01)], ['Mouse flight (M)', tog('tog_mouseFlight', s.mouseControl)]],
       audio: [['Master volume', slider('master', s.master)], ['Radio volume', slider('radio', s.radio)], ['Effects volume', slider('effects', s.effects)], ['Music volume', slider('music', s.music)], ['Radio voice (TTS)', tog('tog_tts', s.tts)]],
       accessibility: [['Subtitles', tog('tog_subtitles', s.subtitles)], ['Subtitle size', seg('set_subtitleSize', [['small', 'S'], ['medium', 'M'], ['large', 'L'], ['xlarge', 'XL']], s.subtitleSize)], ['Subtitle language', seg('set_subtitleLang', [['en', 'ENGLISH'], ['fr', 'FRANÇAIS'], ['ar', 'العربية']], s.subtitleLang)], ['Bilingual (AR)', tog('tog_bilingual', s.bilingual)], ['Colour-blind preset', seg('set_colorblind', [['none', 'OFF'], ['protanopia', 'PROTAN'], ['deuteranopia', 'DEUTAN'], ['tritanopia', 'TRITAN']], s.colorblind)], ['Reduced motion', tog('tog_reducedMotion', s.reducedMotion)], ['Camera shake', tog('tog_cameraShake', s.cameraShake)]],
       graphics: [['Quality', seg('set_quality', [['low', 'LOW'], ['medium', 'MEDIUM'], ['high', 'HIGH']], s.quality)], ['Dynamic resolution', tog('tog_dynamicRes', s.dynamicRes)], ['Show FPS', tog('tog_showFps', s.showFps)]]
@@ -239,7 +239,7 @@ export class Screens {
   a_set_difficulty(v) { this._set('difficulty', v); } a_set_flightMode(v) { this._set('flightMode', v); } a_set_subtitleSize(v) { this._set('subtitleSize', v); } a_set_subtitleLang(v) { this._set('subtitleLang', v); }
   a_set_colorblind(v) { this._set('colorblind', v); } a_set_quality(v) { this._set('quality', v); }
   a_tog_autoLevel() { this._set('autoLevel', !Settings.s.autoLevel); } a_tog_targetAssist() { this._set('targetAssist', !Settings.s.targetAssist); } a_tog_invertY() { this._set('invertY', !Settings.s.invertY); }
-  a_tog_mouseFlight() { this._set('mouseFlight', !Settings.s.mouseFlight); } a_tog_tts() { this._set('tts', !Settings.s.tts); } a_tog_subtitles() { this._set('subtitles', !Settings.s.subtitles); }
+  a_tog_mouseFlight() { this._set('mouseControl', !Settings.s.mouseControl); } a_tog_tts() { this._set('tts', !Settings.s.tts); } a_tog_subtitles() { this._set('subtitles', !Settings.s.subtitles); }
   a_tog_bilingual() { this._set('bilingual', !Settings.s.bilingual); } a_tog_reducedMotion() { this._set('reducedMotion', !Settings.s.reducedMotion); } a_tog_cameraShake() { this._set('cameraShake', !Settings.s.cameraShake); }
   a_tog_dynamicRes() { this._set('dynamicRes', !Settings.s.dynamicRes); } a_tog_showFps() { this._set('showFps', !Settings.s.showFps); }
   _slide(key, v) { Settings.set(key, v); this.app.applySettings(key); }
