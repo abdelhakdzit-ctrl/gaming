@@ -41,7 +41,12 @@ export class Input {
     // keyboard
     const kp = (this.down('KeyS', 'ArrowDown') ? 1 : 0) - (this.down('KeyW', 'ArrowUp') ? 1 : 0);
     const kr = (this.down('KeyD', 'ArrowRight') ? 1 : 0) - (this.down('KeyA', 'ArrowLeft') ? 1 : 0);
-    out.pitch = kp * inv; out.roll = kr; out.yaw = (this.down('KeyE') ? 1 : 0) - (this.down('KeyQ') ? 1 : 0);
+    const ky = (this.down('KeyE') ? 1 : 0) - (this.down('KeyQ') ? 1 : 0);
+    const ramp = (cur, tgt) => { const rate = tgt === 0 ? 5 : (Math.sign(tgt) !== Math.sign(cur) && cur !== 0 ? 9 : 2.6); const d = tgt - cur; return Math.abs(d) <= rate * dt ? tgt : cur + Math.sign(d) * rate * dt; };
+    const kb = this.kb || (this.kb = { p: 0, r: 0, y: 0 });
+    kb.p = ramp(kb.p, kp); kb.r = ramp(kb.r, kr); kb.y = ramp(kb.y, ky);
+    const ex = (v) => Math.sign(v) * (0.35 * Math.abs(v) + 0.65 * v * v);
+    out.pitch = ex(kb.p) * inv; out.roll = ex(kb.r); out.yaw = kb.y;
     out.throttleDelta = (this.down('ShiftLeft', 'ShiftRight', 'Equal') ? 1 : 0) - (this.down('ControlLeft', 'ControlRight', 'Minus') ? 1 : 0);
     out.throttleDelta -= this.wheel * 0.9; this.wheel = 0;
     out.brake = this.down('KeyB');

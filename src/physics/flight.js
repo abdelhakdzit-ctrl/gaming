@@ -68,8 +68,16 @@ export class FlightModel {
     if (assist > 0 && !o.locked) {
       // pitch stabiliser: bring AoA back to trim when stick is neutral
       if (Math.abs(cp) < 0.05) cp += clamp(-(this.aoa - 0.05) * 2.4, -0.6, 0.6) * assist;
-      // level wings when roll stick neutral
-      if (o.autoLevel !== false && Math.abs(cr) < 0.05) cr += clamp(-Math.atan2(this.right.y, this.up.y) * (0.5 + assist * 1.4), -1, 1) * assist * (this.up.y > -0.2 ? 1 : 0.7);
+      // level wings when roll stick neutral; the direction is latched near inverted so it can't flip at the +/-180 wrap
+      if (o.autoLevel !== false && Math.abs(cr) < 0.05) {
+        const bank = Math.atan2(this.right.y, this.up.y);
+        if (Math.abs(bank) > 2.7) { if (!this.alDir) this.alDir = bank >= 0 ? 1 : -1; } else if (Math.abs(bank) < 2.2) this.alDir = 0;
+        const cmd = this.alDir ? this.alDir : Math.sign(bank);
+        const mag = this.alDir ? 0.9 : clamp(Math.abs(bank) * (0.6 + assist * 1.2), 0, 1);
+        cr += cmd * mag * assist;
+      }
+      // gentle return to the horizon when the stick is neutral and the nose is steep
+      if (Math.abs(input.pitch || 0) < 0.05 && Math.abs(this.pitchDeg) > 12 && assist > 0.45) cp += clamp(-this.pitchDeg / 60, -0.5, 0.5) * (assist - 0.3) * (this.up.y > 0 ? 1 : 0);
       // hold the turn when banked and pulling nothing
       if (Math.abs(cp) < 0.05 && Math.abs(cr) > 0.05 && assist > 0.7) cp += Math.abs(this.right.y) * 0.3;
     }
