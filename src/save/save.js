@@ -11,7 +11,7 @@ export const DEFAULT_SETTINGS = {
 };
 const fresh = () => ({
   version: 1, created: Date.now(), updated: Date.now(),
-  campaign: { completed: {}, started: false },
+  campaign: { completed: {}, started: false, finished: false }, flags: {},
   scores: {}, bestTimes: {}, challenges: {}, xp: 0, tokens: 0,
   owned: { aircraft: ['falcon-x1'], paints: ['sand'], hudThemes: ['emerald'], cockpits: ['standard'] },
   equipped: { aircraft: 'falcon-x1', paint: 'sand', hudTheme: 'emerald', cockpit: 'standard', loadout: 'balanced' },

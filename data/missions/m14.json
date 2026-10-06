@@ -1,0 +1,689 @@
+{
+ "id": "m14",
+ "number": 14,
+ "title": "GREY",
+ "titleFr": "GREY",
+ "titleAr": "الرمادي",
+ "type": "ACE DUEL",
+ "playable": true,
+ "requires": "m13",
+ "region": "MULTIPLE REGIONS",
+ "regionAr": "مناطق متعددة",
+ "map": {
+  "lon": 5,
+  "lat": 33
+ },
+ "threat": "EXTREME",
+ "threatLevel": 5,
+ "weatherLabel": "CLEAR / SUNSET",
+ "clock": "18:30",
+ "env": {
+  "biome": "coast",
+  "time": "sunset",
+  "weather": "clear"
+ },
+ "narrative": "Grey has stopped watching. He wants to duel — over the coast, then through the Atlas ridgelines, then among the southern rocks. Three regions, one opponent who never wastes energy and always comes back from the better angle. Riad is grounded; you fly alone.",
+ "intel": [
+  {
+   "label": "GREY",
+   "text": "Elite pilot, extremely disciplined, rarely speaks. Conserves energy, avoids predictable turns, disengages when disadvantaged — and re-engages from a better angle.",
+   "confidence": "HIGH"
+  },
+  {
+   "label": "TERRAIN",
+   "text": "The duel moves across three regions. Use ridgelines and rocks; they hurt the careless.",
+   "confidence": "MEDIUM"
+  },
+  {
+   "label": "NOTE",
+   "text": "His transponder reads Command-issue.",
+   "confidence": "LOW"
+  }
+ ],
+ "base": null,
+ "spawn": {
+  "onRunway": false,
+  "heading": 0,
+  "speed": 240,
+  "pos": [
+   0,
+   3200,
+   0
+  ]
+ },
+ "wingman": {
+  "enabled": false
+ },
+ "noWingman": true,
+ "zones": [
+  {
+   "id": "boundary",
+   "type": "boundary",
+   "pos": [
+    0,
+    0,
+    -12000
+   ],
+   "radius": 36000,
+   "label": "OPERATIONS AREA"
+  }
+ ],
+ "waypoints": [],
+ "groups": [
+  {
+   "type": "grey",
+   "side": "hostile",
+   "callsign": "GREY",
+   "identified": true,
+   "targetPriority": "player",
+   "reengage": true,
+   "stand": true,
+   "id": "grey1",
+   "name": "GREY",
+   "pos": [
+    3000,
+    3600,
+    -9000
+   ],
+   "heading": 180,
+   "speed": 240,
+   "spawn": "start",
+   "route": [],
+   "iffShown": "unknown"
+  },
+  {
+   "type": "grey",
+   "side": "hostile",
+   "callsign": "GREY",
+   "identified": true,
+   "targetPriority": "player",
+   "reengage": true,
+   "stand": true,
+   "id": "grey2",
+   "name": "GREY",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "heading": 0,
+   "speed": 240,
+   "spawn": "event",
+   "route": [],
+   "iffShown": "unknown",
+   "hpFrac": 0.7,
+   "near": [
+    2500,
+    700,
+    -9000
+   ],
+   "turn": 160
+  },
+  {
+   "type": "grey",
+   "side": "hostile",
+   "callsign": "GREY",
+   "identified": true,
+   "targetPriority": "player",
+   "reengage": true,
+   "stand": true,
+   "id": "grey3",
+   "name": "GREY",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "heading": 0,
+   "speed": 240,
+   "spawn": "event",
+   "route": [],
+   "iffShown": "unknown",
+   "hpFrac": 0.5,
+   "near": [
+    2500,
+    700,
+    -9000
+   ],
+   "turn": 160
+  }
+ ],
+ "objectives": {
+  "primary": [
+   {
+    "id": "p1",
+    "type": "manual",
+    "label": "ENGAGE GREY — THE COAST",
+    "params": {}
+   },
+   {
+    "id": "p2",
+    "type": "manual",
+    "label": "FOLLOW GREY — ATLAS RIDGELINES",
+    "params": {},
+    "hidden": true
+   },
+   {
+    "id": "duel",
+    "type": "destroy",
+    "label": "DEFEAT GREY — THE ROCKS",
+    "params": {
+     "targets": [
+      "grey3"
+     ]
+    }
+   }
+  ],
+  "secondary": [
+   {
+    "id": "time",
+    "type": "time_limit",
+    "label": "FINISH WITHIN 12:00",
+    "params": {
+     "seconds": 720
+    }
+   }
+  ],
+  "optional": [
+   {
+    "id": "nodamage",
+    "type": "max_damage",
+    "label": "TAKE NO DAMAGE",
+    "params": {
+     "max": 0
+    }
+   },
+   {
+    "id": "acc",
+    "type": "accuracy",
+    "label": "HIGH ACCURACY (25%+)",
+    "params": {
+     "min": 0.25
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "when": {
+    "type": "time",
+    "t": 2
+   },
+   "do": [
+    {
+     "say": "greyduelsky_1"
+    },
+    {
+     "say": "greyduelsky_2",
+     "delay": 1
+    },
+    {
+     "say": "greyduelsky_3",
+     "delay": 1
+    },
+    {
+     "music": "DANGER"
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "when": {
+    "type": "hp_below",
+    "id": "grey1",
+    "frac": 0.72
+   },
+   "do": [
+    {
+     "order": {
+      "id": "grey1",
+      "order": "flee"
+     }
+    },
+    {
+     "complete": "p1"
+    },
+    {
+     "say": "greyduelsky_4",
+     "delay": 1
+    },
+    {
+     "travel": {
+      "env": {
+       "biome": "atlas",
+       "time": "sunset",
+       "weather": "clear"
+      },
+      "pos": [
+       0,
+       3900,
+       0
+      ],
+      "heading": 0,
+      "speed": 240,
+      "title": "PHASE II — ATLAS RIDGELINES",
+      "sub": "GREY IS WAITING",
+      "noWingman": true
+     },
+     "delay": 6
+    },
+    {
+     "show": "p2",
+     "delay": 8
+    },
+    {
+     "spawn": [
+      "grey2"
+     ],
+     "delay": 9
+    },
+    {
+     "say": "greyduelsky_5",
+     "delay": 9.5
+    }
+   ]
+  },
+  {
+   "id": "e4",
+   "when": {
+    "type": "hp_below",
+    "id": "grey2",
+    "frac": 0.46
+   },
+   "do": [
+    {
+     "order": {
+      "id": "grey2",
+      "order": "flee"
+     }
+    },
+    {
+     "complete": "p2"
+    },
+    {
+     "say": "greyduelsky_6",
+     "delay": 1
+    },
+    {
+     "travel": {
+      "env": {
+       "biome": "southern",
+       "time": "sunset",
+       "weather": "clear"
+      },
+      "pos": [
+       0,
+       4200,
+       0
+      ],
+      "heading": 0,
+      "speed": 240,
+      "title": "PHASE III — THE ROCKS",
+      "sub": "NO MORE ROOM TO RUN",
+      "noWingman": true
+     },
+     "delay": 6
+    },
+    {
+     "spawn": [
+      "grey3"
+     ],
+     "delay": 9
+    },
+    {
+     "say": "greyduelsky_7",
+     "delay": 9.5
+    },
+    {
+     "say": "greyduelsky_8",
+     "delay": 14
+    }
+   ]
+  },
+  {
+   "id": "e5",
+   "when": {
+    "type": "hp_below",
+    "id": "grey3",
+    "frac": 0.22
+   },
+   "do": [
+    {
+     "say": "greyduelsky_9"
+    }
+   ]
+  },
+  {
+   "id": "e6",
+   "when": {
+    "type": "destroyed",
+    "id": "grey3"
+   },
+   "do": [
+    {
+     "music": "RESOLUTION"
+    },
+    {
+     "cinematic": "target_crash",
+     "args": {
+      "entity": "grey3"
+     }
+    },
+    {
+     "say": "greyduelsky_10",
+     "delay": 2
+    },
+    {
+     "say": "greyduelsky_11",
+     "delay": 2
+    },
+    {
+     "say": "greyduelsky_12",
+     "delay": 2
+    },
+    {
+     "endMission": {
+      "result": "complete"
+     },
+     "delay": 16
+    }
+   ]
+  },
+  {
+   "id": "c_missile",
+   "when": {
+    "type": "incoming_missile"
+   },
+   "cooldown": 25,
+   "do": [
+    {
+     "say": "m01_missile_warning"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_hit",
+   "when": {
+    "type": "damaged",
+    "id": "wingman"
+   },
+   "cooldown": 30,
+   "do": [
+    {
+     "say": "m01_wing_hit"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_down",
+   "when": {
+    "type": "destroyed",
+    "id": "wingman"
+   },
+   "do": [
+    {
+     "say": "m01_wing_down"
+    }
+   ]
+  },
+  {
+   "id": "c_leave",
+   "when": {
+    "type": "outside",
+    "zone": "boundary"
+   },
+   "cooldown": 20,
+   "do": [
+    {
+     "say": "m01_leave"
+    }
+   ]
+  },
+  {
+   "id": "c_roe",
+   "when": {
+    "type": "roe_violation"
+   },
+   "cooldown": 14,
+   "do": [
+    {
+     "say": "m01_roe"
+    }
+   ]
+  }
+ ],
+ "cinematics": {
+  "target_crash": {
+   "bars": false,
+   "interruptible": true,
+   "shots": [
+    {
+     "dur": 3.4,
+     "mode": "orbit",
+     "follow": "$entity",
+     "fov": 50,
+     "radius": 160
+    }
+   ]
+  }
+ },
+ "flags": {},
+ "reward": {
+  "xp": 1500,
+  "tokens": 5
+ },
+ "scoring": {
+  "parTime": 600
+ },
+ "lines": {
+  "greyduelsky_1": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "Falcon One, unknown fighter on a direct vector. Signature matches Grey. Riad is grounded — you are alone up there.",
+    "fr": "Falcon Un, chasseur inconnu en route directe. Signature : Grey. Riad est cloué au sol — vous êtes seul.",
+    "ar": "فالكون واحد، مقاتلة مجهولة على مسار مباشر. البصمة تطابق غراي. رياض على الأرض — أنت وحدك."
+   }
+  },
+  "greyduelsky_2": {
+   "speaker": "GREY",
+   "voice": null,
+   "emotion": "cold",
+   "text": {
+    "en": "Salim Ben Younes. Your file says calm. Show me.",
+    "fr": "Salim Ben Younes. Ton dossier dit calme. Montre-moi.",
+    "ar": "سليم بن يونس. ملفك يقول هادئ. أرني."
+   }
+  },
+  "greyduelsky_3": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Grey. Let's finish what you started.",
+    "fr": "Grey. Finissons ce que tu a commencé.",
+    "ar": "غراي. لننهِ ما بدأته."
+   }
+  },
+  "greyduelsky_4": {
+   "speaker": "GREY",
+   "voice": null,
+   "emotion": "cold",
+   "text": {
+    "en": "Follow me. The coast is too open.",
+    "fr": "Suis-moi. La côte est trop dégagée.",
+    "ar": "اتبعني. الساحل مفتوح أكثر من اللازم."
+   }
+  },
+  "greyduelsky_5": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "He is dragging me into the mountains. Fine — I know ridgelines too.",
+    "fr": "Il m'entraîne dans les montagnes. Soit — je connais les crêtes aussi.",
+    "ar": "يجرّني إلى الجبال. حسنًا — أعرف الحافات أيضًا."
+   }
+  },
+  "greyduelsky_6": {
+   "speaker": "GREY",
+   "voice": null,
+   "emotion": "cold",
+   "text": {
+    "en": "Better. Now the rocks.",
+    "fr": "Mieux. Maintenant, les rochers.",
+    "ar": "أفضل. الآن الصخور."
+   }
+  },
+  "greyduelsky_7": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "Salim, his transponder is Command-issue. Every tag in this war came from our own side.",
+    "fr": "Salim, son transpondeur est du Commandement. Tous les tags de cette guerre venaient de chez nous.",
+    "ar": "سليم، جهاز تعريفه من القيادة. كل علامة في هذه الحرب جاءت من جانبنا."
+   }
+  },
+  "greyduelsky_8": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "He is above you, high sun side. Break when he commits!",
+    "fr": "Il est au-dessus de vous, côté soleil. Cassez quand il engage !",
+    "ar": "هو فوقك من جهة الشمس. اكسر عندما يلتزم!"
+   }
+  },
+  "greyduelsky_9": {
+   "speaker": "GREY",
+   "voice": null,
+   "emotion": "cold",
+   "text": {
+    "en": "...Good.",
+    "fr": "...Bien.",
+    "ar": "...جيد."
+   }
+  },
+  "greyduelsky_10": {
+   "speaker": "GREY",
+   "voice": null,
+   "emotion": "cold",
+   "text": {
+    "en": "Tell Ben Aissa the line was never mine to cut.",
+    "fr": "Dis à Ben Aissa que la ligne n'était pas à moi de couper.",
+    "ar": "قل لبن عيسى إن الخط لم يكن لي لأقطعه."
+   }
+  },
+  "greyduelsky_11": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "What line, Grey?",
+    "fr": "Quelle ligne, Grey ?",
+    "ar": "أي خط يا غراي؟"
+   }
+  },
+  "greyduelsky_12": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "shaken",
+   "text": {
+    "en": "Parachute — he is alive. Falcon One, come home. The last pieces are in the final operation.",
+    "fr": "Parachute — il est vivant. Falcon Un, rentrez. Les dernières pièces sont dans l'opération finale.",
+    "ar": "مظلة — إنه حيّ. فالكون واحد، عد إلى القاعدة. القطع الأخيرة في العملية النهائية."
+   }
+  }
+ },
+ "briefing": {
+  "center": {
+   "lon": 5,
+   "lat": 33.2
+  },
+  "zoomKm": 90,
+  "playerPath": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    40
+   ]
+  ],
+  "enemyRoutes": [
+   {
+    "id": "GREY",
+    "label": "GREY",
+    "points": [
+     [
+      3,
+      9
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "GREY",
+    "label": "GREY",
+    "points": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "GREY",
+    "label": "GREY",
+    "points": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   }
+  ],
+  "threatZones": [],
+  "radar": {
+   "pos": [
+    0,
+    0
+   ],
+   "r": 70
+  },
+  "friendly": [
+   {
+    "id": "f1",
+    "path": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      40
+     ]
+    ]
+   }
+  ],
+  "objectives": []
+ }
+}

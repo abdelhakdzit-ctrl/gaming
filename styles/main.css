@@ -102,7 +102,7 @@ svg .mk { cursor: pointer; } svg .mk .pulse { animation: mkpulse 2.2s ease-out i
 @keyframes zonepulse { from { fill-opacity: 0.4; } to { fill-opacity: 1; } }
 .radar-cov { fill: rgba(93, 255, 168, 0.05); stroke: rgba(93, 255, 168, 0.5); stroke-dasharray: 3 6; vector-effect: non-scaling-stroke; }
 .radar-sweep { fill: rgba(93, 255, 168, 0.22); transform-origin: 0 0; animation: spin 3s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
-.obj-label { fill: #fff; font-family: var(--mono); font-size: calc(var(--u, 19) * 0.7px); letter-spacing: 0.1em; paint-order: stroke; stroke: #000; stroke-width: 3px; stroke-linejoin: round; }
+.obj-label { fill: #fff; font-family: var(--mono); font-size: calc(var(--u, 19) * 0.7px); letter-spacing: 0.1em; paint-order: stroke; stroke: #000; stroke-width: calc(var(--u, 19) * 0.16px); stroke-linejoin: round; }
 
 /* ------------------------------------------------------------------ loadout / forms */
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
@@ -200,3 +200,24 @@ body.reduced-motion .btn { transition: none; }
 @media (max-width: 1100px) { .loadout-grid { grid-template-columns: 1fr 1fr; } .loadout-grid .spacer { display: none; } }
 
 svg .mk-in { transform: scale(calc(var(--u, 19) / 4.7)); }
+
+/* ------------------------------------------------------------------ title card + fade (phase changes) */
+.hud-fade { position: absolute; inset: 0; background: #000; opacity: 0; transition: opacity 0.85s ease; pointer-events: none; z-index: 8; } .hud-fade.on { opacity: 1; }
+.hud-title-card { position: absolute; left: clamp(20px, 5vw, 90px); top: 22%; opacity: 0; pointer-events: none; z-index: 6; max-width: min(640px, 56vw); }
+.hud-title-card.on { animation: tcard 5.2s ease both; }
+.hud-title-card i { display: block; width: 0; height: 3px; background: var(--accent); margin-bottom: 14px; animation: tline 1.2s 0.2s ease forwards; }
+.hud-title-card h2 { margin: 0; font-size: clamp(20px, 2.6vw, 40px); letter-spacing: 0.16em; line-height: 1.15; text-transform: uppercase; color: #fff; text-shadow: 0 0 24px rgba(0,0,0,.8); } .hud-title-card p { margin: 8px 0 0; letter-spacing: 0.2em; color: var(--accent); font-size: clamp(11px, 1.05vw, 15px); }
+@keyframes tcard { 0% { opacity: 0; transform: translateX(-24px); } 12%, 78% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateX(16px); } } @keyframes tline { to { width: min(320px, 40vw); } }
+
+/* ------------------------------------------------------------------ ending */
+.ending { align-items: center; justify-content: center; cursor: pointer; }
+.end-card { width: min(1080px, 94vw); display: grid; grid-template-columns: minmax(220px, 380px) 1fr; gap: clamp(18px, 3vw, 46px); align-items: center; animation: fadein 0.8s both; }
+.end-card .portrait-art { aspect-ratio: 1 / 1; border: 1px solid var(--line); }
+.end-text h3 { margin: 0 0 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #fff; font-size: clamp(18px, 2vw, 28px); } .end-text p { font-size: clamp(18px, 2.2vw, 32px); line-height: 1.4; margin: 0 0 10px; color: #e7f0ec; font-family: "Segoe UI", Tahoma, var(--font), sans-serif; } .end-text p.alt { font-size: 0.8em; color: var(--mut); }
+.end-hint { position: absolute; bottom: 22px; left: 0; right: 0; text-align: center; letter-spacing: 0.3em; font-size: 12px; color: var(--mut); }
+.credits-roll { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 100vh; animation: roll 46s linear forwards; pointer-events: none; }
+@keyframes roll { to { transform: translateY(-165%); } } body.reduced-motion .credits-roll { animation-duration: 90s; }
+.end-stats { display: flex; gap: clamp(18px, 4vw, 54px); margin: 50px 0 40px; flex-wrap: wrap; justify-content: center; } .end-stats div { display: flex; flex-direction: column; } .end-stats b { font-size: clamp(30px, 4vw, 56px); color: var(--accent); } .end-stats span { letter-spacing: 0.25em; font-size: 12px; color: var(--mut); }
+.credit { display: flex; flex-direction: column; margin: 18px 0; } .credit span { letter-spacing: 0.3em; color: var(--accent); font-size: 13px; } .credit b { font-size: clamp(16px, 1.8vw, 24px); letter-spacing: 0.14em; font-weight: 500; }
+.end-menu { position: absolute; right: clamp(18px, 3vw, 44px); bottom: 24px; z-index: 5; cursor: pointer; pointer-events: auto; }
+@media (max-width: 800px) { .end-card { grid-template-columns: 1fr; } .end-card .portrait-art { max-width: 240px; } }

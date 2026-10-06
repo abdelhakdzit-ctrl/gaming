@@ -7,7 +7,7 @@ import dialogue from '../../data/dialogue.json';
 import { clamp, lerp } from '../util/math.js';
 
 const r1 = (n) => Math.round(n * 10) / 10, r3 = (n) => Math.round(n * 1000) / 1000;
-const MAX_FRAMES = 2600, HZ = 8;
+const MAX_FRAMES = 3600, HZ = 6;
 
 /** Records a lightweight replay: player/camera/entity transforms at 8 Hz plus discrete events. */
 export class Recorder {
@@ -47,6 +47,7 @@ export class ReplaySession {
     this.ei = 0; this.pos = new THREE.Vector3(); this.q = new THREE.Quaternion(); this.free = { yaw: 0.5, pitch: 0.2 }; this.shotT = 99; this.shotPt = new THREE.Vector3(); this.line = ''; this.lineT = 0;
     this.playerPos = new THREE.Vector3(); this.playerQ = new THREE.Quaternion(); this.fpos = new THREE.Vector3();
     this.camera.position.set(...rep.frames[0].c.slice(0, 3));
+    this.phases = rep.events.filter((ev) => ev.k === 'travel'); this.phaseIdx = -1; this.start = c;
   }
   nextCam() { this.camMode = (this.camMode + 1) % this.camNames.length; this.shotT = 99; }
   seek(t) { this.time = clamp(t, 0, this.rep.duration); this.ei = this.rep.events.findIndex((e) => e.t >= this.time); if (this.ei < 0) this.ei = this.rep.events.length; }
@@ -54,8 +55,14 @@ export class ReplaySession {
     const F = this.rep.frames; let lo = 0, hi = F.length - 1; while (lo < hi - 1) { const mid = (lo + hi) >> 1; if (F[mid].t <= t) lo = mid; else hi = mid; }
     const a = F[lo], b = F[Math.min(lo + 1, F.length - 1)], k = b.t > a.t ? clamp((t - a.t) / (b.t - a.t), 0, 1) : 0; return { a, b, k };
   }
+  /** Multi-region missions: rebuild the world whenever the recording crosses a phase change (also on seeking). */
+  syncPhase() {
+    const want = this.phases.filter((ev) => ev.t <= this.time).length - 1; if (want === this.phaseIdx) return; this.phaseIdx = want;
+    const rep = this.rep, ph = want >= 0 ? this.phases[want] : null;
+    this.world.build(ph ? { env: ph.x.env, base: null, zones: ph.x.zones } : { env: rep.env, base: rep.base, zones: rep.zones }, ph ? [ph.p[0], 0, ph.p[2]] : this.start);
+  }
   update(dt, look) {
-    const rep = this.rep; if (this.playing) this.time += dt * this.speed; if (this.time >= rep.duration) { this.time = rep.duration; this.playing = false; }
+    const rep = this.rep; this.syncPhase(); if (this.playing) this.time += dt * this.speed; if (this.time >= rep.duration) { this.time = rep.duration; this.playing = false; }
     const { a, b, k } = this.frameAt(this.time), seen = new Set(), mapB = new Map();
     for (let i = 0; i < b.e.length; i += 8) mapB.set(b.e[i], i);
     for (let i = 0; i < a.e.length; i += 8) {

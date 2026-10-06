@@ -129,7 +129,7 @@ export class Weapons {
     const diff = this.h.diff();
     for (let i = this.missiles.length - 1; i >= 0; i--) {
       const m = this.missiles[i]; m.age += dt;
-      let tgt = m.target; const tpos = tgt ? tgt.pos : null;
+      let tgt = m.target;
       if (tgt && tgt.alive === false) { m.target = tgt = null; }
       if (tgt && tgt.burn !== undefined && tgt.age > tgt.burn) m.target = tgt = null;
 

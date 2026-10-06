@@ -1,7 +1,5 @@
 import * as THREE from 'three';
 import { BillboardBatch } from './billboards.js';
-import { BASE_ALT } from './biomes.js';
-import { noise2 } from '../util/noise.js';
 
 // Algeria-inspired fictional airbase: white-washed arched hangars, tower, radar, bilingual signage.
 const BLACK = new THREE.Color(0, 0, 0);
@@ -11,10 +9,10 @@ function canvasTex(w, h, draw) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
 }
 
-export function buildAirbase(spec) {
+export function buildAirbase(spec, baseAlt = 9) {
   const group = new THREE.Group(); group.name = 'airbase';
   const len = spec.runwayLength || 2500, W = 46;
-  const root = new THREE.Group(); root.position.set(spec.pos[0], BASE_ALT, spec.pos[2]);
+  const root = new THREE.Group(); root.position.set(spec.pos[0], baseAlt, spec.pos[2]);
   root.rotation.y = -(spec.heading || 0) * Math.PI / 180;
   group.add(root);
   const animated = [];
@@ -31,13 +29,13 @@ export function buildAirbase(spec) {
     g.save(); g.translate(w / 2, 150); g.rotate(Math.PI); g.fillText('18', 0, 0); g.restore();
     g.save(); g.translate(w / 2, h - 150); g.fillText('36', 0, 0); g.restore();
   });
-  const runway = new THREE.Mesh(new THREE.PlaneGeometry(W, len), new THREE.MeshStandardMaterial({ map: rwTex, roughness: 0.85 }));
-  runway.rotation.x = -Math.PI / 2; runway.position.y = 0.12; root.add(runway);
-  const apronMat = new THREE.MeshStandardMaterial({ color: 0x3b3d3e, roughness: 0.9 });
+  const runway = new THREE.Mesh(new THREE.PlaneGeometry(W, len), new THREE.MeshStandardMaterial({ map: rwTex, roughness: 0.85, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
+  runway.rotation.x = -Math.PI / 2; runway.position.y = 0.32; root.add(runway);
+  const apronMat = new THREE.MeshStandardMaterial({ color: 0x3b3d3e, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   const apron = new THREE.Mesh(new THREE.PlaneGeometry(210, 420), apronMat);
-  apron.rotation.x = -Math.PI / 2; apron.position.set(190, 0.1, 100); root.add(apron);
+  apron.rotation.x = -Math.PI / 2; apron.position.set(190, 0.24, 100); root.add(apron);
   const taxi = new THREE.Mesh(new THREE.PlaneGeometry(22, len * 0.8), apronMat);
-  taxi.rotation.x = -Math.PI / 2; taxi.position.set(95, 0.1, 0); root.add(taxi);
+  taxi.rotation.x = -Math.PI / 2; taxi.position.set(95, 0.24, 0); root.add(taxi);
 
   // buildings
   const wall = new THREE.MeshStandardMaterial({ color: 0xcfc8b8, roughness: 0.9 });
@@ -89,8 +87,8 @@ export function buildAirbase(spec) {
   lights.end(); group.add(lights.mesh);
 
   // gently varied ground patch around the base so the runway sits in the terrain
-  const patch = new THREE.Mesh(new THREE.PlaneGeometry(900, len + 700), new THREE.MeshStandardMaterial({ color: 0x4b4838, roughness: 1 }));
-  patch.rotation.x = -Math.PI / 2; patch.position.set(120, 0.02, 0); root.add(patch);
+  const patch = new THREE.Mesh(new THREE.PlaneGeometry(900, len + 700), new THREE.MeshStandardMaterial({ color: 0x4b4838, roughness: 1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
+  patch.rotation.x = -Math.PI / 2; patch.position.set(120, 0.12, 0); root.add(patch);
 
   return {
     group, lights,

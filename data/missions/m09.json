@@ -1,0 +1,646 @@
+{
+ "id": "m09",
+ "number": 9,
+ "title": "MIRAGE",
+ "titleFr": "MIRAGE",
+ "titleAr": "سراب",
+ "type": "HIGH-SPEED PURSUIT",
+ "playable": true,
+ "requires": "m08",
+ "region": "SOUTHERN ALGERIA",
+ "regionAr": "جنوب الجزائر",
+ "map": {
+  "lon": 6,
+  "lat": 23.5
+ },
+ "threat": "HIGH",
+ "threatLevel": 4,
+ "weatherLabel": "CLEAR / HEAT HAZE",
+ "clock": "13:10",
+ "env": {
+  "biome": "southern",
+  "time": "day",
+  "weather": "clear"
+ },
+ "narrative": "A VESPER courier jet carrying key material is running south across the rock formations at near top speed. Burn through your energy if you must — it cannot cross the border line. Beware its escorts, and a pilot who does not want it caught.",
+ "intel": [
+  {
+   "label": "COURIER",
+   "text": "Fast jet on a southern track. It jinks and flares when missiles are inbound.",
+   "confidence": "HIGH"
+  },
+  {
+   "label": "ESCORT",
+   "text": "Two raiders trail the courier. Ignore them if you can.",
+   "confidence": "MEDIUM"
+  },
+  {
+   "label": "TIME",
+   "text": "You have about five and a half minutes before it crosses the line.",
+   "confidence": "HIGH"
+  }
+ ],
+ "base": null,
+ "spawn": {
+  "onRunway": false,
+  "heading": 0,
+  "speed": 320,
+  "pos": [
+   0,
+   4000,
+   0
+  ]
+ },
+ "wingman": {
+  "enabled": true,
+  "callsign": "Falcon TWO"
+ },
+ "noWingman": false,
+ "zones": [
+  {
+   "id": "boundary",
+   "type": "boundary",
+   "pos": [
+    0,
+    0,
+    -12000
+   ],
+   "radius": 36000,
+   "label": "OPERATIONS AREA"
+  }
+ ],
+ "waypoints": [],
+ "groups": [
+  {
+   "id": "mirage",
+   "type": "courier",
+   "side": "hostile",
+   "name": "MIRAGE",
+   "callsign": "MIRAGE",
+   "spawn": "start",
+   "pos": [
+    0,
+    3800,
+    -9000
+   ],
+   "heading": 0,
+   "speed": 340,
+   "route": [
+    [
+     2000,
+     3800,
+     -30000
+    ],
+    [
+     -3000,
+     3800,
+     -55000
+    ],
+    [
+     1000,
+     3800,
+     -85000
+    ],
+    [
+     2000,
+     3800,
+     -125000
+    ]
+   ],
+   "iffShown": "unknown",
+   "identified": true,
+   "throttle": 0.86,
+   "reach": 1500
+  },
+  {
+   "id": "r1",
+   "type": "raider",
+   "side": "hostile",
+   "name": "ESCORT-1",
+   "callsign": "ESCORT-1",
+   "spawn": "start",
+   "pos": [
+    900,
+    3800,
+    -8300
+   ],
+   "heading": 0,
+   "speed": 330,
+   "route": [
+    [
+     2000,
+     3800,
+     -30000
+    ],
+    [
+     -3000,
+     3800,
+     -55000
+    ]
+   ],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "r2",
+   "type": "raider",
+   "side": "hostile",
+   "name": "ESCORT-2",
+   "callsign": "ESCORT-2",
+   "spawn": "start",
+   "pos": [
+    -900,
+    3800,
+    -8300
+   ],
+   "heading": 0,
+   "speed": 330,
+   "route": [
+    [
+     2000,
+     3800,
+     -30000
+    ],
+    [
+     -3000,
+     3800,
+     -55000
+    ]
+   ],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "grey",
+   "type": "grey",
+   "side": "hostile",
+   "name": "GREY",
+   "callsign": "GREY",
+   "spawn": "event",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "heading": 0,
+   "speed": 300,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "hpFrac": 0.8,
+   "near": [
+    3500,
+    1200,
+    -5500
+   ],
+   "turn": 150,
+   "egress": [
+    20000,
+    8000,
+    -90000
+   ]
+  }
+ ],
+ "objectives": {
+  "primary": [
+   {
+    "id": "catch",
+    "type": "destroy",
+    "label": "STOP THE COURIER JET",
+    "params": {
+     "targets": [
+      "mirage"
+     ]
+    }
+   }
+  ],
+  "secondary": [
+   {
+    "id": "wingman",
+    "type": "survive_entity",
+    "label": "MAINTAIN WINGMAN SURVIVAL",
+    "params": {
+     "target": "wingman"
+    }
+   },
+   {
+    "id": "esc",
+    "type": "destroy",
+    "label": "SHOOT DOWN BOTH ESCORTS",
+    "params": {
+     "targets": [
+      "r1",
+      "r2"
+     ]
+    }
+   }
+  ],
+  "optional": [
+   {
+    "id": "nodamage",
+    "type": "max_damage",
+    "label": "TAKE NO DAMAGE",
+    "params": {
+     "max": 0
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "when": {
+    "type": "time",
+    "t": 2
+   },
+   "do": [
+    {
+     "say": "masterlistmile_1"
+    },
+    {
+     "say": "masterlistmile_2",
+     "delay": 0.5
+    },
+    {
+     "music": "BUILDUP"
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "when": {
+    "type": "time",
+    "t": 20
+   },
+   "do": [
+    {
+     "music": "COMBAT"
+    },
+    {
+     "say": "masterlistmile_3"
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "when": {
+    "type": "hp_below",
+    "id": "mirage",
+    "frac": 0.6
+   },
+   "do": [
+    {
+     "spawn": [
+      "grey"
+     ]
+    },
+    {
+     "order": {
+      "id": "grey",
+      "order": "engage"
+     },
+     "delay": 0.5
+    },
+    {
+     "say": "masterlistmile_4",
+     "delay": 1.5
+    },
+    {
+     "say": "masterlistmile_5",
+     "delay": 2.5
+    },
+    {
+     "order": {
+      "id": "grey",
+      "order": "flee"
+     },
+     "delay": 50
+    }
+   ]
+  },
+  {
+   "id": "e4",
+   "when": {
+    "type": "destroyed",
+    "id": "mirage"
+   },
+   "do": [
+    {
+     "cinematic": "target_crash",
+     "args": {
+      "entity": "mirage"
+     }
+    },
+    {
+     "music": "RESOLUTION"
+    },
+    {
+     "say": "masterlistmile_6",
+     "delay": 2
+    },
+    {
+     "evidence": {
+      "title": "COURIER FLIGHT RECORDER",
+      "lines": [
+       "OPERATION: SHADOW LINE — FALSE ATTACK ON THE COAST",
+       "WINDOW: JOINT EXERCISE, AT DAWN",
+       "TRIGGER ASSET: ONE STRIKER FLIGHT",
+       "AUTHORITY CODE: BA-07 / M.B.A."
+      ]
+     },
+     "delay": 3
+    },
+    {
+     "endMission": {
+      "result": "complete"
+     },
+     "delay": 14
+    }
+   ]
+  },
+  {
+   "id": "c_missile",
+   "when": {
+    "type": "incoming_missile"
+   },
+   "cooldown": 25,
+   "do": [
+    {
+     "say": "m01_missile_warning"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_hit",
+   "when": {
+    "type": "damaged",
+    "id": "wingman"
+   },
+   "cooldown": 30,
+   "do": [
+    {
+     "say": "m01_wing_hit"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_down",
+   "when": {
+    "type": "destroyed",
+    "id": "wingman"
+   },
+   "do": [
+    {
+     "say": "m01_wing_down"
+    }
+   ]
+  },
+  {
+   "id": "c_leave",
+   "when": {
+    "type": "outside",
+    "zone": "boundary"
+   },
+   "cooldown": 20,
+   "do": [
+    {
+     "say": "m01_leave"
+    }
+   ]
+  },
+  {
+   "id": "c_roe",
+   "when": {
+    "type": "roe_violation"
+   },
+   "cooldown": 14,
+   "do": [
+    {
+     "say": "m01_roe"
+    }
+   ]
+  }
+ ],
+ "cinematics": {
+  "target_crash": {
+   "bars": false,
+   "interruptible": true,
+   "shots": [
+    {
+     "dur": 3.4,
+     "mode": "orbit",
+     "follow": "$entity",
+     "fov": 50,
+     "radius": 160
+    }
+   ]
+  }
+ },
+ "flags": {},
+ "reward": {
+  "xp": 1120,
+  "tokens": 4
+ },
+ "scoring": {
+  "parTime": 280,
+  "timeLimit": 340
+ },
+ "lines": {
+  "masterlistmile_1": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "Courier jet Mirage lifted off from a strip near the border. VESPER's key material is aboard. Do not let it cross the Tassili line.",
+    "fr": "Le jet courrier Mirage a décollé près de la frontière. Le matériel clé de VESPER est à bord. Ne le laissez pas franchir la ligne du Tassili.",
+    "ar": "الطائرة الناقلة ميراج أقلعت من مدرج قرب الحدود. على متنها مواد مفاتيح فيسبر. لا تدعها تعبر خط الطاسيلي."
+   }
+  },
+  "masterlistmile_2": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "playful",
+   "text": {
+    "en": "He's fast, Salim. We will be faster.",
+    "fr": "Il est rapide, Salim. On sera plus rapides.",
+    "ar": "إنها سريعة يا سليم. سنكون أسرع."
+   }
+  },
+  "masterlistmile_3": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "Two raiders covering him. The courier is the target — ignore the rest if you can.",
+    "fr": "Deux raiders le couvrent. Le courrier est la cible — ignorez le reste si possible.",
+    "ar": "مغيران يغطيانها. الناقلة هي الهدف — تجاهل الباقي إن استطعت."
+   }
+  },
+  "masterlistmile_4": {
+   "speaker": "GREY",
+   "voice": null,
+   "emotion": "cold",
+   "text": {
+    "en": "Turn around, Falcon.",
+    "fr": "Fais demi-tour, Falcon.",
+    "ar": "عد أدراجك يا فالكون."
+   }
+  },
+  "masterlistmile_5": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Grey. Of course.",
+    "fr": "Grey. Évidemment.",
+    "ar": "غراي. بالطبع."
+   }
+  },
+  "masterlistmile_6": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "Flight recorder is intact in the wreck. Strike plan: SHADOW LINE — a false attack on the coast at dawn, during the joint exercise.",
+    "fr": "Le enregistreur de vol est intact dans l'épave. Plan : SHADOW LINE — une fausse attaque sur la côte à l'aube, pendant l'exercice conjoint.",
+    "ar": "مسجّل الرحلة سليم في الحطام. خطة الضربة: خط الظل — هجوم كاذب على الساحل عند الفجر أثناء التمرين المشترك."
+   }
+  }
+ },
+ "briefing": {
+  "center": {
+   "lon": 6,
+   "lat": 23.7
+  },
+  "zoomKm": 90,
+  "playerPath": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    40
+   ]
+  ],
+  "enemyRoutes": [
+   {
+    "id": "MIRAGE",
+    "label": "MIRAGE",
+    "points": [
+     [
+      0,
+      9
+     ],
+     [
+      2,
+      30
+     ],
+     [
+      -3,
+      55
+     ],
+     [
+      1,
+      85
+     ],
+     [
+      2,
+      125
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "ESCORT-1",
+    "label": "ESCORT-1",
+    "points": [
+     [
+      0.9,
+      8.3
+     ],
+     [
+      2,
+      30
+     ],
+     [
+      -3,
+      55
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "ESCORT-2",
+    "label": "ESCORT-2",
+    "points": [
+     [
+      -0.9,
+      8.3
+     ],
+     [
+      2,
+      30
+     ],
+     [
+      -3,
+      55
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "GREY",
+    "label": "GREY",
+    "points": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   }
+  ],
+  "threatZones": [],
+  "radar": {
+   "pos": [
+    0,
+    0
+   ],
+   "r": 70
+  },
+  "friendly": [
+   {
+    "id": "f1",
+    "path": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      40
+     ]
+    ]
+   },
+   {
+    "id": "f2",
+    "path": [
+     [
+      -1,
+      -1
+     ],
+     [
+      -1,
+      39
+     ]
+    ]
+   }
+  ],
+  "objectives": []
+ }
+}

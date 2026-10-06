@@ -3,7 +3,6 @@ import { clamp, fmtTime, DEG } from '../util/math.js';
 import { Settings } from '../settings/settings.js';
 
 const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _q = new THREE.Quaternion();
-const FWD = new THREE.Vector3(0, 0, -1);
 
 /**
  * HUD in separate layers: primary flight + targeting (canvas), radar scope (canvas), warnings,
@@ -30,6 +29,8 @@ export class Hud {
     this.el = q('#hud'); this.fc = q('#hud-flight'); this.rc = q('#hud-radar'); this.obj = q('#hud-obj'); this.clock = q('#hud-clock'); this.warn = q('#hud-warn');
     this.msg = q('#hud-msg'); this.evi = q('#hud-evidence'); this.vig = q('#hud-vig'); this.bars = q('#hud-bars'); this.toasts = q('#hud-toasts'); this.camLabel = q('#hud-cam');
     this.g = this.fc.getContext('2d'); this.rg = this.rc.getContext('2d');
+    this.el.insertAdjacentHTML('beforeend', '<div class="hud-title-card" id="hud-title"></div><div class="hud-fade" id="hud-fade"></div>');
+    this.titleEl = this.el.querySelector('#hud-title'); this.fadeEl = this.el.querySelector('#hud-fade');
     this.objKey = ''; this.damageFlash = 0; this.msgT = 0; this.camT = 0; this.sweep = 0; this.lockSoundT = 0; this.palette = Settings.palette();
     window.addEventListener('resize', () => this.resize()); this.resize();
   }
@@ -40,6 +41,11 @@ export class Hud {
     this.fc.width = this.W * dpr; this.fc.height = this.H * dpr; this.fc.style.width = this.W + 'px'; this.fc.style.height = this.H + 'px';
     this.u = clamp(this.H / 1080, 0.62, 1.5); const rs = Math.round(clamp(this.H * 0.21, 130, 230));
     this.rs = rs; this.rc.width = rs * dpr; this.rc.height = rs * dpr; this.rc.style.width = rs + 'px'; this.rc.style.height = rs + 'px';
+  }
+  fade(on) { this.fadeEl.classList.toggle('on', !!on); }
+  titleCard(text, sub = '') {
+    this.titleEl.innerHTML = `<i></i><h2>${text}</h2><p>${sub}</p>`; this.titleEl.classList.remove('on'); void this.titleEl.offsetWidth; this.titleEl.classList.add('on');
+    clearTimeout(this._tc); this._tc = setTimeout(() => this.titleEl.classList.remove('on'), 5200);
   }
   toast(text, kind = '') {
     const d = document.createElement('div'); d.className = 'toast ' + kind; d.textContent = text; this.toasts.appendChild(d);
@@ -77,7 +83,6 @@ export class Hud {
 
   drawObjectives(S) {
     const d = S.director; if (!d) return;
-    const key = d.objectives.map((o) => o.state).join(',') + (d.currentObjective()?.id || '') + Math.floor(S.missionTime / 5);
     const cur = d.currentObjective(), rows = (kind) => d.objectives.filter((o) => o.kind === kind && !o.hidden);
     const row = (o) => `<li class="${o.state}${cur === o ? ' current' : ''}"><i></i>${o.label}${o.progress > 0 && o.progress < 1 && o.state === 'active' ? ` <em>${Math.round(o.progress * 100)}%</em>` : ''}</li>`;
     const html = `<h4>OBJECTIVES</h4><ul>${rows('primary').map(row).join('')}</ul>${rows('secondary').length ? `<h5>SECONDARY</h5><ul class="sec">${rows('secondary').map(row).join('')}</ul>` : ''}${rows('optional').length ? `<h5>OPTIONAL</h5><ul class="sec">${rows('optional').map(row).join('')}</ul>` : ''}`;
@@ -87,6 +92,7 @@ export class Hud {
   drawWarnings(S, threat) {
     const list = [], f = S.flight, p = S.player;
     if (threat > 0) list.push({ t: 'MISSILE WARNING', c: 'crit', blink: 4 + threat * 8 });
+    if (S.samLock > 0.25) list.push({ t: S.samLock >= 0.99 ? 'SAM LAUNCH' : 'SAM LOCK', c: 'crit', blink: 3 + S.samLock * 8 });
     if (S.pullUp) list.push({ t: 'PULL UP', c: 'crit', blink: 8 });
     if (f.stalled && !f.onGround) list.push({ t: 'STALL', c: 'crit', blink: 6 });
     if (f.overspeed) list.push({ t: 'OVERSPEED', c: 'warn', blink: 3 });
@@ -119,7 +125,6 @@ export class Hud {
     // ---- nose / flight-path / ladder
     const nose = this.project(cam, _w.copy(p.pos).addScaledVector(f.fwd, 2500), this.n1 || (this.n1 = {}));
     const fpm = this.project(cam, _w.copy(p.pos).addScaledVector(f.vel.lengthSq() > 1 ? _q.set(0, 0, 0) && _v.copy(f.vel).normalize() : f.fwd, 2500), this.n2 || (this.n2 = {}));
-    let nx = nose.front ? clamp(nose.x, W * 0.2, W * 0.8) : cx, ny = nose.front ? clamp(nose.y, H * 0.2, H * 0.8) : cy;
     // ladder
     if (!minimal && nose.front) {
       const up = this.project(cam, _w.copy(p.pos).addScaledVector(f.fwd, 2500).add(_v.set(0, 250, 0)), this.n3 || (this.n3 = {}));
@@ -154,9 +159,11 @@ export class Hud {
     g.fillText(`THR ${Math.round(f.throttle * 100)}%${f.afterburner ? ' AB' : ''}${f.ctrl.brake > 0.5 ? ' BRK' : ''}`, bx, by + 62 * u);
 
     // ---- weapons
-    this.drawWeapons(g, S, cx, H - 52 * u, u);
+    this.drawWeapons(g, S, cx, H - 96 * u, u);
     // ---- contacts + target
+    this.drawMarkers(g, S, cam, u);
     this.drawContacts(g, S, cam, nose, cx, cy, u, focal, minimal);
+    if (S.recon) { const o = S.recon, x = cx, y = cy + 150 * u; g.save(); g.strokeStyle = '#ffcf3d'; g.fillStyle = '#ffcf3d'; g.shadowColor = '#ffcf3d'; g.globalAlpha = 0.35; g.beginPath(); g.arc(x, y, 26 * u, 0, 6.283); g.stroke(); g.globalAlpha = 1; g.beginPath(); g.arc(x, y, 26 * u, -Math.PI / 2, -Math.PI / 2 + 6.283 * o.progress); g.stroke(); g.textAlign = 'center'; g.fillText(o.type === 'recon_site' ? 'RECORDING — HOLD STEADY' : 'COVERING THE AREA', x, y + 46 * u); g.restore(); }
     // ---- missile warning arrows
     if (threat > 0) this.drawIncoming(g, S, cx, cy, u, threat);
     // ---- mouse aim cursor + line from the nose marker
@@ -192,7 +199,7 @@ export class Hud {
   }
 
   drawTape(g, x, cy, u, value, label, step, side, sub) {
-    const h = 250 * u, pxU = 0.9 * u * (100 / step) * 0.5 + 1.2 * u; g.save(); g.beginPath(); g.rect(x - 70 * u, cy - h / 2, 140 * u, h); g.clip();
+    const h = 250 * u; g.save(); g.beginPath(); g.rect(x - 70 * u, cy - h / 2, 140 * u, h); g.clip();
     const dir = side === 'left' ? -1 : 1; g.textAlign = side === 'left' ? 'right' : 'left';
     const per = step / 2, pix = (h / 2) / (step * 2.4);
     for (let v = Math.floor((value - step * 2.4) / per) * per; v <= value + step * 2.4; v += per) {
@@ -209,7 +216,7 @@ export class Hud {
   }
 
   drawWeapons(g, S, cx, y, u) {
-    const p = S.player, st = S.missileStatus, W = S.weapons;
+    const p = S.player, st = S.missileStatus;
     g.textAlign = 'center';
     const colr = { MOUNTED: this.theme, READY: '#ffcf3d', LOCKED: '#ff5348', LAUNCHED: '#7fdcff', EMPTY: '#8a8f94' }[st] || this.theme;
     if (S.fireHint) { g.save(); g.fillStyle = S.fireHint.startsWith('F /') ? '#ff5348' : '#ffcf3d'; g.shadowColor = g.fillStyle; g.font = `${Math.round(14 * u)}px "Share Tech Mono", ui-monospace, monospace`; g.fillText(S.fireHint, cx, y - 56 * u); g.restore(); }
@@ -248,8 +255,10 @@ export class Hud {
       if (S.idProgress > 0 && S.idProgress < 1) { g.strokeStyle = pal.unknown; g.beginPath(); g.arc(x, y, r * 1.5, -1.57, -1.57 + 6.283 * S.idProgress); g.stroke(); }
       g.font = `${Math.round(14 * u)}px "Share Tech Mono", ui-monospace, monospace`;
       const cls = c.cls === 'unknown' ? (radar.severity > 0.12 ? 'UNKNOWN ?' : 'UNKNOWN') : c.cls.toUpperCase() + (e.identified ? '' : ' ?');
-      g.fillText(`${e.identified ? e.callsign : cls}`, x, y + r + 16 * u); g.fillText(`${(c.range / 1000).toFixed(1)} KM   ${c.closure > 0 ? '+' : ''}${Math.round(c.closure)} M/S`, x, y + r + 34 * u);
-      if (e.identified) g.fillText(`${c.cls.toUpperCase()} · IDENTIFIED`, x, y + r + 52 * u);
+      g.textAlign = 'left'; const lx = x + r + 12 * u;
+      g.fillText(`${e.identified ? e.callsign : cls}`, lx, y - 12 * u); g.fillText(`${(c.range / 1000).toFixed(1)} KM  ${c.closure > 0 ? '+' : ''}${Math.round(c.closure)} M/S`, lx, y + 8 * u);
+      if (e.identified) g.fillText(`${c.cls.toUpperCase()} · IDENTIFIED`, lx, y + 28 * u);
+      g.textAlign = 'center';
       // cannon lead pipper
       if (c.range < 1900 && S.player.hasCannon) {
         const tgo = c.range / 980; _v.copy(e.pos).addScaledVector(_w.copy(e.vel).sub(S.flight.vel), tgo);
@@ -259,6 +268,18 @@ export class Hud {
       g.lineWidth = Math.max(1.4, 1.6 * u);
     }
     g.globalAlpha = 1; g.strokeStyle = this.theme; g.fillStyle = this.theme; g.shadowColor = this.theme;
+  }
+  drawMarkers(g, S, cam, u) {
+    const tmp = this.n6 || (this.n6 = {}); g.save(); g.textAlign = 'center'; g.font = `${Math.round(12 * u)}px ui-monospace, monospace`;
+    for (const m of S.markers || []) {
+      _w.set(m.pos.x, m.pos.y, m.pos.z); const dist = S.player.pos.distanceTo(_w), pr = this.project(cam, _w, tmp);
+      g.strokeStyle = m.color; g.fillStyle = m.color; g.shadowColor = m.color; g.lineWidth = Math.max(1.4, 1.6 * u);
+      if (pr.on && pr.front) {
+        const sz = 10 * u; g.beginPath(); g.moveTo(pr.x, pr.y - sz); g.lineTo(pr.x + sz, pr.y); g.lineTo(pr.x, pr.y + sz); g.lineTo(pr.x - sz, pr.y); g.closePath(); g.stroke();
+        g.fillText(m.label, pr.x, pr.y - 18 * u); g.fillText((dist / 1000).toFixed(1) + ' KM', pr.x, pr.y + 24 * u);
+      } else this.edgeArrow(g, pr.x, pr.y, m.color, u, false, dist);
+    }
+    g.restore();
   }
   edgeArrow(g, x, y, colr, u, sel, range) {
     const cx = this.W / 2, cy = this.H / 2, a = Math.atan2(y - cy, x - cx), r = Math.min(this.W, this.H) * 0.42, k = sel ? 1.3 : 0.9;
@@ -291,7 +312,7 @@ export class Hud {
     g.globalAlpha = 1; g.font = `${Math.round(10 * u)}px ui-monospace, monospace`; g.textAlign = 'center'; g.fillText(`${Math.round(range / 1000)} KM`, c, c + R * 0.66 + 11 * u);
     if (radar.severity > 0.1 || radar.disabled) { g.fillStyle = pal.unknown; g.fillText(radar.disabled ? 'NO RADAR' : 'SIGNAL DEGRADED', c, c - R * 0.5); g.fillStyle = this.theme; }
     if (!radar.disabled) for (const k of radar.contacts) {
-      const rr = Math.min(1, k.range / range) * R, hx = Math.hypot(0), a = k.az + k.jx * 3; if (k.stale && k.lastSeen > 2.2) continue;
+      const rr = Math.min(1, k.range / range) * R, a = k.az + k.jx * 3; if (k.stale && k.lastSeen > 2.2) continue;
       const x = c + Math.sin(a) * rr, y = c - Math.cos(a) * rr, colr = { hostile: pal.hostile, friendly: pal.friend, unknown: pal.unknown }[k.cls];
       g.strokeStyle = colr; g.fillStyle = colr; g.shadowColor = colr; g.globalAlpha = k.stale ? 0.3 : clamp(0.4 + k.quality, 0.4, 1);
       const sz = 4.5 * u; g.beginPath();

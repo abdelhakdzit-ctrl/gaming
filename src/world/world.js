@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { getBiome, BASE_ALT } from './biomes.js';
+import { getBiome } from './biomes.js';
+import { lerp, smoothstep } from '../util/math.js';
 import { buildTerrainMesh } from './terrain.js';
 import { Sky } from './sky.js';
 import { buildAirbase, buildCityLights } from './airbase.js';
@@ -24,13 +25,18 @@ function seaNormalMap() {
 export class World {
   constructor(scene) {
     this.scene = scene; this.sky = new Sky(scene); this.root = new THREE.Group(); scene.add(this.root);
-    this.biome = getBiome('coast'); this.time = 0; this.sea = null; this.base = null; this.exposure = 1;
+    this.biome = getBiome('coast'); this.baseAlt = 9; this.time = 0; this.sea = null; this.base = null; this.exposure = 1;
   }
 
   build(mission, centre = [0, 0, 0]) {
     this.clear();
-    const env = mission.env || {};
-    this.biome = getBiome(env.biome);
+    const env = mission.env || {}, biome = getBiome(env.biome);
+    // flatten the terrain under the airbase (generic: works for any biome) and remember its altitude
+    this.baseAlt = 9;
+    if (mission.base) {
+      const bx = mission.base.pos[0], bz = mission.base.pos[2], alt = biome.sea ? 9 : Math.round(biome.height(bx, bz) + 2); this.baseAlt = alt;
+      this.biome = { ...biome, height: (x, z) => { const h = biome.height(x, z), w = 1 - smoothstep(1800, 3600, Math.hypot(x - bx, (z - bz) * 0.8)); return w > 0 ? lerp(h, alt, w) : h; } };
+    } else this.biome = biome;
     this.sky.set({ time: env.time, weather: env.weather, fogTint: this.biome.fogTint });
     const cx = centre[0], cz = centre[2];
     const inner = buildTerrainMesh(this.biome, cx, cz, 20000, 280, { skirt: 140 });
@@ -41,7 +47,7 @@ export class World {
       this.sea = new THREE.Mesh(new THREE.PlaneGeometry(120000, 120000), new THREE.MeshStandardMaterial({ color: this.sky.seaColor, roughness: 0.16, metalness: 0.25, normalMap: tex, normalScale: new THREE.Vector2(0.9, 0.9) }));
       this.sea.rotation.x = -Math.PI / 2; this.root.add(this.sea);
     }
-    if (mission.base) { this.base = buildAirbase(mission.base); this.root.add(this.base.group); }
+    if (mission.base) { this.base = buildAirbase(mission.base, this.baseAlt); this.root.add(this.base.group); }
     if (mission.zones) {
       const city = buildCityLights(mission.zones, (x, z) => this.biome.height(x, z));
       city.material.opacity = 0.15 + 0.8 * this.sky.lightsAmount; this.root.add(city); this.city = city;

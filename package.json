@@ -1,15 +1,26 @@
 {
   "name": "shadow-line-sky-of-algeria",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "SHADOW LINE — SKY OF ALGERIA: cinematic browser air-combat vertical slice (Three.js)",
+  "description": "SHADOW LINE \u2014 SKY OF ALGERIA: browser air-combat campaign (15 missions, Three.js)",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
-    "validate": "node scripts/validate-data.mjs"
+    "validate": "node scripts/validate-data.mjs",
+    "lint": "eslint src scripts/*.mjs",
+    "check": "npm run validate && npm run lint && npm run build",
+    "sim": "node scripts/sim-check.mjs all"
   },
-  "dependencies": { "three": "^0.170.0" },
-  "devDependencies": { "vite": "^5.4.0" }
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0",
+    "puppeteer-core": "^23.11.1",
+    "vite": "^5.4.0"
+  }
 }

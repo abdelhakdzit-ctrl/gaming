@@ -1,155 +1,581 @@
 {
-  "types": {
-    "scout": {
-      "name": "ENEMY SCOUT",
-      "model": "scout",
-      "role": "recon",
-      "maxSpeed": 300,
-      "cruise": 170,
-      "thrust": 12,
-      "maxTurn": 0.55,
-      "hp": 40,
-      "radius": 9,
-      "weapons": {
-        "cannon": false,
-        "missiles": 0,
-        "flares": 6
-      },
-      "traits": {
-        "skill": 0.35,
-        "aggression": 0.2,
-        "reactionTime": 1.6,
-        "awareness": 0.6,
-        "discipline": 0.5,
-        "riskTolerance": 0.2,
-        "formationSkill": 0.6
-      }
-    },
-    "fighter": {
-      "name": "ENEMY FIGHTER",
-      "model": "fighter",
-      "role": "fighter",
-      "maxSpeed": 390,
-      "cruise": 210,
-      "thrust": 17,
-      "maxTurn": 0.85,
-      "hp": 80,
-      "radius": 11,
-      "weapons": {
-        "cannon": true,
-        "missiles": 2,
-        "flares": 10
-      },
-      "traits": {
-        "skill": 0.55,
-        "aggression": 0.65,
-        "reactionTime": 1.0,
-        "awareness": 0.7,
-        "discipline": 0.5,
-        "riskTolerance": 0.55,
-        "formationSkill": 0.6
-      }
-    },
-    "elite": {
-      "name": "ENEMY ELITE",
-      "model": "elite",
-      "role": "elite",
-      "maxSpeed": 430,
-      "cruise": 230,
-      "thrust": 20,
-      "maxTurn": 1.02,
-      "hp": 120,
-      "radius": 11,
-      "weapons": {
-        "cannon": true,
-        "missiles": 4,
-        "flares": 20
-      },
-      "traits": {
-        "skill": 0.9,
-        "aggression": 0.7,
-        "reactionTime": 0.45,
-        "awareness": 0.95,
-        "discipline": 0.9,
-        "riskTolerance": 0.4,
-        "formationSkill": 0.9
-      },
-      "disengageHp": 0.5
-    },
-    "transport": {
-      "name": "TRANSPORT",
-      "model": "transport",
-      "role": "asset",
-      "maxSpeed": 200,
-      "cruise": 130,
-      "thrust": 6,
-      "maxTurn": 0.22,
-      "hp": 320,
-      "radius": 22,
-      "weapons": {
-        "cannon": false,
-        "missiles": 0,
-        "flares": 12
-      },
-      "traits": {
-        "skill": 0.2,
-        "aggression": 0,
-        "reactionTime": 2,
-        "awareness": 0.3,
-        "discipline": 0.5,
-        "riskTolerance": 0,
-        "formationSkill": 0.3
-      }
-    },
-    "wingman": {
-      "name": "FALCON TWO",
-      "model": "fighter",
-      "role": "wingman",
-      "maxSpeed": 430,
-      "cruise": 230,
-      "thrust": 20,
-      "maxTurn": 0.95,
-      "hp": 100,
-      "radius": 11,
-      "weapons": {
-        "cannon": true,
-        "missiles": 2,
-        "flares": 20
-      },
-      "traits": {
-        "skill": 0.6,
-        "aggression": 0.7,
-        "reactionTime": 0.9,
-        "awareness": 0.7,
-        "discipline": 0.4,
-        "riskTolerance": 0.7,
-        "formationSkill": 0.8
-      }
-    },
-    "drone": {
-      "name": "TARGET DRONE",
-      "model": "scout",
-      "role": "recon",
-      "maxSpeed": 260,
-      "cruise": 160,
-      "thrust": 10,
-      "maxTurn": 0.5,
-      "hp": 30,
-      "radius": 9,
-      "weapons": {
-        "cannon": false,
-        "missiles": 0,
-        "flares": 0
-      },
-      "traits": {
-        "skill": 0.2,
-        "aggression": 0,
-        "reactionTime": 2,
-        "awareness": 0.4,
-        "discipline": 0.3,
-        "riskTolerance": 0,
-        "formationSkill": 0.3
-      }
-    }
+ "types": {
+  "scout": {
+   "name": "ENEMY SCOUT",
+   "model": "scout",
+   "role": "recon",
+   "maxSpeed": 300,
+   "cruise": 170,
+   "thrust": 12,
+   "maxTurn": 0.55,
+   "hp": 40,
+   "radius": 9,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 6
+   },
+   "traits": {
+    "skill": 0.35,
+    "aggression": 0.2,
+    "reactionTime": 1.6,
+    "awareness": 0.6,
+    "discipline": 0.5,
+    "riskTolerance": 0.2,
+    "formationSkill": 0.6
+   }
+  },
+  "fighter": {
+   "name": "ENEMY FIGHTER",
+   "model": "fighter",
+   "role": "fighter",
+   "maxSpeed": 390,
+   "cruise": 210,
+   "thrust": 17,
+   "maxTurn": 0.85,
+   "hp": 80,
+   "radius": 11,
+   "weapons": {
+    "cannon": true,
+    "missiles": 2,
+    "flares": 10
+   },
+   "traits": {
+    "skill": 0.55,
+    "aggression": 0.65,
+    "reactionTime": 1.0,
+    "awareness": 0.7,
+    "discipline": 0.5,
+    "riskTolerance": 0.55,
+    "formationSkill": 0.6
+   }
+  },
+  "elite": {
+   "name": "ENEMY ELITE",
+   "model": "elite",
+   "role": "elite",
+   "maxSpeed": 430,
+   "cruise": 230,
+   "thrust": 20,
+   "maxTurn": 1.02,
+   "hp": 120,
+   "radius": 11,
+   "weapons": {
+    "cannon": true,
+    "missiles": 4,
+    "flares": 20
+   },
+   "traits": {
+    "skill": 0.9,
+    "aggression": 0.7,
+    "reactionTime": 0.45,
+    "awareness": 0.95,
+    "discipline": 0.9,
+    "riskTolerance": 0.4,
+    "formationSkill": 0.9
+   },
+   "disengageHp": 0.5
+  },
+  "transport": {
+   "name": "TRANSPORT",
+   "model": "transport",
+   "role": "asset",
+   "maxSpeed": 200,
+   "cruise": 130,
+   "thrust": 6,
+   "maxTurn": 0.22,
+   "hp": 380,
+   "radius": 22,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 12
+   },
+   "traits": {
+    "skill": 0.2,
+    "aggression": 0,
+    "reactionTime": 2,
+    "awareness": 0.3,
+    "discipline": 0.5,
+    "riskTolerance": 0,
+    "formationSkill": 0.3
+   },
+   "asset": true
+  },
+  "wingman": {
+   "name": "FALCON TWO",
+   "model": "fighter",
+   "role": "wingman",
+   "maxSpeed": 430,
+   "cruise": 230,
+   "thrust": 20,
+   "maxTurn": 0.95,
+   "hp": 100,
+   "radius": 11,
+   "weapons": {
+    "cannon": true,
+    "missiles": 2,
+    "flares": 20
+   },
+   "traits": {
+    "skill": 0.6,
+    "aggression": 0.7,
+    "reactionTime": 0.9,
+    "awareness": 0.7,
+    "discipline": 0.4,
+    "riskTolerance": 0.7,
+    "formationSkill": 0.8
+   }
+  },
+  "drone": {
+   "name": "TARGET DRONE",
+   "model": "scout",
+   "role": "recon",
+   "maxSpeed": 260,
+   "cruise": 160,
+   "thrust": 10,
+   "maxTurn": 0.5,
+   "hp": 30,
+   "radius": 9,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 0
+   },
+   "traits": {
+    "skill": 0.2,
+    "aggression": 0,
+    "reactionTime": 2,
+    "awareness": 0.4,
+    "discipline": 0.3,
+    "riskTolerance": 0,
+    "formationSkill": 0.3
+   }
+  },
+  "raider": {
+   "name": "ENEMY RAIDER",
+   "model": "fighter",
+   "role": "fighter",
+   "maxSpeed": 380,
+   "cruise": 220,
+   "thrust": 17,
+   "maxTurn": 0.8,
+   "hp": 70,
+   "radius": 11,
+   "weapons": {
+    "cannon": true,
+    "missiles": 0,
+    "flares": 8
+   },
+   "traits": {
+    "skill": 0.5,
+    "aggression": 0.85,
+    "reactionTime": 1.0,
+    "awareness": 0.6,
+    "discipline": 0.35,
+    "riskTolerance": 0.7,
+    "formationSkill": 0.5
+   }
+  },
+  "bomber": {
+   "name": "ENEMY STRIKER",
+   "model": "bomber",
+   "role": "fighter",
+   "maxSpeed": 330,
+   "cruise": 210,
+   "thrust": 14,
+   "maxTurn": 0.5,
+   "hp": 220,
+   "radius": 14,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 16
+   },
+   "traits": {
+    "skill": 0.4,
+    "aggression": 0.6,
+    "reactionTime": 1.2,
+    "awareness": 0.5,
+    "discipline": 0.6,
+    "riskTolerance": 0.5,
+    "formationSkill": 0.6
+   }
+  },
+  "grey": {
+   "name": "GREY",
+   "model": "elite",
+   "role": "elite",
+   "maxSpeed": 440,
+   "cruise": 240,
+   "thrust": 21,
+   "maxTurn": 1.08,
+   "hp": 260,
+   "radius": 11,
+   "weapons": {
+    "cannon": true,
+    "missiles": 6,
+    "flares": 30
+   },
+   "traits": {
+    "skill": 0.97,
+    "aggression": 0.75,
+    "reactionTime": 0.38,
+    "awareness": 0.97,
+    "discipline": 0.95,
+    "riskTolerance": 0.35,
+    "formationSkill": 0.95
+   },
+   "disengageHp": 0.4
+  },
+  "courier": {
+   "name": "COURIER JET",
+   "model": "courier",
+   "role": "courier",
+   "maxSpeed": 420,
+   "cruise": 370,
+   "thrust": 22,
+   "maxTurn": 0.55,
+   "hp": 90,
+   "radius": 10,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 14
+   },
+   "traits": {
+    "skill": 0.7,
+    "aggression": 0,
+    "reactionTime": 0.8,
+    "awareness": 0.8,
+    "discipline": 0.8,
+    "riskTolerance": 0.3,
+    "formationSkill": 0.5
+   }
+  },
+  "jammer": {
+   "name": "AIRBORNE JAMMER",
+   "model": "transport",
+   "role": "asset",
+   "maxSpeed": 200,
+   "cruise": 140,
+   "thrust": 6,
+   "maxTurn": 0.25,
+   "hp": 220,
+   "radius": 22,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 12
+   },
+   "traits": {
+    "skill": 0.2,
+    "aggression": 0,
+    "reactionTime": 2,
+    "awareness": 0.3,
+    "discipline": 0.5,
+    "riskTolerance": 0,
+    "formationSkill": 0.3
+   }
+  },
+  "airliner": {
+   "name": "CIVIL AIRLINER",
+   "model": "airliner",
+   "role": "asset",
+   "asset": true,
+   "maxSpeed": 230,
+   "cruise": 150,
+   "thrust": 7,
+   "maxTurn": 0.2,
+   "hp": 420,
+   "radius": 26,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 16
+   },
+   "traits": {
+    "skill": 0.1,
+    "aggression": 0,
+    "reactionTime": 2,
+    "awareness": 0.2,
+    "discipline": 0.5,
+    "riskTolerance": 0,
+    "formationSkill": 0.3
+   }
+  },
+  "helicopter": {
+   "name": "RESCUE HELICOPTER",
+   "model": "helicopter",
+   "role": "heli",
+   "asset": true,
+   "maxSpeed": 80,
+   "cruise": 70,
+   "thrust": 6,
+   "maxTurn": 0.5,
+   "hp": 260,
+   "radius": 10,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 10
+   },
+   "traits": {
+    "skill": 0.2,
+    "aggression": 0,
+    "reactionTime": 2,
+    "awareness": 0.3,
+    "discipline": 0.5,
+    "riskTolerance": 0,
+    "formationSkill": 0.3
+   }
+  },
+  "sam": {
+   "name": "SAM",
+   "model": "sam",
+   "role": "ground",
+   "ground": true,
+   "kind": "sam",
+   "hp": 90,
+   "radius": 14,
+   "maxSpeed": 0,
+   "cruise": 0,
+   "thrust": 0,
+   "maxTurn": 0,
+   "weapons": {
+    "cannon": false,
+    "missiles": 99,
+    "flares": 0
+   },
+   "traits": {
+    "skill": 0.3,
+    "aggression": 0,
+    "reactionTime": 1,
+    "awareness": 0.5,
+    "discipline": 0.5,
+    "riskTolerance": 0,
+    "formationSkill": 0.3
+   },
+   "range": 9500,
+   "reload": 13
+  },
+  "relay": {
+   "name": "RELAY",
+   "model": "relay",
+   "role": "ground",
+   "ground": true,
+   "kind": "static",
+   "hp": 160,
+   "radius": 16,
+   "maxSpeed": 0,
+   "cruise": 0,
+   "thrust": 0,
+   "maxTurn": 0,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 0
+   },
+   "traits": {
+    "skill": 0.3,
+    "aggression": 0,
+    "reactionTime": 1,
+    "awareness": 0.5,
+    "discipline": 0.5,
+    "riskTolerance": 0,
+    "formationSkill": 0.3
+   }
+  },
+  "depot": {
+   "name": "DEPOT",
+   "model": "depot",
+   "role": "ground",
+   "ground": true,
+   "kind": "static",
+   "hp": 130,
+   "radius": 22,
+   "maxSpeed": 0,
+   "cruise": 0,
+   "thrust": 0,
+   "maxTurn": 0,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 0
+   },
+   "traits": {
+    "skill": 0.3,
+    "aggression": 0,
+    "reactionTime": 1,
+    "awareness": 0.5,
+    "discipline": 0.5,
+    "riskTolerance": 0,
+    "formationSkill": 0.3
+   },
+   "explosive": true
+  },
+  "radar_site": {
+   "name": "RADAR SITE",
+   "model": "radar_site",
+   "role": "ground",
+   "ground": true,
+   "kind": "static",
+   "hp": 110,
+   "radius": 14,
+   "maxSpeed": 0,
+   "cruise": 0,
+   "thrust": 0,
+   "maxTurn": 0,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 0
+   },
+   "traits": {
+    "skill": 0.3,
+    "aggression": 0,
+    "reactionTime": 1,
+    "awareness": 0.5,
+    "discipline": 0.5,
+    "riskTolerance": 0,
+    "formationSkill": 0.3
+   }
+  },
+  "node": {
+   "name": "NODE",
+   "model": "node",
+   "role": "ground",
+   "ground": true,
+   "kind": "static",
+   "hp": 320,
+   "radius": 26,
+   "maxSpeed": 0,
+   "cruise": 0,
+   "thrust": 0,
+   "maxTurn": 0,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 0
+   },
+   "traits": {
+    "skill": 0.3,
+    "aggression": 0,
+    "reactionTime": 1,
+    "awareness": 0.5,
+    "discipline": 0.5,
+    "riskTolerance": 0,
+    "formationSkill": 0.3
+   },
+   "explosive": true
+  },
+  "plant": {
+   "name": "PLANT",
+   "model": "plant",
+   "role": "ground",
+   "ground": true,
+   "kind": "static",
+   "hp": 420,
+   "radius": 30,
+   "maxSpeed": 0,
+   "cruise": 0,
+   "thrust": 0,
+   "maxTurn": 0,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 0
+   },
+   "traits": {
+    "skill": 0.3,
+    "aggression": 0,
+    "reactionTime": 1,
+    "awareness": 0.5,
+    "discipline": 0.5,
+    "riskTolerance": 0,
+    "formationSkill": 0.3
+   },
+   "asset": true
+  },
+  "truck": {
+   "name": "TRUCK",
+   "model": "truck",
+   "role": "ground",
+   "ground": true,
+   "kind": "truck",
+   "hp": 70,
+   "radius": 7,
+   "maxSpeed": 0,
+   "cruise": 0,
+   "thrust": 0,
+   "maxTurn": 0,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 0
+   },
+   "traits": {
+    "skill": 0.3,
+    "aggression": 0,
+    "reactionTime": 1,
+    "awareness": 0.5,
+    "discipline": 0.5,
+    "riskTolerance": 0,
+    "formationSkill": 0.3
+   },
+   "asset": true,
+   "speed": 22
+  },
+  "escort": {
+   "name": "ESCORT FIGHTER",
+   "model": "courier",
+   "role": "asset",
+   "asset": true,
+   "maxSpeed": 300,
+   "cruise": 150,
+   "thrust": 14,
+   "maxTurn": 0.6,
+   "hp": 140,
+   "radius": 11,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 14
+   },
+   "traits": {
+    "skill": 0.5,
+    "aggression": 0,
+    "reactionTime": 1,
+    "awareness": 0.5,
+    "discipline": 0.8,
+    "riskTolerance": 0,
+    "formationSkill": 0.9
+   }
+  },
+  "striker": {
+   "name": "STRIKER",
+   "model": "bomber",
+   "role": "courier",
+   "maxSpeed": 330,
+   "cruise": 210,
+   "thrust": 14,
+   "maxTurn": 0.5,
+   "hp": 220,
+   "radius": 14,
+   "weapons": {
+    "cannon": false,
+    "missiles": 0,
+    "flares": 16
+   },
+   "traits": {
+    "skill": 0.5,
+    "aggression": 0,
+    "reactionTime": 1,
+    "awareness": 0.5,
+    "discipline": 0.8,
+    "riskTolerance": 0,
+    "formationSkill": 0.8
+   }
   }
+ }
 }

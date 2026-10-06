@@ -134,6 +134,18 @@
         "accent": "#222831",
         "trim": "#cfd6dd"
       }
+    },
+    {
+      "id": "shadow",
+      "name": "Shadow Line",
+      "cost": 0,
+      "unlockRank": null,
+      "unlockFlag": "campaignFinished",
+      "colors": {
+        "body": "#23272d",
+        "accent": "#c9a24a",
+        "trim": "#4a525c"
+      }
     }
   ],
   "hudThemes": [
@@ -164,6 +176,14 @@
       "cost": 2,
       "unlockRank": null,
       "color": "#f2f5f7"
+    },
+    {
+      "id": "crimson",
+      "name": "Crimson",
+      "cost": 0,
+      "unlockRank": null,
+      "unlockFlag": "campaignFinished",
+      "color": "#ff6a5c"
     }
   ],
   "cockpits": [

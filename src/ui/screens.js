@@ -1,4 +1,4 @@
-import missionsData from '../../data/missions.json';
+import { MISSIONS, FINAL_MISSION } from '../missions/registry.js';
 import aircraftData from '../../data/aircraft.json';
 import difficultyData from '../../data/difficulty.json';
 import progression from '../../data/progression.json';
@@ -9,10 +9,10 @@ import { Settings } from '../settings/settings.js';
 import { baseMapSVG, px, py, FULL_VIEW, regionFor, REGIONS } from '../briefing/algeriaMap.js';
 import { Briefing } from '../briefing/briefing.js';
 import { portraitHTML } from './portraits.js';
-import { rankInfo, itemStatus, hasItem, buyItem, challengeUnlocked, rankIdx } from '../progression.js';
+import { rankInfo, itemStatus, hasItem, buyItem, challengeUnlocked } from '../progression.js';
 import { fmtTime } from '../util/math.js';
 
-export const MISSIONS = missionsData.missions;
+export { MISSIONS };
 const DIFFS = Object.keys(difficultyData.levels);
 const TIMES = ['dawn', 'day', 'sunset', 'night'], WEATHERS = ['clear', 'cloudy', 'fog', 'storm', 'dust'];
 const BIOMES = [['coast', 'COAST'], ['atlas', 'ATLAS'], ['plateaus', 'HIGH PLATEAUS'], ['sahara', 'SAHARA'], ['southern', 'SOUTHERN ROCKS']];
@@ -100,7 +100,7 @@ export class Screens {
   a_zoomin() { const v = this.svg.getAttribute('viewBox').split(' ').map(Number); this._tw = (this._tw || 0); this.tween([v[0] + v[2] * 0.15, v[1] + v[3] * 0.15, v[2] * 0.7, v[3] * 0.7], 300); }
   a_zoomout() { const v = this.svg.getAttribute('viewBox').split(' ').map(Number); this.tween([v[0] - v[2] * 0.2, v[1] - v[3] * 0.2, v[2] * 1.4, v[3] * 1.4], 300); }
   a_zoomsel() { this.zoomTo(this.sel, 800); }
-  a_zoomall() { const r = this.svg.getBoundingClientRect(); this.tween([FULL_VIEW.x, FULL_VIEW.y, FULL_VIEW.w, FULL_VIEW.h], 800); }
+  a_zoomall() { this.tween([FULL_VIEW.x, FULL_VIEW.y, FULL_VIEW.w, FULL_VIEW.h], 800); }
   a_pick(id) { this.sel = id; this.renderCard(); this.zoomTo(id, 900); }
   renderCard() {
     const m = MISSIONS.find((x) => x.id === this.sel), st = missionStatus(m), sc = Save.data.scores[m.id];
@@ -146,7 +146,7 @@ export class Screens {
     this.renderLoadout();
   }
   renderLoadout() {
-    const m = this.mission, lo = this.lo, d = Save.data, ac = aircraftData.aircraft.find((a) => a.id === lo.ac), ld = aircraftData.loadouts.find((l) => l.id === lo.load);
+    const m = this.mission, lo = this.lo, ac = aircraftData.aircraft.find((a) => a.id === lo.ac), ld = aircraftData.loadouts.find((l) => l.id === lo.load);
     const paint = aircraftData.paints.find((p) => p.id === lo.paint); this.app.hangar.setPaint(paint.colors);
     const s = ac.stats, bar = (l, v, max) => `<div class="statbar"><span>${l}</span><i><b style="width:${Math.round((v / max) * 100)}%"></b></i></div>`;
     const canLaunch = m.playable;
@@ -160,7 +160,7 @@ export class Screens {
         <div class="panel ui-block"><h3>${ac.name}</h3><p class="mut" style="margin-top:-6px">${ac.desc}</p>${bar('SPEED', s.maxSpeed, 520)}${bar('AGILITY', s.rollRate * 20 + s.pitchRate * 25, 120)}${bar('STABILITY', 160 - s.stallSpeed, 110)}${bar('ARMOUR', s.hp, 150)}
           <div class="mono" style="margin:10px 0">AAM ${Math.max(1, ac.weapons.missiles + ld.missilesDelta)} · FLARES ${Math.max(0, ac.weapons.flares + ld.flaresDelta)} · GUN ${Math.round(ac.weapons.cannonRounds * ld.ammoMult)}</div>
           <h3>DIFFICULTY</h3>${seg('lo_diff', DIFFS.map((x) => [x, x]), lo.diff)}<p class="mut" style="font-size:14px">${difficultyData.levels[lo.diff].desc}</p>
-          <div class="row" style="margin-top:14px"><button class="btn primary" data-act="launch" ${canLaunch ? '' : 'disabled'}>${canLaunch ? 'LAUNCH ▸' : 'NOT PLAYABLE IN THIS BUILD'}</button></div>${canLaunch ? '' : '<p class="mut" style="font-size:13px">Mission data for this operation is fully defined (data/missions.json) and awaits flight content.</p>'}</div></div></div></div>`;
+          <div class="row" style="margin-top:14px"><button class="btn primary" data-act="launch" ${canLaunch ? '' : 'disabled'}>${canLaunch ? 'LAUNCH ▸' : 'NOT PLAYABLE IN THIS BUILD'}</button></div>${canLaunch ? '' : '<p class="mut" style="font-size:13px">Mission data for this operation is not available.</p>'}</div></div></div></div>`;
   }
   a_lo_ac(v) { const a = aircraftData.aircraft.find((x) => x.id === v); if (!hasItem('aircraft', a)) return this.app.toast('AIRCRAFT LOCKED'); this.lo.ac = v; this.renderLoadout(); }
   a_lo_paint(v) { const p = aircraftData.paints.find((x) => x.id === v); if (!hasItem('paints', p)) return this.app.toast('PAINT LOCKED'); this.lo.paint = v; this.renderLoadout(); }
@@ -251,9 +251,10 @@ export class Screens {
     this.tab = tab; let body = '';
     if (tab === 'controls') body = `<div class="ctrl-table"><kbd>W / ↑</kbd><span>Nose up</span><kbd>S / ↓</kbd><span>Nose down (Settings → Invert Y flips both)</span><kbd>Mouse</kbd><span>Aim: the jet turns toward the on-screen cursor (cursor up = nose up)</span><kbd>A / D</kbd><span>Roll left / right</span><kbd>Q / E</kbd><span>Yaw (rudder)</span><kbd>Shift / Ctrl · wheel</kbd><span>Throttle up / down</span><kbd>Space · click</kbd><span>Cannon</span><kbd>T</kbd><span>Select / cycle radar target (hold target in radar cone to lock)</span><kbd>I (hold)</kbd><span>Identify selected contact (visual ID required before firing)</span><kbd>F · right-click</kbd><span>Fire missile (needs LOCK + identified hostile)</span><kbd>X</kbd><span>Flares</span><kbd>B</kbd><span>Airbrake</span><kbd>C / 1-8</kbd><span>Camera: chase · cockpit · close · missile · wing · tactical · cinematic · free</span><kbd>M</kbd><span>Toggle mouse flight</span><kbd>H</kbd><span>Toggle HUD</span><kbd>Esc / P</kbd><span>Pause</span></div><p class="mut">Gamepad: left stick pitch/roll · right stick yaw · RT cannon · LT airbrake · A missile · B flares · X target · Y identify · LB/RB camera · D-pad throttle · Start pause.</p>`;
     else if (tab === 'characters') body = `<div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${Object.values(dialogue.characters).map((c) => `<div class="card" style="cursor:default">${portraitHTML(c, false)}<h4 style="margin-top:8px">${c.name}</h4><p>${c.callsign} · ${c.role}</p></div>`).join('')}</div>`;
-    else if (tab === 'about') body = `<p style="line-height:1.5;max-width:800px">SHADOW LINE — SKY OF ALGERIA is a work of fiction. All organisations (VESPER), aircraft variants, units, characters and missions are invented; Algeria-inspired geography and atmosphere are used for setting only. No real operations, bases or classified information are depicted.</p><p class="mut">Vertical slice: Mission 01 “First Contact” is fully playable. Missions 02–15 are complete data definitions in <span class="mono">data/missions.json</span> awaiting flight content. All assets are procedural placeholders with GLB / PNG / audio replacement paths.</p>`;
+    else if (tab === 'about') body = `<p style="line-height:1.5;max-width:800px">SHADOW LINE — SKY OF ALGERIA is a work of fiction. All organisations (VESPER), aircraft variants, units, characters and missions are invented; Algeria-inspired geography and atmosphere are used for setting only. No real operations, bases or classified information are depicted.</p><p class="mut">All fifteen missions of the campaign are playable, from “First Contact” to the finale “Shadow Line”. Every mission is its own data file in <span class="mono">data/missions/</span>. All art and audio are procedural placeholders with GLB / PNG / audio replacement paths.</p>`;
+    else if (tab === 'ending') body = `<p>You finished the campaign. Watch the epilogue and credits again.</p><div class="row"><button class="btn primary" data-act="deb_ending">▶ PLAY EPILOGUE</button></div>`;
     else body = `<p>Save file: ${Save.has() ? 'present' : 'none'} · XP ${Save.data.xp} · Tokens ${Save.data.tokens} · Missions completed ${Object.keys(Save.data.campaign.completed).length}/${MISSIONS.length}</p><div class="row"><button class="btn danger" data-act="reset_save">RESET SAVE DATA</button></div>`;
-    this.root.innerHTML = `<div class="screen dim"><div class="back-bar"><button class="btn small" data-act="back">◂ MENU</button></div><div class="big-center" style="margin:0;justify-content:center;max-width:1100px"><div class="kicker">EXTRAS · إضافات</div><div class="tabs">${seg('ex_tab', [['controls', 'CONTROLS'], ['characters', 'CHARACTERS'], ['about', 'ABOUT'], ['save', 'SAVE DATA']], tab)}</div><div class="panel ui-block scroll" style="max-height:66vh">${body}</div></div></div>`;
+    this.root.innerHTML = `<div class="screen dim"><div class="back-bar"><button class="btn small" data-act="back">◂ MENU</button></div><div class="big-center" style="margin:0;justify-content:center;max-width:1100px"><div class="kicker">EXTRAS · إضافات</div><div class="tabs">${seg('ex_tab', [['controls', 'CONTROLS'], ['characters', 'CHARACTERS'], ['about', 'ABOUT'], ['save', 'SAVE DATA'], ...(Save.data.campaign.finished ? [['ending', 'EPILOGUE']] : [])], tab)}</div><div class="panel ui-block scroll" style="max-height:66vh">${body}</div></div></div>`;
   }
   a_ex_tab(v) { this.go('extras', { tab: v }); }
   a_reset_save() { if (!confirm('Delete ALL save data (campaign, scores, unlocks, settings)?')) return; Save.reset(); Settings.apply(); this.app.applySettings(); this.app.lastReplay = null; this.go('menu'); this.app.toast('SAVE DATA RESET'); }
@@ -268,7 +269,7 @@ export class Screens {
   a_pause_controls() { this.go('settings', { tab: 'controls', from: 'pause' }); }
 
   // ------------------------------------------------------------------ debrief
-  s_debrief({ result, snap, score, rank, unlocks, mission, saved, retry, next }) {
+  s_debrief({ result, snap, score, rank, unlocks, mission, saved, retry, next, final }) {
     const good = snap.result === 'complete'; this.app.hangar.setFocus('dim');
     const pct = (v) => Math.round(v * 100) + '%';
     const rows = [['TARGETS DESTROYED', `${score.kills} / ${score.killsTotal}`], ['ACCURACY', pct(score.acc)], ['DAMAGE TAKEN', pct(score.dmg)], ['ALLY SURVIVAL', snap.allies.length ? (score.ally >= 1 ? 'ALL SURVIVED' : 'LOST') : 'N/A'], ['MISSION TIME', fmtTime(score.time)],
@@ -283,10 +284,35 @@ export class Screens {
         <div class="mono" style="margin-top:8px">+${score.xp} XP · +${score.tokens} TOKENS</div><div class="xpbar"><i id="xpfill" style="width:${Math.round(rank.before * 100)}%"></i></div><div class="mut mono" style="font-size:13px;margin-top:4px">${rank.name}${rank.up ? ' — RANK UP!' : ''}</div>
         ${unlocks.map((u, i) => `<div class="unlock-pop" style="animation-delay:${3.8 + i * 0.3}s">UNLOCKED · ${esc(u)}</div>`).join('')}
         <div class="mono mut" style="margin-top:10px">${saved ? '✔ PROGRESS SAVED' : ''}</div>
-        <div class="row" style="margin-top:14px;flex-direction:column;align-items:stretch">${next ? `<button class="btn primary" data-act="deb_next">NEXT MISSION ▸</button>` : ''}${retry ? `<button class="btn ${next ? '' : 'primary'}" data-act="deb_retry">${good ? 'REPLAY MISSION' : 'RETRY'}</button>` : ''}<button class="btn" data-act="deb_replay">WATCH REPLAY</button><button class="btn" data-act="deb_map">MISSION SELECT</button><button class="btn" data-act="back">MAIN MENU</button></div></div></div></div>`;
+        <div class="row" style="margin-top:14px;flex-direction:column;align-items:stretch">${final ? `<button class="btn primary" data-act="deb_ending">EPILOGUE ▸</button>` : ''}${next ? `<button class="btn primary" data-act="deb_next">NEXT MISSION ▸</button>` : ''}${retry ? `<button class="btn ${next ? '' : 'primary'}" data-act="deb_retry">${good ? 'REPLAY MISSION' : 'RETRY'}</button>` : ''}<button class="btn" data-act="deb_replay">WATCH REPLAY</button><button class="btn" data-act="deb_map">MISSION SELECT</button><button class="btn" data-act="back">MAIN MENU</button></div></div></div></div>`;
     this.app.audio.play(good ? 'confirm' : 'denied'); setTimeout(() => { const f = this.root.querySelector('#xpfill'); if (f) f.style.width = Math.round(rank.after * 100) + '%'; }, 1800); setTimeout(() => this.app.audio.play('stamp'), 3500);
     this.deb = { mission, next, retry };
   }
+  // ------------------------------------------------------------------ campaign ending: epilogue slides, then credits
+  s_ending() {
+    const ep = FINAL_MISSION.epilogue, lang = Settings.s.subtitleLang, rtl = lang === 'ar', root = this.root; let i = -1, timer = null, phase = 'slides';
+    this.app.hangar.setFocus('dim'); this.app.audio.setMusic('RESOLUTION');
+    const grades = { S: 4, A: 3, B: 2, C: 1, D: 0 }, sc = Object.values(Save.data.scores);
+    const total = sc.reduce((a, q) => a + q.score, 0), medals = sc.reduce((a, q) => a + (q.medals || []).length, 0), avg = sc.length ? sc.reduce((a, q) => a + grades[q.grade], 0) / sc.length : 0;
+    const grade = ['D', 'C', 'B', 'A', 'S'][Math.min(4, Math.round(avg))], best = sc.reduce((a, q) => a + q.time, 0);
+    const credits = () => {
+      phase = 'credits'; clearTimeout(timer);
+      root.innerHTML = `<div class="screen dark ending"><div class="credits-roll"><div class="kicker">THE CAMPAIGN IS COMPLETE</div><h1 class="title">Shadow Line<small>SKY OF ALGERIA</small></h1><div class="tagline">“When the radar lies, the pilot must decide.”</div>
+        <div class="end-stats"><div><b>${sc.length}/${MISSIONS.length}</b><span>MISSIONS</span></div><div><b>${grade}</b><span>CAMPAIGN GRADE</span></div><div><b>${total}</b><span>TOTAL SCORE</span></div><div><b>${medals}</b><span>MEDALS</span></div><div><b>${fmtTime(best)}</b><span>FLIGHT TIME</span></div></div>
+        ${ep.credits.map(([k, v]) => `<div class="credit"><span>${k}</span><b>${v}</b></div>`).join('')}<p class="mut" style="margin-top:60px;letter-spacing:.2em">UNLOCKED: SHADOW LINE PAINT · CRIMSON HUD THEME</p></div><button class="btn primary end-menu" data-act="back">MAIN MENU</button></div>`;
+    };
+    const show = () => {
+      i++; clearTimeout(timer); if (i >= ep.slides.length) return credits();
+      const sl = ep.slides[i], ch = dialogue.characters[sl.speaker], text = sl.text[lang] || sl.text.en;
+      root.innerHTML = `<div class="screen dark ending" data-act="ending_next"><div class="end-card">${portraitHTML(ch, true)}<div class="end-text" dir="${rtl ? 'rtl' : 'ltr'}"><div class="kicker">EPILOGUE · ${i + 1} / ${ep.slides.length}</div><h3>${ch.name}</h3><p>${esc(text)}</p>${Settings.s.bilingual && !rtl ? `<p class="alt" dir="rtl">${esc(sl.text.ar)}</p>` : ''}</div></div><div class="end-hint">CLICK OR PRESS SPACE TO CONTINUE · ESC TO SKIP</div></div>`;
+      timer = setTimeout(show, Math.max(6500, text.length * 90));
+    };
+    const key = (e) => { if (phase !== 'slides') return; if (e.code === 'Escape') credits(); else if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); show(); } };
+    window.addEventListener('keydown', key); this.endingNext = show; this.cleanup = () => { window.removeEventListener('keydown', key); clearTimeout(timer); };
+    show();
+  }
+  a_ending_next() { this.endingNext?.(); }
+  a_deb_ending() { this.go('ending'); }
   a_deb_next() { const n = this.deb.next; if (n.playable) this.go('intel', { id: n.id }); else this.go('missions', { selected: n.id }); }
   a_deb_retry() { this.deb.retry(); } a_deb_replay() { this.a_play_replay(); } a_deb_map() { this.go('missions', { selected: this.deb.mission.id }); }
 }

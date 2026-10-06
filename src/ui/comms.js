@@ -9,6 +9,8 @@ export class Comms {
     root.insertAdjacentHTML('beforeend', `<div class="portrait hidden" id="portrait"></div><div class="subs" id="subs" aria-live="polite"></div>`);
     this.portrait = root.querySelector('#portrait'); this.subs = root.querySelector('#subs');
   }
+  /** Dynamic line (callouts): text = {en, fr, ar}. */
+  sayRaw(speaker, text) { this.queue.push({ id: 'raw', speaker, voice: null, emotion: 'calm', text }); }
   get busy() { return !!this.cur || this.queue.length > 0; }
   say(id) {
     const l = dialogue.lines[id]; if (!l) { console.warn('missing dialogue', id); return; }

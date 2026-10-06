@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import enemiesData from '../data/enemies.json';
 import aircraftData from '../data/aircraft.json';
 import difficultyData from '../data/difficulty.json';
-import dialogue from '../data/dialogue.json';
 import { World } from './world/world.js';
-import { BASE_ALT } from './world/biomes.js';
+import { GroundUnit } from './ai/ground.js';
+import { noise2 } from './util/noise.js';
 import { Particles } from './weapons/particles.js';
 import { Weapons } from './weapons/weapons.js';
 import { buildFighter, buildModel } from './aircraft/model.js';
@@ -15,12 +15,11 @@ import { Pilot } from './ai/pilot.js';
 import { Director } from './missions/director.js';
 import { CameraRig, CAMERA_IDS } from './camera/cameras.js';
 import { Recorder } from './replay/replay.js';
-import { clamp, lerp, DEG, smoothstep, wrapPi } from './util/math.js';
+import { clamp, rand, DEG, wrapPi } from './util/math.js';
 import { Settings } from './settings/settings.js';
-import { Save } from './save/save.js';
 
 const ENEMY = enemiesData.types;
-const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _q = new THREE.Quaternion();
+const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _q = new THREE.Quaternion(), _eu = new THREE.Euler();
 const FWD = new THREE.Vector3(0, 0, -1);
 export const aircraftById = (id) => aircraftData.aircraft.find((a) => a.id === id) || aircraftData.aircraft[0];
 
@@ -32,11 +31,12 @@ export class Game {
   constructor(app, mission, opts = {}) {
     this.app = app; this.mission = mission; this.opts = opts; const { audio, hud, comms, input } = app;
     this.audio = audio; this.hud = hud; this.comms = comms; this.input = input;
-    this.scene = new THREE.Scene(); this.camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.8, 140000);
+    this.scene = new THREE.Scene(); this.camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 1.5, 140000);
     this.settings = Settings.s; this.diffName = opts.difficulty || this.settings.difficulty; this.diffData = difficultyData.levels[this.diffName] || difficultyData.levels.PILOT;
     this.time = 0; this.missionTime = 0; this.state = 'flight'; this.paused = false; this.ended = false; this.endTimer = 0; this.endResult = null;
     this.entities = []; this.byId = new Map(); this.wrecks = []; this.pilots = []; this.cine = null; this.cineT = 0; this.pullUp = false; this.boundary = 0;
     this.lastFirePos = null; this.cannonAcc = 0; this.flareCd = 0; this.musicBase = 'IDLE'; this.launchCamT = 0; this.prevCam = null; this.idProgress = 0; this.fireHeld = 0;
+    this.units = []; this.burners = []; this.samLock = 0; this.friendlyFire = false; this.transition = null; this.turbulence = mission.env?.turbulence || 0;
     this.wingmanFree = false; this.hudHidden = false; this.radarLockOn = null; this.missileHud = 'MOUNTED'; this.launchedUntil = 0; this.rumbleT = 0; this.crashed = false;
 
     this.particles = new Particles(this.scene);
@@ -64,6 +64,7 @@ export class Game {
     this.hud.setTheme(opts.hudColor || '#5dffa8'); this.hud.show(true);
     this.audio.setAmbience('flight', 0.3);
     this.camRig.snap();
+    if (mission.number > 0 && !mission.cinematics?.intro) this.hud.titleCard(`MISSION ${String(mission.number).padStart(2, '0')} — ${mission.title}`, `${mission.region} · ${mission.clock || ''} · ${mission.weatherLabel || ''}`);
   }
 
   diff() { return this.diffData; }
@@ -74,7 +75,7 @@ export class Game {
     const ac = aircraftById(opts.aircraft), st = ac.stats, ld = opts.loadout || { missilesDelta: -1, flaresDelta: 10, ammoMult: 1 };
     this.ac = ac; this.flight = new FlightModel(st);
     const sp = this.mission.spawn, onRunway = !!sp.onRunway;
-    const pos = new THREE.Vector3(sp.pos[0], onRunway ? BASE_ALT + 2.2 : sp.pos[1], sp.pos[2]);
+    const pos = new THREE.Vector3(sp.pos[0], onRunway ? this.world.baseAlt + 2.2 : sp.pos[1], sp.pos[2]);
     this.flight.reset(pos, sp.heading || 0, sp.speed || 0, onRunway);
     const p = new Entity({ id: 'player', name: 'FALCON ONE', callsign: 'FALCON ONE', side: 'friendly', type: 'player', role: 'player', pos: this.flight.pos, quat: this.flight.quat, vel: this.flight.vel, hp: st.hp, radius: 9, flares: Math.max(0, ac.weapons.flares + ld.flaresDelta), missiles: Math.max(1, ac.weapons.missiles + ld.missilesDelta), cannon: true, identified: true });
     p.isPlayer = true; p.airborne = false; p.hunted = false; this.player = p; this.maxHp = st.hp;
@@ -87,33 +88,101 @@ export class Game {
     const def = ENEMY.wingman, sp = this.mission.spawn, hd = (sp.heading || 0) * DEG, ground = !!sp.onRunway;
     const off = new THREE.Vector3(ground ? 42 : 120, ground ? 0 : 6, ground ? 70 : 40).applyAxisAngle(new THREE.Vector3(0, 1, 0), -hd);
     const e = this.makeEntity({ id: 'wingman', name: this.mission.wingman.callsign, callsign: this.mission.wingman.callsign, side: 'friendly', type: 'wingman', pos: this.player.pos.clone().add(off), heading: sp.heading || 0, speed: ground ? 0 : this.flight.speed, identified: true }, def);
-    if (ground) { e.onGround = true; e.pos.y = BASE_ALT + 2.2; }
+    if (ground) { e.onGround = true; e.pos.y = this.world.baseAlt + 2.2; }
     this.wingman = e;
   }
   makeEntity(g, def) {
     const e = new Entity({ id: g.id, name: g.name, callsign: g.callsign, side: g.side, type: g.type, role: def.role, def, hp: def.hp, radius: def.radius, flares: def.weapons.flares, missiles: def.weapons.missiles, cannon: def.weapons.cannon, identified: !!g.identified, iffShown: g.iffShown });
-    e.pos.set(...(Array.isArray(g.pos) ? g.pos : [g.pos.x, g.pos.y, g.pos.z])); e.speed = g.speed || def.cruise;
+    e.isGround = !!def.ground; e.asset = !!(def.asset || def.role === 'asset'); e.explosive = !!def.explosive; e.landed = false;
+    e.pos.set(...(Array.isArray(g.pos) ? g.pos : [g.pos.x, g.pos.y, g.pos.z]));
+    if (g.hpFrac) e.hp = e.maxHp * g.hpFrac;
+    if (e.isGround) e.pos.y = this.world.groundY(e.pos.x, e.pos.z);
+    e.speed = e.isGround ? 0 : (g.speed || def.cruise);
     e.quat.setFromEuler(new THREE.Euler(0, -(g.heading || 0) * DEG, 0)); e.dir = FWD.clone().applyQuaternion(e.quat); e.vel.copy(e.dir).multiplyScalar(e.speed);
     const kind = def.role === 'wingman' ? 'wingman' : def.model;
     e.model = buildModel(kind, this.opts.paint); this.scene.add(e.model.root); e.model.root.position.copy(e.pos); e.model.root.quaternion.copy(e.quat);
-    e.pilot = new Pilot(e, this, { route: g.route, egress: g.egress, targetPriority: g.targetPriority, engageWhenPlayerWithin: g.engageWhenPlayerWithin, permanentLeave: !this.mission.challenge });
-    this.entities.push(e); this.byId.set(e.id, e); this.pilots.push(e.pilot); return e;
+    if (e.isGround) { e.unit = new GroundUnit(e, this, { route: g.route, speed: g.speed, active: g.active, reload: g.reload }); this.units.push(e.unit); }
+    else { e.pilot = new Pilot(e, this, { route: g.route, egress: g.egress, targetPriority: g.targetPriority, engageWhenPlayerWithin: g.engageWhenPlayerWithin, cruise: g.speed, hover: g.hover, hold: g.hold, reach: g.reach, throttle: g.throttle, loop: g.loop, stand: g.stand, missileOnAsset: g.missileOnAsset, permanentLeave: g.reengage ? false : !this.mission.challenge }); this.pilots.push(e.pilot); }
+    this.entities.push(e); this.byId.set(e.id, e); return e;
   }
   spawnGroup(id) {
-    const g = (this.mission.groups || []).find((x) => x.id === id); if (!g || this.byId.has(id)) return;
+    if (Array.isArray(id)) return id.map((x) => this.spawnGroup(x));
+    let g = (this.mission.groups || []).find((x) => x.id === id); if (!g || this.byId.has(id)) return;
     const def = ENEMY[g.type]; if (!def) { console.warn('unknown enemy type', g.type); return; }
+    if (g.near) { const o = new THREE.Vector3(...g.near).applyQuaternion(this.player.quat).add(this.player.pos); g = { ...g, pos: [o.x, o.y, o.z], heading: this.flight.heading + (g.turn || 180) }; }
     const e = this.makeEntity(g, def);
-    if (g.side === 'hostile' && g.spawn === 'event') e.pilot.alert = 20;
+    if (g.side === 'hostile' && g.spawn === 'event' && e.pilot) e.pilot.alert = 20;
     return e;
   }
+  /** Takes an entity out of the simulation and scene (despawned, landed or phase change) without destroying it. */
+  removeEntity(e) {
+    if (e.model) this.scene.remove(e.model.root);
+    for (const [list, item] of [[this.entities, e], [this.pilots, e.pilot], [this.units, e.unit]]) { const i = list.indexOf(item); if (i >= 0) list.splice(i, 1); }
+  }
+  order(id, order, args = {}) {
+    const e = this.byId.get(id); if (!e) return;
+    if (order === 'go') { if (e.pilot) e.pilot.go = true; if (e.unit) e.unit.active = true; }
+    else if (order === 'engage' && e.pilot) { e.pilot.alert = 40; e.pilot.set('INTERCEPT'); }
+    else if (order === 'flee' && e.pilot) e.pilot.set('DISENGAGE');
+    else if (order === 'land' || order === 'depart') { e.landed = true; this.removeEntity(e); }
+    else if (order === 'hp') e.hp = e.maxHp * (args.frac ?? 1);
+    else if (order === 'activate' && e.unit) e.unit.active = true;
+  }
+  setRadar(spec) {
+    if (spec.mode === 'off') this.radar.disabled = true; else if (spec.mode === 'on') { this.radar.disabled = false; this.radar.disruptT = 0; }
+    if (spec.severity !== undefined) this.radar.disrupt(spec.duration ?? 9999, spec.severity);
+  }
+  setEnv(env) {
+    this.world.sky.set({ time: env.time || this.world.sky.time, weather: env.weather || this.world.sky.weather, fogTint: this.world.biome.fogTint });
+    if (env.turbulence !== undefined) this.turbulence = env.turbulence;
+  }
+  repair(frac) { this.player.hp = Math.min(this.player.maxHp, this.player.hp + this.player.maxHp * frac); this.hud.toast('AIRFRAME REPAIRED', 'ok'); }
+  titleCard(card) { this.hud.titleCard(card.text, card.sub || ''); }
+  /** Radio call generated from live positions (used when radar cannot paint the picture). */
+  callout(spec) {
+    const p = this.player; let e = spec.id ? this.byId.get(spec.id) : null;
+    if (spec.only && (!e || !e.alive)) return;
+    if (!e || !e.alive) {
+      e = null; let best = 1e9; const side = spec.nearest || 'hostile';
+      for (const x of this.entities) if (x.alive && !x.isPlayer && x.side === side && !x.isGround && !x.landed) { const d = x.pos.distanceTo(p.pos); if (d < best) { best = d; e = x; } }
+    }
+    if (!e) return;
+    const d = e.pos.clone().sub(p.pos), brg = String(Math.round((Math.atan2(d.x, -d.z) * 180 / Math.PI + 360) % 360)).padStart(3, '0'), km = (d.length() / 1000).toFixed(1);
+    const lvl = d.y > 600 ? 0 : d.y < -600 ? 1 : 2;
+    const L = { bandit: ['Bandit', 'Bandit', 'عدو'], target: ['Target', 'Cible', 'هدف'], traffic: ['Traffic', 'Trafic', 'حركة جوية'] }[spec.label || 'bandit'];
+    const H = [['high', 'haut', 'أعلى'], ['low', 'bas', 'أسفل'], ['level', 'même altitude', 'نفس الارتفاع']][lvl];
+    this.comms.sayRaw(spec.speaker || 'NADIA', { en: `${L[0]}, bearing ${brg}, ${km} kilometres, ${H[0]}.`, fr: `${L[1]}, cap ${brg}, ${km} kilomètres, ${H[1]}.`, ar: `${L[2]}، الاتجاه ${brg}، ${km} كيلومتر، ${H[2]}.` });
+  }
 
-  // ------------------------------------------------------------ hooks used by director / weapons
+  // ------------------------------------------------------------ phase change (multi-region missions)
+  travel(spec) { if (this.transition || this.ended || this.state === 'dead') return; this.transition = { t: 0, spec, applied: false }; this.hud.fade(true); }
+  updateTransition(dt) {
+    const tr = this.transition; if (!tr) return; tr.t += dt;
+    if (!tr.applied && tr.t >= 0.9) { tr.applied = true; this.applyTravel(tr.spec); this.hud.fade(false); }
+    if (tr.t >= 2.2) { this.transition = null; if (tr.spec.title) this.hud.titleCard(tr.spec.title, tr.spec.sub || ''); }
+  }
+  applyTravel(spec) {
+    const keep = new Set(['player', 'wingman', ...(spec.keep || [])]);
+    for (const e of [...this.entities]) if (!keep.has(e.id)) { e.landed = true; this.removeEntity(e); }
+    for (const w of this.wrecks) if (!w.nomodel) this.scene.remove(w.e.model.root);
+    this.wrecks.length = 0; this.burners.length = 0; this.weapons.reset(); this.cine = null; this.camRig.override = null;
+    const zones = spec.zones || [{ id: 'boundary', type: 'boundary', pos: [spec.pos[0], 0, spec.pos[2] - 10000], radius: 40000, label: 'OPERATIONS AREA' }];
+    this.mission.env = spec.env; this.mission.base = null; this.director.m.zones = zones; this.director.m.waypoints = spec.waypoints || []; this.director.outsideT = 0;
+    this.world.build({ env: spec.env, base: null, zones }, [spec.pos[0], 0, spec.pos[2]]);
+    this.turbulence = spec.env?.turbulence || 0;
+    this.flight.reset(new THREE.Vector3(...spec.pos), spec.heading || 0, spec.speed || 230, false); this.flight.throttle = 0.8; this.player.airborne = true; this.state = 'flight';
+    const w = this.wingman; if (w && w.alive && !spec.noWingman) { w.pos.copy(this.player.pos).add(new THREE.Vector3(110, 8, 60).applyQuaternion(this.player.quat)); w.quat.copy(this.player.quat); w.dir.copy(this.flight.fwd); w.speed = this.flight.speed; w.vel.copy(this.flight.vel); w.onGround = false; w.pilot?.set('FORMATION'); }
+    this.radar.reset(); this.radar.disabled = spec.radar === 'off'; this.camRig.snap(); this.particles.setFog(this.world.sky.fogColor, this.world.sky.scene.fog.density);
+    this.rec?.event('travel', this.player.pos, null, { env: spec.env, zones });
+  }
+
+    // ------------------------------------------------------------ hooks used by director / weapons
   say(id) { this.comms.say(id); this.rec?.event('say', null, null, id); }
   setMusic(s) { this.musicBase = s; }
   showEvidence(card) { this.hud.showEvidence(card); this.audio.play('objective'); }
   onObjective(o) { if (o.kind === 'primary' || o.kind === 'secondary') { this.hud.toast(`✔ ${o.label}`, 'ok'); this.audio.play('objective'); } this.rec?.event('objective', null, null, o.label); }
   onAIState(e, s) { /* hook for future FX/analytics */ }
-  onAIGone(e) { this.hud.toast(`${e.callsign} LEFT THE AREA`, 'warn'); }
+  onAIGone(e) { this.hud.toast(`${e.callsign} LEFT THE AREA`, 'warn'); this.removeEntity(e); }
   accuracy() { const s = this.weapons.stats, d = s.shots + s.launched * 12; return d ? clamp((s.hits + s.missileHits * 12) / d, 0, 1) : 0; }
   onMissionEnd(result) {
     if (this.ended) return; this.ended = true; this.endResult = result; this.endTimer = result === 'complete' ? 2.5 : 3.2;
@@ -128,7 +197,7 @@ export class Game {
     return {
       result: this.endResult || 'failed', reason: dir.failReason, time: this.missionTime, shots: ws.shots, accuracy: this.accuracy(), damageTaken: this.player.damageTaken, maxHp: this.maxHp,
       targetsTotal: tids.size, targetsDestroyed: targets.filter((t) => !t.alive && !t.despawned).length,
-      allies: this.wingman ? [{ alive: this.wingman.alive }] : [], objectives: dir.summary(), missilesFired: ws.launched, flares: ws.flaresDropped, oneLife: !!this.mission.oneLife
+      allies: [...(this.wingman ? [this.wingman] : []), ...(this.mission.groups || []).filter((q) => q.side === 'friendly').map((q) => this.byId.get(q.id)).filter(Boolean)].map((x) => ({ alive: x.alive })), objectives: dir.summary(), missilesFired: ws.launched, flares: ws.flaresDropped, oneLife: !!this.mission.oneLife
     };
   }
 
@@ -142,7 +211,7 @@ export class Game {
       if (killed) this.destroyPlayer();
       return;
     }
-    if (owner?.isPlayer && e.side === 'friendly') { this.director.roeViolation = true; this.hud.centerMsg('FRIENDLY FIRE', 1.8, 'bad'); }
+    if (owner?.isPlayer && e.side === 'friendly') { this.director.roeViolation = true; this.friendlyFire = true; this.hud.centerMsg('FRIENDLY FIRE', 1.8, 'bad'); }
     if (e.pilot) { e.pilot.alert = 10; if (owner) e.lastDamageBy = owner; }
     const killed = e.hurt(amount, owner);
     if (owner?.isPlayer && kind !== 'missile') this.audio.play('hit', 0.25);
@@ -150,11 +219,16 @@ export class Game {
     if (killed) this.killEntity(e, owner);
   }
   killEntity(e, owner) {
-    this.particles.explosion(e.pos.clone(), e.role === 'asset' ? 1.8 : 1.2); this.onExplosion(e.pos, 1.2, owner);
-    this.wrecks.push({ e, t: 0, spin: new THREE.Vector3((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 1, (Math.random() - 0.5) * 4) });
+    this.particles.explosion(e.pos.clone(), e.explosive ? 2.6 : e.asset ? 1.8 : 1.2); this.onExplosion(e.pos, 1.2, owner);
+    if (e.isGround) {
+      if (e.explosive) for (let i = 0; i < 3; i++) this.particles.explosion(e.pos.clone().add(new THREE.Vector3(rand(-14, 14), rand(2, 10), rand(-14, 14))), 1.5);
+      this.burners.push({ pos: e.pos.clone().add(new THREE.Vector3(0, 3, 0)), t: 0, size: Math.max(4, e.radius * 0.35) });
+      e.model.root.traverse((o) => { if (o.isMesh && o.material?.color) { o.material = o.material.clone(); o.material.color.multiplyScalar(0.16); } });
+    } else this.wrecks.push({ e, t: 0, spin: new THREE.Vector3((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 1, (Math.random() - 0.5) * 4) });
     if (owner?.isPlayer && e.side === 'hostile') this.hud.centerMsg(`${e.callsign} DESTROYED`, 1.6, 'good');
     const idx = this.entities.indexOf(e); if (idx >= 0) this.entities.splice(idx, 1);
     const pi = this.pilots.indexOf(e.pilot); if (pi >= 0) this.pilots.splice(pi, 1);
+    const ui = this.units.indexOf(e.unit); if (ui >= 0) this.units.splice(ui, 1);
     this.rec?.event('kill', e.pos, null, e.id);
   }
   destroyPlayer() {
@@ -174,6 +248,7 @@ export class Game {
   // ------------------------------------------------------------ cinematics
   playCinematic(name, args = {}) {
     const def = this.mission.cinematics?.[name]; if (!def || this.state === 'dead') return;
+    for (const sh of def.shots) if (sh.d === undefined) sh.d = sh.dur ?? 3;   // authoring alias: `dur` or `d`
     const entity = args.entity ? this.byId.get(args.entity) : null;
     this.cine = { name, def, args, entity, t: 0, shot: -1, total: def.shots.reduce((s, x) => s + x.d, 0), st: {} };
     if (def.bars) this.hud.cinematic(true);
@@ -202,7 +277,7 @@ export class Game {
       o.pos = t.pos.clone().add(new THREE.Vector3(Math.cos(a) * shot.radius, shot.radius * 0.35, Math.sin(a) * shot.radius)); o.look = t.pos.clone(); return;
     }
     const frame = (shot.anchor === 'base' ? this.mission.base : null), hd = -((frame?.heading) || 0) * DEG, R = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), hd);
-    const origin = shot.anchor === 'base' ? new THREE.Vector3(frame.pos[0], BASE_ALT, frame.pos[2]) : this.player.pos.clone();
+    const origin = shot.anchor === 'base' ? new THREE.Vector3(frame.pos[0], this.world.baseAlt, frame.pos[2]) : this.player.pos.clone();
     const mk = (a, b) => new THREE.Vector3().fromArray(a).lerp(new THREE.Vector3().fromArray(b), ease).applyQuaternion(shot.anchor === 'base' ? R : this.player.quat).add(origin);
     o.pos = mk(shot.from.off, shot.to.off); o.look = mk(shot.from.look, shot.to.look);
   }
@@ -225,6 +300,7 @@ export class Game {
     this.handleGlobalInput(inp);
     if (this.cine?.def.interruptible && (inp.camera || inp.cameraDirect >= 0)) this.endCinematic();
     const locked = (this.state === 'intro') || this.state === 'dead' || (this.cine?.def.locked);
+    this.samLock = 0; this.updateTransition(dt);
     this.updatePlayer(dt, inp, locked);
     this.updateAI(dt);
     this.updateWrecks(dt);
@@ -265,6 +341,7 @@ export class Game {
     const assistBonus = d.assistBonus + (S.assistLevel - 0.5) * 0.4;
     f.update(dt, input, { mode: S.flightMode, autoLevel: S.autoLevel, groundY: gy, locked, autoTakeoff: this.state === 'takeoff' || this.state === 'intro', diff: { stallForgiveness: d.stallForgiveness, energyBleed: d.energyBleed, assistBonus } });
     if (f.agl > 8) p.airborne = true;
+    if (this.turbulence > 0 && p.airborne && !f.onGround) this.applyTurbulence(dt);
     p.speed = f.speed;
     // impact with terrain / sea
     if (p.airborne && f.agl < 1.2 && !f.onGround) { this.damage(p, 9999, null, 'ground'); }
@@ -310,14 +387,25 @@ export class Game {
     return 'F / RIGHT CLICK: FIRE MISSILE';
   }
 
+  /** Storm / mountain-wave buffeting: smooth noise on attitude and vertical speed plus an occasional hard gust. */
+  applyTurbulence(dt) {
+    const f = this.flight, k = this.turbulence, t = this.time;
+    const gx = noise2(t * 0.9, 3.1, 4) - 0.5, gy = noise2(t * 0.6, 9.7, 5) - 0.5, gz = noise2(t * 1.1, 5.3, 6) - 0.5;
+    this.gustT = (this.gustT ?? 6) - dt; let gust = 0; if (this.gustT <= 0) { this.gustT = rand(6, 12); this.gust = 1; } if (this.gust > 0) { gust = this.gust; this.gust = Math.max(0, this.gust - dt * 1.4); }
+    _q.setFromEuler(_eu.set(gx * dt * 0.7 * k + gust * dt * 0.5 * k, gy * dt * 0.25 * k, gz * dt * 1.3 * k + gust * dt * 1.2 * k * Math.sign(gx || 1)));
+    f.quat.multiply(_q).normalize(); f.vel.y += (gy * 22 * k + gust * 18 * k * Math.sign(gy || 1)) * dt;
+    this.camRig.addTrauma((0.012 + gust * 0.02) * k);
+  }
+
   updateAI(dt) {
-    const gw = this.wingman; this.wingmanFree = this.entities.some((e) => e.side === 'hostile' && e.identified && e.alive);
+    this.wingmanFree = this.entities.some((e) => e.side === 'hostile' && e.identified && e.alive);
     for (const e of [...this.entities]) {
       if (e.isPlayer || !e.alive) continue;
+      if (e.isGround) { e.unit.update(dt); e.model.root.position.copy(e.pos); e.model.root.quaternion.copy(e.quat); continue; }
       if (e.onGround) {
         if (this.player.speed > 15 || this.player.airborne || this.state === 'flight') {
           e.speed = Math.min(e.speed + 15 * dt, 90); e.dir.set(0, 0, -1).applyQuaternion(e.quat).setY(0).normalize(); e.pos.addScaledVector(e.dir, e.speed * dt); e.vel.copy(e.dir).multiplyScalar(e.speed);
-          e.pos.y = BASE_ALT + 2.2; if (e.speed > 80) { e.onGround = false; e.pos.y += 4; e.dir.y = 0.16; e.dir.normalize(); }
+          e.pos.y = this.world.baseAlt + 2.2; if (e.speed > 80) { e.onGround = false; e.pos.y += 4; e.dir.y = 0.16; e.dir.normalize(); }
         }
       } else e.pilot?.update(dt);
       // sync
@@ -331,6 +419,11 @@ export class Game {
   }
 
   updateWrecks(dt) {
+    for (let i = this.burners.length - 1; i >= 0; i--) {
+      const b = this.burners[i]; b.t += dt; if (b.t > 70) { this.burners.splice(i, 1); continue; }
+      if (Math.random() < 0.55) this.particles.smokePuff(_v.set(b.pos.x + rand(-b.size, b.size) * 0.4, b.pos.y, b.pos.z + rand(-b.size, b.size) * 0.4), _w.set(rand(-2, 2), 11 + rand(0, 5), rand(-2, 2)), b.size * (1 + b.t * 0.02), 6, 0.5 * (1 - b.t / 80));
+      if (b.t < 25 && Math.random() < 0.35) this.particles.fire(_v.set(b.pos.x + rand(-b.size, b.size) * 0.5, b.pos.y - 1, b.pos.z + rand(-b.size, b.size) * 0.5), _w.set(0, 7, 0), b.size * 0.9, 0.5);
+    }
     for (let i = this.wrecks.length - 1; i >= 0; i--) {
       const w = this.wrecks[i], e = w.e; w.t += dt;
       e.vel.y -= 9.81 * dt * 1.2; e.pos.addScaledVector(e.vel, dt); e.vel.multiplyScalar(Math.exp(-0.05 * dt));
@@ -424,6 +517,7 @@ export class Game {
     const p = this.player, f = this.flight, inc = this.weapons.incoming(p), threatDist = inc.length ? Math.min(...inc.map((m) => m.pos.distanceTo(p.pos))) : 1e9;
     const threat = inc.length ? clamp(1 - threatDist / 6500, 0.12, 1) * this.diffData.warning + (inc.length ? 0.1 : 0) : 0;
     let enemyLock = 0; for (const e of this.entities) if (e.alive && e.pilot && e.side === 'hostile' && e.state === 'ATTACK' && e.pos.distanceTo(p.pos) < 7000) enemyLock = Math.max(enemyLock, 0.6);
+    enemyLock = Math.max(enemyLock, this.samLock);
     this.audio.warnings(dt, { missile: clamp(threat, 0, 1), lock: enemyLock, pullup: this.pullUp, stall: f.stalled && !f.onGround && p.airborne });
     if (threat > 0.5) this.input.rumble(0.2 * threat, 0.5 * threat, 120);
     this.audio.setEngine(p.alive, f.throttle, f.speed);
@@ -448,7 +542,7 @@ export class Game {
     const hud = {
       player: this.player, flight: this.flight, camera: this.camera, radar: this.radar, weapons: this.weapons, director: this.director, diff: this.diffData, camMode: this.camRig.override ? 'cine' : this.camRig.mode,
       incoming: inc, missionTime: this.missionTime, missileStatus: this.missileHud, ammo: this.ammo, hpFrac: this.player.hp / this.player.maxHp, pullUp: this.pullUp, boundary: this.boundary,
-      idProgress: this.idProgress, waypoint: wp, mouseFlight: !!this.mouseFlight, mouseAim: this.mouseFlight && !this.cine ? this.mouseAimPx : null, fireHint: this.fireHint(), hudHidden: this.hudHidden || !!this.cine?.def.locked || this.state === 'dead'
+      idProgress: this.idProgress, waypoint: wp, mouseFlight: !!this.mouseFlight, mouseAim: this.mouseFlight && !this.cine ? this.mouseAimPx : null, fireHint: this.fireHint(), samLock: this.samLock, markers: this.director.markers(), recon: this.director.objectives.find((o) => o.live && o.state === 'active'), hudHidden: this.hudHidden || !!this.cine?.def.locked || this.state === 'dead'
     };
     document.body.classList.toggle('aim-mouse', !!this.mouseFlight && !this.paused && !this.ended);
     this.hud.update(dt, hud); this.lastHud = hud;

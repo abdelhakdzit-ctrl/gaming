@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { clamp, rand, DEG, smoothstep } from '../util/math.js';
 
-const G = 9.81, UPV = new THREE.Vector3(0, 1, 0);
+const G = 9.81, UPV = new THREE.Vector3(0, 1, 0), _e2 = new THREE.Euler();
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _m = new THREE.Matrix4();
 
 /** Shared kinematic flight for AI: turn-rate limited steering with the same energy rules as the player. */
@@ -53,7 +53,7 @@ export class Pilot {
       if (!c.alive) continue;
       const d = c.pos.distanceTo(e.pos); if (d > 16000) continue;
       let w = 1 / (d + 500);
-      if (e.side === 'hostile') { const isAsset = c.role === 'asset'; if (this.priority === 'asset' && isAsset) w *= 4; if (this.priority === 'player' && c.isPlayer) w *= 4; if (c.role === 'wingman') w *= 0.7; }
+      if (e.side === 'hostile') { const isAsset = !!c.asset; if (this.priority === 'asset' && isAsset) w *= 4; if (this.priority === 'player' && c.isPlayer) w *= 4; if (c.role === 'wingman') w *= 0.7; }
       if (w > bs) { bs = w; best = c; }
     }
     return best;
@@ -72,16 +72,19 @@ export class Pilot {
   }
 
   update(dt) {
-    const e = this.e, g = this.game; this.t += dt; this.timer += dt;
+    const e = this.e; this.t += dt; this.timer += dt;
     const role = e.role;
     if (role === 'asset') return this.updateAsset(dt);
+    if (role === 'courier') return this.updateCourier(dt);
+    if (role === 'heli') return this.updateHeli(dt);
     if (role === 'wingman') return this.updateWing(dt);
     return this.updateHostile(dt);
   }
 
-  followRoute(dt, speed) {
-    if (!this.route.length) { _c.copy(this.e.dir).multiplyScalar(5000).add(this.e.pos); return this.steerTo(dt, _c, speed); }
-    const p = this.route[this.wp]; if (p.distanceTo(this.e.pos) < 900) this.wp = (this.wp + 1) % this.route.length;
+  followRoute(dt, speed, loop = false) {
+    const e = this.e;
+    if (!this.route.length || this.routeDone) { _c.copy(e.dir).multiplyScalar(8000).add(e.pos); return this.steerTo(dt, _c, speed); }
+    if (this.route[this.wp].distanceTo(e.pos) < (this.cfg.reach || 900)) { if (this.wp < this.route.length - 1) this.wp++; else if (loop) this.wp = 0; else this.routeDone = true; }
     this.steerTo(dt, this.route[this.wp], speed, 0.8);
   }
 
@@ -89,7 +92,41 @@ export class Pilot {
     const e = this.e, inc = this.game.weapons.incoming(e);
     this.flareCd -= dt;
     if (inc.length && this.flareCd <= 0) { this.game.weapons.dropFlares(e, 2); this.flareCd = 1.2; }
-    this.followRoute(dt, e.def.cruise);
+    this.followRoute(dt, this.cfg.cruise || e.def.cruise, this.cfg.loop);
+  }
+
+  /** Courier: runs its route at full throttle, jinks and flares when a missile is inbound, and escapes at the end of the route. */
+  updateCourier(dt) {
+    const e = this.e, g = this.game, w = g.weapons; this.flareCd -= dt;
+    const inc = w.incoming(e).filter((m) => m.pos.distanceTo(e.pos) < 6000);
+    if (inc.length && this.flareCd <= 0) { w.dropFlares(e, 2); this.flareCd = 1.0; this.jinkT = 2.4; this.jinkDir = Math.random() < 0.5 ? -1 : 1; }
+    const speed = e.def.maxSpeed * (this.cfg.throttle || 0.97);
+    if (this.jinkT > 0) { this.jinkT -= dt; _b.copy(e.dir).applyAxisAngle(UPV, this.jinkDir * 0.9).add(_c.set(0, -0.15, 0)).normalize(); steer(e, dt, _b, speed, 1.2); }
+    else this.followRoute(dt, speed);
+    if (this.routeDone && g.player.pos.distanceTo(e.pos) > 2500) { e.despawned = true; e.alive = false; g.onAIGone?.(e); }
+  }
+
+  /** Helicopter: kinematic flight along its route, hovers at waypoints listed in cfg.hover ({index: seconds}), waits for an order when cfg.hold. */
+  updateHeli(dt) {
+    const e = this.e, g = this.game, w = g.weapons; this.flareCd -= dt;
+    if (w.incoming(e).length && this.flareCd <= 0) { w.dropFlares(e, 2); this.flareCd = 1.0; }
+    const moving = (spd) => { e.speed += (spd - e.speed) * Math.min(1, dt * 0.8); };
+    if (this.cfg.hold && !this.go) { this.set('IDLE'); moving(0); e.vel.set(0, 0, 0); return; }
+    const hov = this.cfg.hover || {};
+    if (this.hoverT > 0) { this.hoverT -= dt; this.set('HOVER'); moving(0); e.vel.set(0, 0, 0); if (this.hoverT <= 0) { this.hoverDone = this.hoverDone || new Set(); this.hoverDone.add(this.wp); this.wp = Math.min(this.wp + 1, this.route.length - 1); this.set('ROUTE'); } return; }
+    if (!this.route.length || this.routeDone) { moving(0); e.vel.set(0, 0, 0); return; }
+    const tgt = this.route[this.wp]; _c.copy(tgt).sub(e.pos); const horiz = Math.hypot(_c.x, _c.z);
+    if (horiz < 140) {
+      if (hov[this.wp] && !(this.hoverDone && this.hoverDone.has(this.wp))) { this.hoverT = hov[this.wp]; return; }
+      if (this.wp < this.route.length - 1) this.wp++; else this.routeDone = true; return;
+    }
+    this.set('ROUTE'); moving(Math.min(this.cfg.cruise || e.def.cruise, 20 + horiz * 0.25));
+    _b.set(_c.x, 0, _c.z).normalize(); e.dir.copy(_b);
+    e.vel.copy(_b).multiplyScalar(e.speed); e.pos.addScaledVector(e.vel, dt);
+    // terrain following with look-ahead; route y is only a floor
+    const ahead = Math.max(g.groundY(e.pos.x, e.pos.z), g.groundY(e.pos.x + _b.x * 500, e.pos.z + _b.z * 500), g.groundY(e.pos.x + _b.x * 1000, e.pos.z + _b.z * 1000));
+    const wantY = Math.max(tgt.y, ahead + 130), dy = Math.max(-25 * dt, Math.min(45 * dt, wantY - e.pos.y)); e.pos.y += dy; e.vel.y = dy / Math.max(dt, 1e-3);
+    e.quat.setFromEuler(_e2.set(-0.12 * Math.min(1, e.speed / 60), Math.atan2(-_b.x, -_b.z), 0, 'YXZ'));
   }
 
   updateWing(dt) {
@@ -128,17 +165,17 @@ export class Pilot {
     const aa = tgt ? ang(tgt.forward(_b), toT.clone().negate()) : 0;       // small = I'm behind the target
     const inc = w.incoming(e).filter((m) => m.pos.distanceTo(e.pos) < 5500);
     const energy = e.speed / d.maxSpeed;
-    const frac = e.hp / e.maxHp, leave = d.disengageHp !== undefined ? frac < d.disengageHp : frac < 0.35 * (1 - tr.risk);
+    const frac = e.hp / e.maxHp, leave = !this.cfg.stand && (d.disengageHp !== undefined ? frac < d.disengageHp : frac < 0.35 * (1 - tr.risk));
     const detect = 14000 * tr.awareness * (tgt && ata > 100 * DEG ? 0.55 : 1);
 
     // global interrupts
     if (this.state !== 'DISENGAGE' && this.state !== 'EVADE' && inc.length) { this.evadeSeen += dt; if (this.evadeSeen > tr.reaction * 0.8) this.set('EVADE'); } else if (!inc.length) this.evadeSeen = 0;
     if (this.state !== 'DISENGAGE' && (leave || (d.role === 'recon' && tgt && (tgt.isPlayer && (dist < 3200 || p.hunted) )) || (d.role === 'recon' && frac < 0.7))) this.set('DISENGAGE');
 
-    const spdCruise = d.cruise;
+    const spdCruise = this.cfg.cruise || d.cruise;
     switch (this.state) {
       case 'PATROL': {
-        this.followRoute(dt, spdCruise);
+        this.followRoute(dt, spdCruise, true);
         if (tgt && (dist < detect || this.alert > 0) && this.timer > 1) { this.set('DETECT'); }
         break;
       }

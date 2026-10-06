@@ -53,7 +53,7 @@ export class Briefing {
     requestAnimationFrame(step);
   }
   script() {
-    const { b, origin, m } = this, R = REGIONS[this.region];
+    const { b, m } = this, R = REGIONS[this.region];
     this.at(600, () => { this.stage.querySelector('.country').style.opacity = 1; this.say('ALGERIA — NATIONAL AIRSPACE'); this.root.querySelector('.stamp').style.display = 'block'; this.audio?.play('stamp'); });
     this.at(1500, () => { this.svg.querySelector(`.region[data-region=${this.region}]`)?.classList.add('hot'); this.svg.querySelectorAll('.map-label').forEach((l) => { if (l.textContent === R.name) l.classList.add('hot'); }); this.say(`REGION: ${m.region}`); this.line(0); });
     this.at(2400, () => { this.line(1); this.line(5); });
@@ -94,7 +94,7 @@ export class Briefing {
     };
     draw();
   }
-  svgScale() { const vb = this.svg.getAttribute('viewBox').split(' ').map(Number); return Math.max(0.4, vb[2] / 900) * 1.3; }
+  svgScale() { const vb = this.svg.getAttribute('viewBox').split(' ').map(Number); return Math.min(1.2, Math.max(0.05, (vb[2] / 900) * 0.5)); }
   finish() { if (this.done) return; this.done = true; this.timers.forEach(clearTimeout); cancelAnimationFrame(this.raf); this.onDone?.(); }
   dispose() { this.done = true; this.timers.forEach(clearTimeout); cancelAnimationFrame(this.raf); }
 }

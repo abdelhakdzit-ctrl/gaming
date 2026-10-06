@@ -2,7 +2,7 @@
 
 *"When the radar lies, the pilot must decide."*
 
-A browser-based 3D air-combat vertical slice (Three.js + Vite, ES modules, no framework).
+A browser-based 3D air-combat campaign (Three.js + Vite, ES modules, no framework): **15 playable missions** from *First Contact* to the finale *Shadow Line*, with epilogue and credits.
 Fictional story, factions and aircraft; Algeria-inspired geography only.
 
 ## Run
@@ -10,61 +10,74 @@ Fictional story, factions and aircraft; Algeria-inspired geography only.
 ```bash
 npm install
 npm run dev        # http://localhost:5173  (must be served over HTTP, not file://)
-npm run build      # production bundle in dist/
-npm run validate   # cross-checks data/*.json (dialogue ids, targets, zones, enemy types)
+npm run check      # validate data + lint + production build
+npm run sim        # headless regression: drives all 15 missions end to end (dev server running; set CHROME_PATH)
 ```
+
+(Windows PowerShell 5: run `npm install` and `npm run dev` as two separate commands — `&&` is not supported.)
 
 Dev shortcut: `http://localhost:5173/?quick=1` skips the menus and starts Mission 01.
 
-## Playable loop (all functional)
+## The campaign
 
-Title → Main menu → Campaign / Mission select (animated Algeria map: zoom, pan, markers, medals) → Intelligence dossier →
-animated Tactical Briefing (SVG + canvas + CSS, ends by diving into the 3D hangar) → Aircraft/Loadout (variant, paint, weapons, difficulty) →
-Airbase → Cockpit → Takeoff → Mission 01 *First Contact* (radar uncertainty, visual ID, dogfight, Grey) → Mission result → animated Debrief
-(score, grade, XP/rank, unlocks, medals, auto-save) → next mission / retry / replay.
-Also: Free Flight (region, aircraft, time, weather, difficulty, targets), 8 Challenges, Replay viewer, Settings, Extras, Pause.
+| # | Mission | Type | Setting |
+|---|---------|------|---------|
+| 01 | First Contact | Intercept, visual ID | Coast, night, scramble from the runway |
+| 02 | Guardian | Escort | Mediterranean, day |
+| 03 | Red Vector | Dogfight | Coast, sunset |
+| 04 | Eagle Eye | Recon (image 3 sites, SAM cover) | Atlas, fog, turbulence |
+| 05 | Dust Route | Air support (protect a truck convoy) | High plateaus, dust |
+| 06 | Broken Wing | Rescue (SAM suppression, helicopter pickup) | Atlas, gusts |
+| 07 | No Signal | Navigation under total jamming | Sahara |
+| 08 | Black Sand | Ground strike (SAMs, mast, fuel depot) | Deep Sahara, sunset |
+| 09 | Mirage | High-speed pursuit (courier jet, Grey) | Southern rocks |
+| 10 | Night Watch | Night base defence, scramble | Sahara base, night |
+| 11 | Storm Line | Weather combat (protect the dam) | Atlas storm, heavy turbulence |
+| 12 | Blind Sky | Radar blackout — fly by eye, bearing calls | Coast, dawn |
+| 13 | False Flag | Identify & escort; the IFF lies both ways | Mediterranean, night |
+| 14 | Grey | Ace duel across **three regions** | Coast → Atlas → Southern rocks |
+| 15 | Shadow Line | Finale across **two regions**: destroy the command node, then stop the trigger flight | Sahara night → Coast dawn |
+
+Flow: title → menu → animated Algeria map → intelligence → animated tactical briefing → loadout → mission → debrief (score, grade, XP/rank, unlocks, medals, autosave) → next mission. After Mission 15: epilogue slides (EN/FR/AR), credits and campaign statistics; unlocks the *Shadow Line* paint and *Crimson* HUD theme.
+Also: Free Flight, 8 Challenges, Replay viewer (multi-region aware), Settings, Extras, Pause.
 
 ### Controls
-`W/↑` nose up · `S/↓` nose down · mouse = aim cursor (up = nose up) · `A/D` roll · `Q/E` yaw · `Shift/Ctrl` or wheel throttle · `Space`/click cannon ·
-`T` select/cycle radar target (keep it in the radar cone to **LOCK**) · `I` hold to **identify** · `F`/right-click missile · `X` flares · `B` airbrake ·
-`C` or `1-8` cameras · `M` mouse flight · `H` HUD · `Esc`/`P` pause. Gamepad is supported (see Extras → Controls).
+`W/↑` nose up · `S/↓` nose down · `A/D` roll · `Q/E` yaw · `Shift/Ctrl` or wheel throttle · mouse = aim cursor (cursor up = nose up) ·
+`Space`/click cannon · `T` select/cycle target (keep it in the radar cone to **LOCK**) · `I` (hold) identify · `F`/right-click missile · `X` flares · `B` airbrake ·
+`C` or `1-8` cameras · `M` mouse flight · `H` HUD · `Esc`/`P` pause. Gamepad supported (Extras → Controls).
 
-Rules of engagement: a missile can only be launched at a **locked, identified hostile**. Radar classification is deliberately unreliable
-(flicker/ghosting during disruption) until you identify a contact — in Mission 01 one of the "hostile" tracks is a friendly medical transport.
+Rules of engagement: a missile can only be launched at a **locked, identified hostile**. Radar classification is deliberately unreliable (flicker, ghosting, forged IFF) until you identify a contact. With the radar jammed or dead (missions 07, 12) only eyeball/heat-seeker lock works and Overwatch calls bandits by bearing.
 
 ## Architecture
 
 ```
 index.html, styles/main.css
-src/main.js            App: screens, game session lifecycle, save/debrief, replay viewer, frame loop
-src/game.js            Mission session (scene, entities, input→flight, weapons, cinematics, HUD data)
-src/renderer.js        WebGL2 renderer, quality presets, dynamic resolution
+src/main.js            App: screens, session lifecycle, save/debrief/ending, replay viewer, frame loop
+src/game.js            Mission session (scene, entities, input→flight, weapons, phases, cinematics, HUD data)
 src/physics/           SIMCADE flight model (energy/lift/stall/AoA/G, ASSISTED/NORMAL/EXPERT)
-src/aircraft/          Procedural jet/scout/transport models with named parts (GLB hook), Entity
-src/weapons/           Cannon, missiles (guidance, seeker, flare seduction, proximity fuse), flares, pooled particles
-src/ai/                Pilot state machine PATROL→DETECT→IDENTIFY→INTERCEPT→ATTACK→EVADE→REPOSITION→REGROUP→DISENGAGE
-src/radar/             Range/cone/noise/dropout/disruption, classification uncertainty, lock
-src/missions/          Director (objectives + scripted events from JSON), scoring
-src/world/             Biomes (coast, atlas, plateaus, sahara, southern rocks), terrain LOD, sky/weather/time, airbase, hangar
-src/camera/            8 camera modes with blended transitions, shake, scripted overrides
-src/ui/                HUD (flight/targeting/radar canvases + DOM layers), screens, comms (subtitles EN/FR/AR), motion portraits
-src/briefing/          Algeria SVG map + animated briefing
-src/audio/             WebAudio synth: 8 buses, radio filtering, state-driven music (IDLE→BUILDUP→COMBAT→DANGER→RESOLUTION)
-src/save/, settings/   localStorage persistence + accessibility settings
-src/replay/            Recorder + viewer
-data/                  missions.json (15), aircraft.json, enemies.json, dialogue.json, difficulty.json, progression.json, challenges.json
-assets/                Placeholder folders for GLB / PNG / audio replacements
+src/aircraft/          Procedural models: lofted jet fuselage, helicopter, airliner, ground installations; Entity
+src/weapons/           Cannon, missiles (guidance, seeker, flare seduction, fuse), flares, pooled particles
+src/ai/                Pilot state machine (+ courier, helicopter, asset roles) and GroundUnit (SAM sites, convoy trucks)
+src/radar/             Range/cone/noise/dropout/disruption, forged IFF, eyeball detection, lock
+src/missions/          registry (loads data/missions/*.json), Director (objectives + scripted events), scoring
+src/world/             Biomes (coast, atlas, plateaus, sahara, southern), terrain, sky/weather/time, airbase, hangar
+src/camera/ src/ui/    8 camera modes; HUD (flight/targeting/radar/markers), screens, comms (EN/FR/AR), portraits
+src/briefing/          Algeria SVG map + animated briefing (auto-derived from mission data)
+src/audio/ save/ settings/ replay/
+data/missions/*.json   One file per mission: spawn, zones, waypoints, groups+routes, objectives, events, cinematics, radio lines
+data/                  aircraft, enemies (incl. ground units), dialogue (characters + shared lines), difficulty, progression, challenges
+scripts/validate-data.mjs   Cross-checks every reference in the JSON content
 ```
 
-Everything mission-specific lives in `data/missions.json` (spawn, zones, waypoints, enemy groups + routes, objectives, radio/radar/spawn/cinematic
-events, rewards, briefing map data). Adding a mission means adding data; the renderer and Game contain no Mission 01 logic.
-Missions 02–15 are fully defined as content skeletons but are flagged `playable: false` in this slice.
+### Data-driven missions
+Objective types: `reach_area` (sequence), `identify`, `destroy`, `protect`, `protect_group`, `entity_at`, `hold_area`, `recon_site`, `prevent_arrival`, `avoid_friendly_fire`, `survive`, `manual`, plus constraints (`max_damage`, `time_limit`, ...).
+Event conditions: `time`, `objective`, `range`, `identified`, `destroyed`, `all_destroyed`, `hp_below`, `in_area`, `entity_in_area`, `state`, `damaged`, `outside`, ...
+Event actions: `say`, `music`, `spawn` (incl. `near` the player), `order` (go/engage/flee/land/activate), `callout` (live bearing call), `radar`, `retag`, `reveal`, `travel` (change region mid-mission), `show`, `complete`, `fail`, `evidence`, `cinematic`, `repair`, `endMission`.
+Adding a mission means adding `data/missions/mNN.json` — the registry, map, briefing and scoring pick it up.
 
-## Notes / known limits
+## Quality checks
+`npm run check` validates the data, lints the source (0 warnings) and builds. All 15 missions are also driven end to end in headless Chromium by `npm run sim` (`scripts/sim-check.mjs`) (objective chains, phase changes, SAM fire, helicopter rescue, convoy, courier), and Mission 01 was flown by a scripted pilot. Not measured: real-GPU performance, gamepad feel, audio by ear.
 
-- Three.js `WebGLRenderer` (WebGL2) is used; WebGPU is not wired in this build.
-- All art/audio is procedural. Replace the aircraft with a GLB via `loadAircraftModel` (node names match the procedural parts),
-  portraits via `characters[x].image` in `data/dialogue.json`, audio by swapping the recipes in `src/audio/audio.js`.
-- Radio voice is optional browser TTS (Settings → Audio); lines are subtitled in English, French and Arabic (RTL).
-- Verified in headless Chromium (software GL) by driving the game through the full Mission 01 loop with a scripted pilot; real-GPU
-  performance and gamepad/pointer-lock feel have not been measured.
+## Known limits
+- WebGL2 renderer (WebGPU not wired). All art/audio are procedural placeholders; GLB/PNG/audio replacement hooks exist (`loadAircraftModel`, `characters[x].image`, `src/audio/audio.js`).
+- Radio voice is optional browser TTS; lines are always subtitled in English, French and Arabic (RTL).

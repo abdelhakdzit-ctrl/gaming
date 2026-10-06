@@ -1,5 +1,3 @@
-import { clamp } from '../util/math.js';
-
 // Procedural WebAudio engine with eight buses: engine, weapons, missiles, warning, radio, ambience, music, ui.
 // Everything is synthesised so the game ships without audio assets; drop files in assets/audio later and
 // replace the recipes in play() without touching gameplay code.

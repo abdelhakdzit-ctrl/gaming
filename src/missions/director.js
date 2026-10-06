@@ -1,9 +1,13 @@
-import { fmtTime } from '../util/math.js';
 
 /**
  * Data-driven mission runtime: objectives, scripted events (radio, spawns, radar disruption, cinematics)
  * and failure conditions. Knows nothing about rendering; talks to Game through the hooks it is given.
  */
+const PASSIVE = new Set(['manual', 'protect', 'protect_group', 'max_damage', 'max_missiles', 'avoid_friendly_fire', 'prevent_arrival', 'survive_entity', 'avoid_zone_fire', 'time_limit']);
+const CONSTRAINT = new Set(['avoid_friendly_fire', 'max_damage', 'max_missiles', 'survive_entity', 'avoid_zone_fire', 'time_limit']);
+const endBound = (o) => (o.type === 'protect' || o.type === 'protect_group') && o.params?.until === 'end';
+const clamp1 = (v) => Math.max(-1, Math.min(1, v));
+
 export class Director {
   constructor(mission, game) {
     this.m = mission; this.g = game; this.t = 0;
@@ -18,8 +22,22 @@ export class Director {
   }
   obj(id) { return this.objectives.find((o) => o.id === id); }
   get primaries() { return this.objectives.filter((o) => o.kind === 'primary'); }
-  currentObjective() { return this.primaries.find((o) => o.state === 'active' && o.type !== 'protect' && o.type !== 'max_damage' && o.type !== 'max_missiles') || this.primaries.find((o) => o.state === 'active'); }
+  currentObjective() { return this.primaries.find((o) => o.state === 'active' && !PASSIVE.has(o.type)) || this.primaries.find((o) => o.state === 'active'); }
 
+  targetPos(id) { const e = this.g.byId.get(id); if (e) return e.pos; const w = this.waypoint(id); return w ? { x: w.pos[0], y: w.pos[1], z: w.pos[2] } : null; }
+  /** World markers for the HUD: where to fly next, which ground targets to hit, who to protect. */
+  markers() {
+    const out = [], cur = this.currentObjective(), g = this.g; if (!cur) return out;
+    const P = cur.params || {}, wp = (id) => { const w = this.waypoint(id); return w && { pos: { x: w.pos[0], y: w.pos[1], z: w.pos[2] }, label: w.label }; };
+    const add = (pos, label, color) => out.push({ pos, label, color });
+    if (cur.type === 'reach_area') { const id = (P.waypoints || []).find((w) => !cur.hit.has(w)), w = id && wp(id); if (w) add(w.pos, w.label, '#ffcf3d'); }
+    else if (cur.type === 'hold_area' || cur.type === 'entity_at') { const w = wp(P.waypoint); if (w) add(w.pos, w.label, '#ffcf3d'); }
+    else if (cur.type === 'recon_site') { const t = this.targetPos(P.target); if (t) add(t, cur.label, '#ffcf3d'); }
+    else if (cur.type === 'destroy') for (const id of P.targets || []) { const e = g.byId.get(id); if (e && e.alive && e.isGround) add(e.pos, e.callsign, '#ff5348'); }
+    for (const o of this.objectives) if (o.state === 'active' && (o.type === 'protect' || o.type === 'entity_at') && o.params.target) { const e = g.byId.get(o.params.target); if (e && e.alive && !e.landed) add(e.pos, e.callsign || e.name, '#4cc9ff'); }
+    return out;
+  }
+  forceObjective(id, state) { const o = this.obj(id); if (o && o.state === 'active') { o.state = state; if (state === 'complete') this.g.onObjective?.(o); } }
   zone(id) { return (this.m.zones || []).find((z) => z.id === id); }
   waypoint(id) { return (this.m.waypoints || []).find((z) => z.id === id); }
   inside(p, z) { return Math.hypot(p.x - z.pos[0], (p.z - z.pos[2])) < z.radius; }
@@ -42,7 +60,10 @@ export class Director {
     const failed = this.primaries.find((o) => o.state === 'failed');
     if (failed) this.fail(failed.note || failed.label + ' FAILED');
     if (!p.alive && this.allPrimaryDoneAt === null) this.fail('AIRCRAFT DESTROYED');
-    this.allPrimaryDone = this.primaries.length > 0 && this.primaries.every((o) => o.state === 'complete');
+    // constraint objectives (no friendly fire, protect-until-end, ...) only matter by failing; they never block completion
+    const core = this.primaries.filter((o) => !CONSTRAINT.has(o.type) && !endBound(o)), bound = this.primaries.filter((o) => CONSTRAINT.has(o.type) || endBound(o));
+    this.allPrimaryDone = this.primaries.length > 0 && (core.length ? core.every((o) => o.state === 'complete') && bound.every((o) => o.state !== 'failed') : this.primaries.every((o) => o.state === 'complete'));
+    if (this.allPrimaryDone) for (const o of bound) if (o.state === 'active') o.state = 'complete';
     if (this.allPrimaryDone && this.allPrimaryDoneAt === null) {
       this.allPrimaryDoneAt = this.t;
       if (!this.hasEndAction) this.pending.push({ at: this.t + 3.5, act: { endMission: { result: 'complete' } } });
@@ -69,9 +90,43 @@ export class Director {
           const es = (P.targets || []).map((id) => g.byId.get(id)).filter(Boolean);
           const escaped = es.find((e) => e.despawned);
           if (escaped) { s = 'failed'; o.note = escaped.callsign + ' ESCAPED'; break; }
-          o.progress = es.filter((e) => !e.alive).length / Math.max(1, es.length);
-          if (es.length && es.every((e) => !e.alive)) s = 'complete'; break;
+          o.progress = es.filter((e) => !e.alive).length / Math.max(1, (P.targets || []).length);
+          if (es.length === (P.targets || []).length && es.every((e) => !e.alive)) s = 'complete'; break;
         }
+        case 'recon_site': {
+          const tp = this.targetPos(P.target); if (!tp) break;
+          const dx = tp.x - p.pos.x, dy = tp.y - p.pos.y, dz = tp.z - p.pos.z, dist = Math.hypot(dx, dy, dz), fw = g.flight.fwd;
+          const ang = Math.acos(clamp1((dx * fw.x + dy * fw.y + dz * fw.z) / Math.max(dist, 1)));
+          const ok = dist < (P.range || 2500) && ang < (P.cone || 55) * Math.PI / 180 && g.flight.agl < (P.maxAgl || 2500) && p.speed > 70 && g.state === 'flight';
+          o.live = ok; o.hold = ok ? (o.hold || 0) + dt : Math.max(0, (o.hold || 0) - dt * 0.6); o.progress = Math.min(1, o.hold / P.seconds);
+          if (o.hold >= P.seconds) s = 'complete'; break;
+        }
+        case 'hold_area': {
+          const z = this.waypoint(P.waypoint); if (!z) break;
+          const inside = Math.hypot(p.pos.x - z.pos[0], p.pos.z - z.pos[2]) < z.radius && (!P.requireAlive || g.byId.get(P.requireAlive)?.alive);
+          o.live = inside; o.hold = inside ? (o.hold || 0) + dt : o.hold || 0; o.progress = Math.min(1, o.hold / P.seconds); if (o.hold >= P.seconds) s = 'complete'; break;
+        }
+        case 'entity_at': {
+          const z = this.waypoint(P.waypoint); if (!z) break;
+          if (P.targets) {
+            const es = P.targets.map((id) => g.byId.get(id)).filter((e) => e && e.alive), need = P.min || 1;
+            const n = es.filter((e) => Math.hypot(e.pos.x - z.pos[0], e.pos.z - z.pos[2]) < z.radius).length; o.progress = Math.min(1, n / need); if (n >= need) s = 'complete'; break;
+          }
+          const e = g.byId.get(P.target); if (!e) break;
+          if (!e.alive) { s = 'failed'; o.note = e.name + ' WAS LOST'; break; }
+          if (Math.hypot(e.pos.x - z.pos[0], e.pos.z - z.pos[2]) < z.radius) s = 'complete'; break;
+        }
+        case 'prevent_arrival': {
+          const e = g.byId.get(P.target), z = this.waypoint(P.waypoint); if (!e || !z) break;
+          if (e.alive && Math.hypot(e.pos.x - z.pos[0], e.pos.z - z.pos[2]) < z.radius) { s = 'failed'; o.note = P.message || 'TARGET REACHED THE LINE'; }
+          else if (!e.alive || e.despawned) s = 'complete'; break;
+        }
+        case 'protect_group': {
+          const es = (P.targets || []).map((id) => g.byId.get(id)).filter(Boolean), alive = es.filter((e) => e.alive).length;
+          o.progress = alive / Math.max(1, (P.targets || []).length);
+          if (alive < (P.min || 1)) { s = 'failed'; o.note = 'ESCORT LOST'; } else if (P.until && P.until !== 'end' && this.obj(P.until)?.state === 'complete') s = 'complete'; break;
+        }
+        case 'avoid_friendly_fire': if (g.friendlyFire) { s = 'failed'; o.note = 'FRIENDLY FIRE — ROE VIOLATION'; } break;
         case 'survive_entity': { const e = g.byId.get(P.target); if (e && !e.alive) s = 'failed'; break; }
         case 'avoid_zone_fire': if (this.firedInZone && this.zoneOf(P.zone)) s = 'failed'; break;
         case 'time_limit': if (this.t > P.seconds) s = 'failed'; break;
@@ -101,7 +156,7 @@ export class Director {
       if (result !== 'complete' && o.kind === 'primary') { o.state = 'failed'; continue; }
       switch (o.type) {
         case 'survive_entity': o.state = g.byId.get(P.target)?.alive ? 'complete' : 'failed'; break;
-        case 'avoid_zone_fire': case 'max_damage': case 'max_missiles': case 'time_limit': case 'protect': o.state = 'complete'; break;
+        case 'avoid_zone_fire': case 'max_damage': case 'max_missiles': case 'time_limit': case 'protect': case 'protect_group': case 'avoid_friendly_fire': case 'prevent_arrival': o.state = 'complete'; break;
         case 'accuracy': o.state = g.accuracy() >= P.min ? 'complete' : 'failed'; break;
         case 'formation': o.state = o.progress >= P.ratio ? 'complete' : 'failed'; break;
         default: o.state = result === 'complete' && o.kind === 'primary' ? 'complete' : 'failed';
@@ -125,6 +180,10 @@ export class Director {
       case 'fired_in_zone': return this.firedInZone && this.zoneOf(w.zone);
       case 'roe_violation': return this.roeViolation;
       case 'flag': return this.flags.has(w.name);
+      case 'all_destroyed': return (w.ids || []).length > 0 && w.ids.every((id) => { const x = e(id); return !!x && !x.alive; });
+      case 'hp_below': { const x = e(w.id); return !!x && x.alive && x.hp / x.maxHp < w.frac; }
+      case 'in_area': { const z = this.waypoint(w.waypoint); return !!z && this.inside(g.player.pos, z); }
+      case 'entity_in_area': { const x = e(w.id), z = this.waypoint(w.waypoint); return !!x && !!z && x.alive && this.inside(x.pos, z); }
       default: return false;
     }
   }
@@ -146,6 +205,19 @@ export class Director {
     else if (a.cinematic) g.playCinematic(a.cinematic, a.args || {});
     else if (a.evidence) g.showEvidence(a.evidence);
     else if (a.flag) this.flags.add(a.flag);
+    else if (a.travel) g.travel(a.travel);
+    else if (a.callout) g.callout(a.callout);
+    else if (a.radar) g.setRadar(a.radar);
+    else if (a.order) g.order(a.order.id, a.order.order, a.order);
+    else if (a.reveal) for (const id of a.reveal) { const x = g.byId.get(id); if (x) g.identify(x); }
+    else if (a.retag) { const x = g.byId.get(a.retag.id); if (x) x.iffShown = a.retag.iff; }
+    else if (a.complete) this.forceObjective(a.complete, 'complete');
+    else if (a.fail) this.forceObjective(a.fail, 'failed');
+    else if (a.show) { const o = this.obj(a.show); if (o) o.hidden = false; }
+    else if (a.kill) { const x = g.byId.get(a.kill); if (x && x.alive) g.damage(x, 99999, g.byId.get(a.by) || null, 'script'); }
+    else if (a.card) g.titleCard(a.card);
+    else if (a.repair) g.repair(a.repair);
+    else if (a.env) g.setEnv(a.env);
     else if (a.endMission) this.end(a.endMission.result || 'complete');
   }
 

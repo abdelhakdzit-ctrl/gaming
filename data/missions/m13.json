@@ -1,0 +1,779 @@
+{
+ "id": "m13",
+ "number": 13,
+ "title": "FALSE FLAG",
+ "titleFr": "FAUX DRAPEAU",
+ "titleAr": "العلم الكاذب",
+ "type": "IDENTIFY & ESCORT",
+ "playable": true,
+ "requires": "m12",
+ "region": "MEDITERRANEAN",
+ "regionAr": "البحر المتوسط",
+ "map": {
+  "lon": 1,
+  "lat": 37.2
+ },
+ "threat": "EXTREME",
+ "threatLevel": 5,
+ "weatherLabel": "CLOUDY / MODERATE",
+ "clock": "23:15",
+ "env": {
+  "biome": "coast",
+  "time": "night",
+  "weather": "cloudy"
+ },
+ "narrative": "Civil flight Sahel 211 crosses the Mediterranean at night with two neutral escorts. The Central Picture tags the escorts hostile and the real attackers friendly. Identify every contact with your own eyes. Fire on nothing you have not seen.",
+ "intel": [
+  {
+   "label": "PICTURE",
+   "text": "Central Picture: tracks U-4 and U-5 hostile (weapons free), U-2 and U-3 friendly. Unverified.",
+   "confidence": "LOW"
+  },
+  {
+   "label": "TRUTH",
+   "text": "IFF is forged in both directions. Visual identification at 7 km or less, or from close range by eye.",
+   "confidence": "MEDIUM"
+  },
+  {
+   "label": "ROE",
+   "text": "Any shot at a friendly ends the mission.",
+   "confidence": "HIGH"
+  }
+ ],
+ "base": null,
+ "spawn": {
+  "onRunway": false,
+  "heading": 0,
+  "speed": 230,
+  "pos": [
+   0,
+   3000,
+   0
+  ]
+ },
+ "wingman": {
+  "enabled": true,
+  "callsign": "Falcon TWO"
+ },
+ "noWingman": false,
+ "zones": [
+  {
+   "id": "boundary",
+   "type": "boundary",
+   "pos": [
+    0,
+    0,
+    -12000
+   ],
+   "radius": 36000,
+   "label": "OPERATIONS AREA"
+  }
+ ],
+ "waypoints": [
+  {
+   "id": "dest",
+   "pos": [
+    0,
+    3000,
+    -40500
+   ],
+   "radius": 3500,
+   "label": "SAHEL 211 DESTINATION"
+  }
+ ],
+ "groups": [
+  {
+   "id": "sahel",
+   "type": "airliner",
+   "side": "friendly",
+   "name": "SAHEL 211",
+   "callsign": "SAHEL 211",
+   "spawn": "start",
+   "pos": [
+    0,
+    3000,
+    -3500
+   ],
+   "heading": 0,
+   "speed": 140,
+   "route": [
+    [
+     0,
+     3000,
+     -22000
+    ],
+    [
+     0,
+     3000,
+     -42000
+    ]
+   ],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "esc1",
+   "type": "escort",
+   "side": "friendly",
+   "name": "ESCORT U-4",
+   "callsign": "U-4",
+   "spawn": "start",
+   "pos": [
+    -700,
+    3050,
+    -3000
+   ],
+   "heading": 0,
+   "speed": 140,
+   "route": [
+    [
+     -700,
+     3000,
+     -22000
+    ],
+    [
+     -700,
+     3000,
+     -42000
+    ]
+   ],
+   "iffShown": "hostile"
+  },
+  {
+   "id": "esc2",
+   "type": "escort",
+   "side": "friendly",
+   "name": "ESCORT U-5",
+   "callsign": "U-5",
+   "spawn": "start",
+   "pos": [
+    700,
+    3050,
+    -3000
+   ],
+   "heading": 0,
+   "speed": 140,
+   "route": [
+    [
+     700,
+     3000,
+     -22000
+    ],
+    [
+     700,
+     3000,
+     -42000
+    ]
+   ],
+   "iffShown": "hostile"
+  },
+  {
+   "id": "v1",
+   "type": "fighter",
+   "side": "hostile",
+   "name": "U-2",
+   "callsign": "U-2",
+   "spawn": "start",
+   "pos": [
+    5200,
+    3300,
+    -1500
+   ],
+   "heading": 0,
+   "speed": 142,
+   "route": [
+    [
+     3500,
+     3100,
+     -22000
+    ],
+    [
+     1500,
+     3050,
+     -40000
+    ]
+   ],
+   "iffShown": "friendly",
+   "targetPriority": "asset",
+   "missileOnAsset": true,
+   "cruise": 142,
+   "engageWhenPlayerWithin": 1
+  },
+  {
+   "id": "v2",
+   "type": "fighter",
+   "side": "hostile",
+   "name": "U-3",
+   "callsign": "U-3",
+   "spawn": "start",
+   "pos": [
+    5900,
+    3350,
+    -2200
+   ],
+   "heading": 0,
+   "speed": 142,
+   "route": [
+    [
+     4200,
+     3100,
+     -22000
+    ],
+    [
+     1800,
+     3050,
+     -40000
+    ]
+   ],
+   "iffShown": "friendly",
+   "targetPriority": "asset",
+   "missileOnAsset": true,
+   "cruise": 142,
+   "engageWhenPlayerWithin": 1
+  }
+ ],
+ "objectives": {
+  "primary": [
+   {
+    "id": "idall",
+    "type": "identify",
+    "label": "IDENTIFY ALL FOUR CONTACTS",
+    "params": {
+     "targets": [
+      "esc1",
+      "esc2",
+      "v1",
+      "v2"
+     ]
+    }
+   },
+   {
+    "id": "noff",
+    "type": "avoid_friendly_fire",
+    "label": "DO NOT FIRE ON FRIENDLIES",
+    "params": {}
+   },
+   {
+    "id": "guard",
+    "type": "protect",
+    "label": "PROTECT SAHEL 211",
+    "params": {
+     "target": "sahel",
+     "until": "arrive"
+    }
+   },
+   {
+    "id": "arrive",
+    "type": "entity_at",
+    "label": "SEE SAHEL 211 TO ITS DESTINATION",
+    "params": {
+     "target": "sahel",
+     "waypoint": "dest"
+    }
+   },
+   {
+    "id": "clear",
+    "type": "destroy",
+    "label": "DESTROY THE CONFIRMED HOSTILES",
+    "params": {
+     "targets": [
+      "v1",
+      "v2"
+     ]
+    }
+   }
+  ],
+  "secondary": [
+   {
+    "id": "wingman",
+    "type": "survive_entity",
+    "label": "MAINTAIN WINGMAN SURVIVAL",
+    "params": {
+     "target": "wingman"
+    }
+   },
+   {
+    "id": "time",
+    "type": "time_limit",
+    "label": "COMPLETE WITHIN 9:00",
+    "params": {
+     "seconds": 540
+    }
+   }
+  ],
+  "optional": [
+   {
+    "id": "nodamage",
+    "type": "max_damage",
+    "label": "TAKE NO DAMAGE",
+    "params": {
+     "max": 0
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "when": {
+    "type": "time",
+    "t": 2
+   },
+   "do": [
+    {
+     "say": "falsebannerflag_1"
+    },
+    {
+     "say": "falsebannerflag_2",
+     "delay": 0.5
+    },
+    {
+     "say": "falsebannerflag_3",
+     "delay": 1
+    },
+    {
+     "say": "falsebannerflag_4",
+     "delay": 1
+    },
+    {
+     "music": "BUILDUP"
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "when": {
+    "type": "objective",
+    "id": "idall"
+   },
+   "do": [
+    {
+     "say": "falsebannerflag_5",
+     "delay": 1
+    },
+    {
+     "retag": {
+      "id": "v1",
+      "iff": "hostile"
+     }
+    },
+    {
+     "retag": {
+      "id": "v2",
+      "iff": "hostile"
+     }
+    },
+    {
+     "retag": {
+      "id": "esc1",
+      "iff": "friendly"
+     }
+    },
+    {
+     "retag": {
+      "id": "esc2",
+      "iff": "friendly"
+     }
+    },
+    {
+     "order": {
+      "id": "v1",
+      "order": "engage"
+     },
+     "delay": 5
+    },
+    {
+     "order": {
+      "id": "v2",
+      "order": "engage"
+     },
+     "delay": 5
+    },
+    {
+     "music": "COMBAT",
+     "delay": 5
+    },
+    {
+     "say": "falsebannerflag_6",
+     "delay": 6
+    },
+    {
+     "say": "falsebannerflag_7",
+     "delay": 7
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "when": {
+    "type": "time",
+    "t": 210
+   },
+   "do": [
+    {
+     "order": {
+      "id": "v1",
+      "order": "engage"
+     }
+    },
+    {
+     "order": {
+      "id": "v2",
+      "order": "engage"
+     }
+    },
+    {
+     "music": "COMBAT"
+    }
+   ]
+  },
+  {
+   "id": "e4",
+   "when": {
+    "type": "destroyed",
+    "id": "v1"
+   },
+   "do": [
+    {
+     "say": "falsebannerflag_8"
+    }
+   ]
+  },
+  {
+   "id": "e5",
+   "when": {
+    "type": "objective",
+    "id": "arrive"
+   },
+   "do": [
+    {
+     "order": {
+      "id": "sahel",
+      "order": "land"
+     }
+    },
+    {
+     "music": "RESOLUTION"
+    },
+    {
+     "say": "falsebannerflag_9",
+     "delay": 1
+    },
+    {
+     "say": "falsebannerflag_10",
+     "delay": 1
+    },
+    {
+     "evidence": {
+      "title": "IFF OVERRIDE — SEQUENCE 7-1-3",
+      "lines": [
+       "KEY ROTATION EXPOSED: EVERY 4 HOURS",
+       "FORGED TAGS ISSUED FROM BA-07 OPERATIONS NET",
+       "TRIGGER PLAN: \"SHADOW LINE\" — DAWN, COAST",
+       "ESCORTS U-4/U-5 CONFIRMED NEUTRAL"
+      ]
+     },
+     "delay": 3
+    }
+   ]
+  },
+  {
+   "id": "c_missile",
+   "when": {
+    "type": "incoming_missile"
+   },
+   "cooldown": 25,
+   "do": [
+    {
+     "say": "m01_missile_warning"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_hit",
+   "when": {
+    "type": "damaged",
+    "id": "wingman"
+   },
+   "cooldown": 30,
+   "do": [
+    {
+     "say": "m01_wing_hit"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_down",
+   "when": {
+    "type": "destroyed",
+    "id": "wingman"
+   },
+   "do": [
+    {
+     "say": "m01_wing_down"
+    }
+   ]
+  },
+  {
+   "id": "c_leave",
+   "when": {
+    "type": "outside",
+    "zone": "boundary"
+   },
+   "cooldown": 20,
+   "do": [
+    {
+     "say": "m01_leave"
+    }
+   ]
+  },
+  {
+   "id": "c_roe",
+   "when": {
+    "type": "roe_violation"
+   },
+   "cooldown": 14,
+   "do": [
+    {
+     "say": "m01_roe"
+    }
+   ]
+  }
+ ],
+ "cinematics": {
+  "target_crash": {
+   "bars": false,
+   "interruptible": true,
+   "shots": [
+    {
+     "dur": 3.4,
+     "mode": "orbit",
+     "follow": "$entity",
+     "fov": 50,
+     "radius": 160
+    }
+   ]
+  }
+ },
+ "flags": {},
+ "reward": {
+  "xp": 1360,
+  "tokens": 5
+ },
+ "scoring": {
+  "parTime": 420
+ },
+ "lines": {
+  "falsebannerflag_1": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "Central Picture update: tracks U-4 and U-5, hostile, weapons free. U-2 and U-3 are friendly escorts.",
+    "fr": "Mise à jour de l'image centrale : pistes U-4 et U-5 hostiles, tir autorisé. U-2 et U-3 sont des escorteurs amis.",
+    "ar": "تحديث الصورة المركزية: المسارات U-4 وU-5 معادية، الإطلاق مسموح. U-2 وU-3 مرافقتان صديقتان."
+   }
+  },
+  "falsebannerflag_2": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "Two tags changed colour while I was looking at them. Overwatch — verify. I will not fire on a tag.",
+    "fr": "Deux tags ont changé de couleur pendant que je les regardais. Overwatch — vérifiez. Je ne tire pas sur un tag.",
+    "ar": "علامتان غيّرتا لونهما وأنا أنظر إليهما. المراقبة — تحققي. لن أطلق على علامة."
+   }
+  },
+  "falsebannerflag_3": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "firm",
+   "text": {
+    "en": "Command insists. You are cleared on U-4 and U-5, Falcon.",
+    "fr": "Le Commandement insiste. Vous êtes autorisé sur U-4 et U-5, Falcon.",
+    "ar": "القيادة تصرّ. مسموح لك على U-4 وU-5 يا فالكون."
+   }
+  },
+  "falsebannerflag_4": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Negative. Visual identification first. Closing now.",
+    "fr": "Négatif. Identification visuelle d'abord. Je m'approche.",
+    "ar": "سلبي. التعريف البصري أولًا. أقترب الآن."
+   }
+  },
+  "falsebannerflag_5": {
+   "speaker": "MOURAD",
+   "voice": null,
+   "emotion": "shaken",
+   "text": {
+    "en": "Salim... the IFF key rotates every four hours. Nadia, apply sequence seven-one-three. I should have told you two years ago.",
+    "fr": "Salim... la clé IFF tourne toutes les quatre heures. Nadia, appliquez la séquence sept-un-trois. J'aurais dû vous le dire il y a deux ans.",
+    "ar": "سليم... مفتاح التعريف يتبدّل كل أربع ساعات. ناديا، طبّقي التسلسل سبعة-واحد-ثلاثة. كان عليّ إخباركم قبل سنتين."
+   }
+  },
+  "falsebannerflag_6": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "Retagging — U-4 and U-5 friendly, U-2 and U-3 HOSTILE! They are turning on the airliner!",
+    "fr": "Reclassification — U-4 et U-5 amis, U-2 et U-3 HOSTILES ! Ils se tournent vers l'avion civil !",
+    "ar": "إعادة التصنيف — U-4 وU-5 صديقتان، U-2 وU-3 معاديتان! تلتفتان نحو الطائرة المدنية!"
+   }
+  },
+  "falsebannerflag_7": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "Flares, Sahel! Falcon Two on the left shooter — Salim, take the right!",
+    "fr": "Leurres, Sahel ! Falcon Deux sur le tireur de gauche — Salim, prends celui de droite !",
+    "ar": "مشاعل يا ساحل! فالكون اثنان على مطلق اليسار — سليم، خذ اليمين!"
+   }
+  },
+  "falsebannerflag_8": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "One shooter down. The other is still hunting the airliner!",
+    "fr": "Un tireur abattu. L'autre chasse encore l'avion civil !",
+    "ar": "سقط مطلق نار. الآخر ما زال يطارد الطائرة المدنية!"
+   }
+  },
+  "falsebannerflag_9": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Sahel two-eleven is clear. The picture has been rewritten — the whole grid was lying.",
+    "fr": "Sahel deux-onze est en sécurité. L'image est réécrite — toute la grille mentait.",
+    "ar": "ساحل 211 بأمان. أُعيدت كتابة الصورة — الشبكة كلها كانت تكذب."
+   }
+  },
+  "falsebannerflag_10": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "The network is called VESPER, and Shadow Line is real: the strike package launches at dawn on the coast.",
+    "fr": "Le réseau s'appelle VESPER, et Shadow Line est réel : le paquet de frappe décolle à l'aube sur la côte.",
+    "ar": "الشبكة اسمها فيسبر، وخط الظل حقيقي: رزمة الضربة تقلع عند الفجر على الساحل."
+   }
+  }
+ },
+ "briefing": {
+  "center": {
+   "lon": 1,
+   "lat": 37.4
+  },
+  "zoomKm": 90,
+  "playerPath": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    40.5
+   ]
+  ],
+  "enemyRoutes": [
+   {
+    "id": "U-2",
+    "label": "U-2",
+    "points": [
+     [
+      5.2,
+      1.5
+     ],
+     [
+      3.5,
+      22
+     ],
+     [
+      1.5,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "U-3",
+    "label": "U-3",
+    "points": [
+     [
+      5.9,
+      2.2
+     ],
+     [
+      4.2,
+      22
+     ],
+     [
+      1.8,
+      40
+     ]
+    ],
+    "unknown": true
+   }
+  ],
+  "threatZones": [
+   {
+    "pos": [
+     0,
+     40.5
+    ],
+    "r": 6,
+    "label": "SAHEL 211 DESTINATION"
+   }
+  ],
+  "radar": {
+   "pos": [
+    0,
+    0
+   ],
+   "r": 70
+  },
+  "friendly": [
+   {
+    "id": "f1",
+    "path": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      40.5
+     ]
+    ]
+   },
+   {
+    "id": "f2",
+    "path": [
+     [
+      -1,
+      -1
+     ],
+     [
+      -1,
+      39.5
+     ]
+    ]
+   }
+  ],
+  "objectives": [
+   {
+    "label": "SAHEL 211 DESTINATION",
+    "pos": [
+     0,
+     40.5
+    ]
+   }
+  ]
+ }
+}

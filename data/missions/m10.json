@@ -1,0 +1,782 @@
+{
+ "id": "m10",
+ "number": 10,
+ "title": "NIGHT WATCH",
+ "titleFr": "GARDE DE NUIT",
+ "titleAr": "مراقبة الليل",
+ "type": "NIGHT COMBAT",
+ "playable": true,
+ "requires": "m09",
+ "region": "SAHARA",
+ "regionAr": "الصحراء",
+ "map": {
+  "lon": -0.5,
+  "lat": 29.5
+ },
+ "threat": "HIGH",
+ "threatLevel": 4,
+ "weatherLabel": "CLEAR / CALM",
+ "clock": "01:50",
+ "env": {
+  "biome": "sahara",
+  "time": "night",
+  "weather": "clear"
+ },
+ "narrative": "Hassi Khalil is under night attack by six unlit raiders. Scramble from the runway, defend the radar site and the fuel depot, and learn to trust your instruments and flares in the dark.",
+ "intel": [
+  {
+   "label": "ATTACK",
+   "text": "Three raider waves from east, west and north, no navigation lights.",
+   "confidence": "MEDIUM"
+  },
+  {
+   "label": "PRIORITY",
+   "text": "Radar site first, fuel depot second. Both are the raiders' targets.",
+   "confidence": "HIGH"
+  },
+  {
+   "label": "TIP",
+   "text": "Flares illuminate attackers. Hold the base lights behind you.",
+   "confidence": "MEDIUM"
+  }
+ ],
+ "base": {
+  "name": "BA-12 HASSI KHALIL",
+  "pos": [
+   0,
+   0,
+   1500
+  ],
+  "heading": 0,
+  "runwayLength": 2400
+ },
+ "spawn": {
+  "onRunway": true,
+  "heading": 0,
+  "speed": 0,
+  "pos": [
+   0,
+   0,
+   2650
+  ]
+ },
+ "wingman": {
+  "enabled": true,
+  "callsign": "Falcon TWO"
+ },
+ "noWingman": false,
+ "zones": [
+  {
+   "id": "boundary",
+   "type": "boundary",
+   "pos": [
+    0,
+    0,
+    -12000
+   ],
+   "radius": 36000,
+   "label": "OPERATIONS AREA"
+  }
+ ],
+ "waypoints": [],
+ "groups": [
+  {
+   "id": "fuel",
+   "type": "depot",
+   "side": "friendly",
+   "name": "FUEL DEPOT",
+   "callsign": "FUEL DEPOT",
+   "spawn": "start",
+   "pos": [
+    -900,
+    0,
+    1700
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "radarb",
+   "type": "radar_site",
+   "side": "friendly",
+   "name": "RADAR SITE",
+   "callsign": "RADAR SITE",
+   "spawn": "start",
+   "pos": [
+    1000,
+    0,
+    1000
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "r1",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-1",
+   "callsign": "RAIDER-1",
+   "spawn": "event",
+   "pos": [
+    14000,
+    2500,
+    -12000
+   ],
+   "heading": 215,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "targetPriority": "asset"
+  },
+  {
+   "id": "r2",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-2",
+   "callsign": "RAIDER-2",
+   "spawn": "event",
+   "pos": [
+    14800,
+    2600,
+    -12800
+   ],
+   "heading": 215,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "targetPriority": "asset"
+  },
+  {
+   "id": "r3",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-3",
+   "callsign": "RAIDER-3",
+   "spawn": "event",
+   "pos": [
+    -13000,
+    2400,
+    -8000
+   ],
+   "heading": 120,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "targetPriority": "asset"
+  },
+  {
+   "id": "r4",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-4",
+   "callsign": "RAIDER-4",
+   "spawn": "event",
+   "pos": [
+    -13800,
+    2500,
+    -8800
+   ],
+   "heading": 120,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "targetPriority": "asset"
+  },
+  {
+   "id": "r5",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-5",
+   "callsign": "RAIDER-5",
+   "spawn": "event",
+   "pos": [
+    3000,
+    3200,
+    -20000
+   ],
+   "heading": 185,
+   "speed": 240,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "targetPriority": "asset"
+  },
+  {
+   "id": "f1",
+   "type": "fighter",
+   "side": "hostile",
+   "name": "FIGHTER-1",
+   "callsign": "FIGHTER-1",
+   "spawn": "event",
+   "pos": [
+    -3000,
+    3400,
+    -21000
+   ],
+   "heading": 185,
+   "speed": 240,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  }
+ ],
+ "objectives": {
+  "primary": [
+   {
+    "id": "scramble",
+    "type": "airborne",
+    "label": "SCRAMBLE",
+    "params": {
+     "altitude": 150
+    }
+   },
+   {
+    "id": "defend",
+    "type": "protect_group",
+    "label": "DEFEND THE RADAR SITE AND FUEL DEPOT",
+    "params": {
+     "targets": [
+      "fuel",
+      "radarb"
+     ],
+     "min": 2,
+     "until": "clear"
+    }
+   },
+   {
+    "id": "clear",
+    "type": "destroy",
+    "label": "DESTROY ALL SIX RAIDERS",
+    "params": {
+     "targets": [
+      "r1",
+      "r2",
+      "r3",
+      "r4",
+      "r5",
+      "f1"
+     ]
+    }
+   }
+  ],
+  "secondary": [
+   {
+    "id": "wingman",
+    "type": "survive_entity",
+    "label": "MAINTAIN WINGMAN SURVIVAL",
+    "params": {
+     "target": "wingman"
+    }
+   },
+   {
+    "id": "time",
+    "type": "time_limit",
+    "label": "CLEAR THE SKY WITHIN 8:00",
+    "params": {
+     "seconds": 480
+    }
+   }
+  ],
+  "optional": [
+   {
+    "id": "nodamage",
+    "type": "max_damage",
+    "label": "TAKE NO DAMAGE",
+    "params": {
+     "max": 0
+    }
+   },
+   {
+    "id": "acc",
+    "type": "accuracy",
+    "label": "HIGH ACCURACY (30%+)",
+    "params": {
+     "min": 0.3
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "when": {
+    "type": "time",
+    "t": 1
+   },
+   "do": [
+    {
+     "say": "nightsandwatch_1"
+    },
+    {
+     "say": "nightsandwatch_2",
+     "delay": 1
+    },
+    {
+     "music": "BUILDUP"
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "when": {
+    "type": "time",
+    "t": 40
+   },
+   "do": [
+    {
+     "spawn": [
+      "r1",
+      "r2"
+     ]
+    },
+    {
+     "music": "COMBAT"
+    },
+    {
+     "say": "nightsandwatch_3"
+    },
+    {
+     "callout": {
+      "nearest": "hostile"
+     },
+     "delay": 4
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "when": {
+    "type": "time",
+    "t": 105
+   },
+   "do": [
+    {
+     "spawn": [
+      "r3",
+      "r4"
+     ]
+    },
+    {
+     "say": "nightsandwatch_4"
+    },
+    {
+     "callout": {
+      "nearest": "hostile"
+     },
+     "delay": 3
+    }
+   ]
+  },
+  {
+   "id": "e4",
+   "when": {
+    "type": "time",
+    "t": 170
+   },
+   "do": [
+    {
+     "spawn": [
+      "r5",
+      "f1"
+     ]
+    },
+    {
+     "say": "nightsandwatch_5"
+    }
+   ]
+  },
+  {
+   "id": "e5",
+   "when": {
+    "type": "objective",
+    "id": "clear"
+   },
+   "do": [
+    {
+     "music": "RESOLUTION"
+    },
+    {
+     "say": "nightsandwatch_6",
+     "delay": 3
+    },
+    {
+     "say": "nightsandwatch_7",
+     "delay": 2
+    },
+    {
+     "say": "nightsandwatch_8",
+     "delay": 2
+    },
+    {
+     "endMission": {
+      "result": "complete"
+     },
+     "delay": 14
+    }
+   ]
+  },
+  {
+   "id": "c_missile",
+   "when": {
+    "type": "incoming_missile"
+   },
+   "cooldown": 25,
+   "do": [
+    {
+     "say": "m01_missile_warning"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_hit",
+   "when": {
+    "type": "damaged",
+    "id": "wingman"
+   },
+   "cooldown": 30,
+   "do": [
+    {
+     "say": "m01_wing_hit"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_down",
+   "when": {
+    "type": "destroyed",
+    "id": "wingman"
+   },
+   "do": [
+    {
+     "say": "m01_wing_down"
+    }
+   ]
+  },
+  {
+   "id": "c_leave",
+   "when": {
+    "type": "outside",
+    "zone": "boundary"
+   },
+   "cooldown": 20,
+   "do": [
+    {
+     "say": "m01_leave"
+    }
+   ]
+  },
+  {
+   "id": "c_roe",
+   "when": {
+    "type": "roe_violation"
+   },
+   "cooldown": 14,
+   "do": [
+    {
+     "say": "m01_roe"
+    }
+   ]
+  }
+ ],
+ "cinematics": {
+  "intro": {
+   "bars": true,
+   "locked": true,
+   "shots": [
+    {
+     "dur": 4.2,
+     "anchor": "base",
+     "from": {
+      "off": [
+       190,
+       30,
+       320
+      ],
+      "look": [
+       0,
+       8,
+       140
+      ]
+     },
+     "to": {
+      "off": [
+       120,
+       16,
+       230
+      ],
+      "look": [
+       0,
+       6,
+       150
+      ]
+     },
+     "fov": 42
+    },
+    {
+     "dur": 2.8,
+     "anchor": "cockpit",
+     "fov": 70
+    }
+   ]
+  },
+  "target_crash": {
+   "bars": false,
+   "interruptible": true,
+   "shots": [
+    {
+     "dur": 3.4,
+     "mode": "orbit",
+     "follow": "$entity",
+     "fov": 50,
+     "radius": 160
+    }
+   ]
+  }
+ },
+ "flags": {},
+ "reward": {
+  "xp": 1180,
+  "tokens": 4
+ },
+ "scoring": {
+  "parTime": 400
+ },
+ "lines": {
+  "nightsandwatch_1": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "Falcon flight, scramble, scramble! Hassi Khalil is under attack — six bandits, no lights.",
+    "fr": "Escadrille Falcon, décollage immédiat ! Hassi Khalil est attaquée — six bandits, sans feux.",
+    "ar": "سرب فالكون، إقلاع فوري! حاسي خليل تحت الهجوم — ستة أعداء بلا أضواء."
+   }
+  },
+  "nightsandwatch_2": {
+   "speaker": "MOURAD",
+   "voice": null,
+   "emotion": "stern",
+   "text": {
+    "en": "Defend the radar and the fuel, in that order. Weapons free.",
+    "fr": "Défendez le radar et le carburant, dans cet ordre. Armes libres.",
+    "ar": "احموا الرادار والوقود بهذا الترتيب. الإطلاق مسموح."
+   }
+  },
+  "nightsandwatch_3": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "First pair from the east, low and dark. They are going for the radar!",
+    "fr": "Première paire par l'est, basse et sombre. Ils visent le radar !",
+    "ar": "الزوج الأول من الشرق، منخفض ومظلم. يستهدفون الرادار!"
+   }
+  },
+  "nightsandwatch_4": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "Second pair from the west. Flares light them up — use them.",
+    "fr": "Deuxième paire par l'ouest. Les leurres les éclairent — utilisez-les.",
+    "ar": "الزوج الثاني من الغرب. المشاعل تكشفهم — استخدمها."
+   }
+  },
+  "nightsandwatch_5": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "Last wave. One of them flies like a real pilot, Salim — careful.",
+    "fr": "Dernière vague. L'un d'eux vole comme un vrai pilote, Salim — prudence.",
+    "ar": "الموجة الأخيرة. أحدهم يطير كطيار حقيقي يا سليم — احذر."
+   }
+  },
+  "nightsandwatch_6": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "Sir. The Black Sand logs carry your signature. BA-07, M.B.A.",
+    "fr": "Mon commandant. Les journaux de Sable Noir portent votre signature. BA-07, M.B.A.",
+    "ar": "سيدي. سجلات الرمال السوداء تحمل توقيعك. بي أيه-07، إم بي إيه."
+   }
+  },
+  "nightsandwatch_7": {
+   "speaker": "MOURAD",
+   "voice": null,
+   "emotion": "shaken",
+   "text": {
+    "en": "Land, Falcon One. We will talk on the ground. Not on this channel.",
+    "fr": "Posez-vous, Falcon Un. On parlera au sol. Pas sur ce canal.",
+    "ar": "اهبط يا فالكون واحد. سنتحدث على الأرض. ليس على هذه القناة."
+   }
+  },
+  "nightsandwatch_8": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "Salim... what did you just say to the Major?",
+    "fr": "Salim... qu'est-ce que tu viens de dire au commandant ?",
+    "ar": "سليم... ماذا قلت للرائد للتو؟"
+   }
+  }
+ },
+ "briefing": {
+  "center": {
+   "lon": -0.5,
+   "lat": 29.7
+  },
+  "zoomKm": 90,
+  "playerPath": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    40
+   ]
+  ],
+  "enemyRoutes": [
+   {
+    "id": "RAIDER-1",
+    "label": "RAIDER-1",
+    "points": [
+     [
+      14,
+      14.7
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-2",
+    "label": "RAIDER-2",
+    "points": [
+     [
+      14.8,
+      15.5
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-3",
+    "label": "RAIDER-3",
+    "points": [
+     [
+      -13,
+      10.7
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-4",
+    "label": "RAIDER-4",
+    "points": [
+     [
+      -13.8,
+      11.5
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-5",
+    "label": "RAIDER-5",
+    "points": [
+     [
+      3,
+      22.7
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "FIGHTER-1",
+    "label": "FIGHTER-1",
+    "points": [
+     [
+      -3,
+      23.7
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   }
+  ],
+  "threatZones": [],
+  "radar": {
+   "pos": [
+    0,
+    0
+   ],
+   "r": 70
+  },
+  "friendly": [
+   {
+    "id": "f1",
+    "path": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      40
+     ]
+    ]
+   },
+   {
+    "id": "f2",
+    "path": [
+     [
+      -1,
+      -1
+     ],
+     [
+      -1,
+      39
+     ]
+    ]
+   }
+  ],
+  "objectives": []
+ }
+}

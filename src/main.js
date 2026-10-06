@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import aircraftData from '../data/aircraft.json';
 import difficultyData from '../data/difficulty.json';
 import { createRenderer } from './renderer.js';
@@ -6,14 +5,15 @@ import { AudioEngine } from './audio/audio.js';
 import { Input } from './input/input.js';
 import { Hud } from './ui/hud.js';
 import { Comms } from './ui/comms.js';
-import { Screens, MISSIONS, missionStatus } from './ui/screens.js';
+import { MISSIONS } from './missions/registry.js';
+import { Screens } from './ui/screens.js';
 import { Hangar } from './world/hangar.js';
 import { Game } from './game.js';
 import { ReplaySession } from './replay/replay.js';
 import { Save } from './save/save.js';
 import { Settings } from './settings/settings.js';
-import { scoreMission, rankFor } from './missions/scoring.js';
-import { rankInfo, rankIdx, newUnlocks, unlockedCameraSet } from './progression.js';
+import { scoreMission } from './missions/scoring.js';
+import { rankInfo, newUnlocks, unlockedCameraSet } from './progression.js';
 import { fmtTime } from './util/math.js';
 
 const live = new Proxy({}, { get: (_, k) => Settings.s[k] });
@@ -76,13 +76,14 @@ class App {
     const m = game.mission, snap = game.snapshot(), diff = difficultyData.levels[game.diffName];
     const score = scoreMission(m, snap, diff), rep = game.rec.export(); if (rep.frames.length > 3) { this.lastReplay = rep; Save.saveReplay(rep); }
     this.lastResult = { snap, score };
-    const d = Save.data, kind = m.kind, good = snap.result === 'complete'; let saved = false;
+    const d = Save.data, kind = m.kind, good = snap.result === 'complete'; let saved = false, final = false;
     const beforeXp = d.xp, ri0 = rankInfo(beforeXp);
     if (kind === 'campaign') {
       if (good) { d.campaign.completed[m.id] = true; }
       const prev = d.scores[m.id]; if (good && (!prev || score.score > prev.score)) d.scores[m.id] = { grade: score.grade, score: score.score, time: score.time, medals: score.medals, accuracy: score.acc };
       if (good && (!d.bestTimes[m.id] || score.time < d.bestTimes[m.id])) d.bestTimes[m.id] = score.time;
       d.xp += score.xp; d.tokens += score.tokens; saved = true;
+      if (good && m.number === MISSIONS.length) { d.campaign.finished = true; d.flags = { ...(d.flags || {}), campaignFinished: true }; d.tokens += 5; score.tokens += 5; final = true; }
     } else if (kind === 'challenge') {
       const cid = m.id.replace(/^ch_/, ''), prev = d.challenges[cid];
       if (good && (!prev || score.score > prev.score)) d.challenges[cid] = { grade: score.grade, score: score.score, time: score.time };
@@ -93,7 +94,7 @@ class App {
     const idx = MISSIONS.findIndex((x) => x.id === m.id), next = kind === 'campaign' && good ? MISSIONS[idx + 1] : null;
     const launch = this.lastLaunch; game.dispose(); this.game = null; this.input.enabled = false; this.audio.setAmbience('hangar'); this.audio.setMusic('IDLE');
     const retry = m.oneLife && !good ? null : () => this.start(launch.def, launch.kind, launch.extra);
-    this.screens.show('debrief', { result: snap.result, snap, score, rank: { before: ri0.index === ri1.index ? ri0.progress : ri0.progress, after: ri1.progress, name: ri1.rank, up: ri1.index > ri0.index }, unlocks, mission: m, saved, retry, next });
+    this.screens.show('debrief', { result: snap.result, snap, score, rank: { before: ri0.index === ri1.index ? ri0.progress : ri0.progress, after: ri1.progress, name: ri1.rank, up: ri1.index > ri0.index }, unlocks: [...unlocks, ...(final ? ['PAINT: Shadow Line', 'HUD THEME: Crimson', 'CAMPAIGN COMPLETE: +5 TOKENS'] : [])], mission: m, saved, retry, next, final });
   }
 
   // ------------------------------------------------------------------ pause

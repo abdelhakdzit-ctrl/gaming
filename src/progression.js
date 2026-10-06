@@ -12,11 +12,11 @@ export function rankInfo(xp) {
 }
 export const currentRankIndex = () => rankInfo(Save.data.xp).index;
 
-const KINDS = { aircraft: 'aircraft', paints: 'paints', hudThemes: 'hudThemes', cockpits: 'cockpits' };
 /** 'owned' | 'rank' (earned by rank) | 'buy' (token purchase) | 'locked' (needs rank). */
 export function itemStatus(kind, item) {
   const d = Save.data, owned = d.owned[kind] || [];
   if (owned.includes(item.id)) return 'owned';
+  if (item.unlockFlag) return d.flags?.[item.unlockFlag] ? 'rank' : 'locked';
   if (item.unlockRank && currentRankIndex() >= rankIdx(item.unlockRank)) return 'rank';
   if (item.unlockRank) return 'locked';
   if (item.cost === 0) return 'owned';
