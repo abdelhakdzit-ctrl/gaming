@@ -1,0 +1,133 @@
+{
+  "characters": {
+    "SALIM":  { "name": "SALIM BEN YOUNES", "callsign": "FALCON ONE", "role": "Fighter pilot", "image": null, "palette": ["#1b2a3a", "#d9b27c", "#3d5a40"], "look": "pilot" },
+    "RIAD":   { "name": "RIAD QADRI", "callsign": "FALCON TWO", "role": "Wingman", "image": null, "palette": ["#2a2018", "#c99a6b", "#8a3b2a"], "look": "pilot" },
+    "NADIA":  { "name": "CAPT. NADIA MANSOURI", "callsign": "OVERWATCH", "role": "Air-control officer", "image": null, "palette": ["#14202c", "#cfa07a", "#2f6b7a"], "look": "headset" },
+    "MOURAD": { "name": "MAJ. MOURAD BEN AISSA", "callsign": "COMMAND", "role": "Squadron commander", "image": null, "palette": ["#1a1a1a", "#b98a63", "#6b6b55"], "look": "officer" },
+    "LEILA":  { "name": "LEILA SAADI", "callsign": "TECH", "role": "Systems engineer", "image": null, "palette": ["#161e26", "#d4a780", "#7a4fa0"], "look": "engineer" },
+    "GREY":   { "name": "GREY", "callsign": "UNKNOWN PILOT", "role": "Unknown enemy ace", "image": null, "palette": ["#0b0d10", "#7f858c", "#a8b0b8"], "look": "visor" },
+    "UNKNOWN": { "name": "UNKNOWN TRANSMISSION", "callsign": "NO ID", "role": "Unverified source", "image": null, "palette": ["#0d0d12", "#555a60", "#aa3030"], "look": "static" }
+  },
+  "lines": {
+    "m01_scramble_1": { "speaker": "NADIA", "voice": "nadia_01", "emotion": "calm", "text": {
+      "en": "Falcon flight, this is Overwatch. Scramble, scramble. Unknown contacts entering restricted airspace.",
+      "fr": "Escadrille Falcon, ici Overwatch. Décollage immédiat. Contacts inconnus dans l'espace aérien restreint.",
+      "ar": "سرب فالكون، هنا المراقبة. إقلاع فوري. أهداف مجهولة تدخل المجال الجوي المحظور." } },
+    "m01_scramble_2": { "speaker": "RIAD", "voice": "riad_01", "emotion": "playful", "text": {
+      "en": "Falcon Two, rolling with you. Try not to fall asleep up there, Salim.",
+      "fr": "Falcon Deux, je te suis. Ne t'endors pas là-haut, Salim.",
+      "ar": "فالكون اثنان معك. حاول ألا تنام هناك يا سليم." } },
+    "m01_airborne": { "speaker": "NADIA", "voice": "nadia_02", "emotion": "calm", "text": {
+      "en": "Gear up. Vector north-east, climb to angels eight. Three contacts, forty kilometres out.",
+      "fr": "Train rentré. Cap nord-est, montez à huit mille pieds. Trois contacts, à quarante kilomètres.",
+      "ar": "ارفع العجلات. اتجه شمال شرق وأصعد إلى ثمانية آلاف قدم. ثلاثة أهداف على بعد أربعين كيلومتراً." } },
+    "m01_mourad": { "speaker": "MOURAD", "voice": "mourad_01", "emotion": "stern", "text": {
+      "en": "Falcon One, Command. The central picture lists all three as hostile. Intercept, identify, report.",
+      "fr": "Falcon Un, Commandement. L'image centrale les classe tous hostiles. Interceptez, identifiez, rendez compte.",
+      "ar": "فالكون واحد، هنا القيادة. الصورة المركزية تصنفهم جميعاً معادين. اعترض، حدد الهوية، وأبلغ." } },
+    "m01_area": { "speaker": "NADIA", "voice": "nadia_03", "emotion": "tense", "text": {
+      "en": "Radar classification is inconsistent. Tags are flickering. Confirm visually before you fire.",
+      "fr": "La classification radar est incohérente. Les marqueurs clignotent. Confirmez visuellement avant de tirer.",
+      "ar": "تصنيف الرادار غير متسق. العلامات تومض. تأكد بصرياً قبل أن تطلق النار." } },
+    "m01_unknown_msg": { "speaker": "UNKNOWN", "voice": "unk_01", "emotion": "distorted", "text": {
+      "en": "...the line is open... repeat, shadow line is open... the sky was never empty...",
+      "fr": "...la ligne est ouverte... je répète, la ligne d'ombre est ouverte... le ciel n'a jamais été vide...",
+      "ar": "...الخط مفتوح... أكرر، خط الظل مفتوح... السماء لم تكن فارغة أبداً..." } },
+    "m01_salim_doubt": { "speaker": "SALIM", "voice": "salim_01", "emotion": "analytical", "text": {
+      "en": "Overwatch, that wasn't a threat. It sounded like a warning.",
+      "fr": "Overwatch, ce n'était pas une menace. On aurait dit un avertissement.",
+      "ar": "المراقبة، لم يكن ذلك تهديداً. بدا كأنه تحذير." } },
+    "m01_id_scout": { "speaker": "NADIA", "voice": "nadia_04", "emotion": "calm", "text": {
+      "en": "Visual confirms a recon drone, no friendly markings. Hostile. You are cleared to engage that contact.",
+      "fr": "Visuel confirmé : drone de reconnaissance, sans marquage ami. Hostile. Vous êtes autorisé à engager.",
+      "ar": "تأكيد بصري: طائرة استطلاع بدون علامات صديقة. معادية. مسموح لك بالاشتباك." } },
+    "m01_id_fighter": { "speaker": "SALIM", "voice": "salim_02", "emotion": "calm", "text": {
+      "en": "Fighter. Armed. Hostile confirmed.",
+      "fr": "Chasseur. Armé. Hostile confirmé.",
+      "ar": "مقاتلة. مسلحة. العداء مؤكد." } },
+    "m01_id_asset": { "speaker": "SALIM", "voice": "salim_03", "emotion": "tense", "text": {
+      "en": "Overwatch, one of your hostiles is a transport. Medical markings. Your IFF is lying to us.",
+      "fr": "Overwatch, l'un de vos hostiles est un transport. Marquages médicaux. Votre IFF nous ment.",
+      "ar": "المراقبة، أحد أهدافكم المعادية طائرة نقل. علامات طبية. نظام التعريف يكذب علينا." } },
+    "m01_id_asset2": { "speaker": "NADIA", "voice": "nadia_05", "emotion": "shaken", "text": {
+      "en": "Copy. Retagging friendly. Kestrel Seven, you are under our protection. Falcon One, keep them alive.",
+      "fr": "Reçu. Reclassé ami. Kestrel Sept, vous êtes sous notre protection. Falcon Un, gardez-les en vie.",
+      "ar": "مفهوم. إعادة التصنيف كصديق. كيستريل سبعة، أنتم تحت حمايتنا. فالكون واحد، أبقهم أحياء." } },
+    "m01_asset_threat": { "speaker": "NADIA", "voice": "nadia_06", "emotion": "urgent", "text": {
+      "en": "Hostile fighter is turning on Kestrel! Falcon One, cover them!",
+      "fr": "Le chasseur hostile attaque Kestrel ! Falcon Un, couvrez-les !",
+      "ar": "المقاتلة المعادية تهاجم كيستريل! فالكون واحد، احمهم!" } },
+    "m01_grey_appear": { "speaker": "RIAD", "voice": "riad_02", "emotion": "urgent", "text": {
+      "en": "Bandit from the high side! He's good, Salim. Really good.",
+      "fr": "Bandit par le haut ! Il est bon, Salim. Vraiment bon.",
+      "ar": "عدو من الأعلى! إنه ماهر يا سليم. ماهر جداً." } },
+    "m01_grey_leave": { "speaker": "GREY", "voice": "grey_01", "emotion": "cold", "text": {
+      "en": "Not today, Falcon.",
+      "fr": "Pas aujourd'hui, Falcon.",
+      "ar": "ليس اليوم يا فالكون." } },
+    "m01_kill_scout": { "speaker": "RIAD", "voice": "riad_03", "emotion": "playful", "text": {
+      "en": "Splash one. Nice shooting.",
+      "fr": "Un de moins. Beau tir.",
+      "ar": "سقطت الأولى. رماية جميلة." } },
+    "m01_kill_fighter": { "speaker": "RIAD", "voice": "riad_04", "emotion": "tense", "text": {
+      "en": "Bandit down! Salim... are you seeing this?",
+      "fr": "Bandit abattu ! Salim... tu vois ça ?",
+      "ar": "العدو سقط! سليم... هل ترى هذا؟" } },
+    "m01_wing_hit": { "speaker": "RIAD", "voice": "riad_05", "emotion": "urgent", "text": {
+      "en": "I'm hit! Still flying!",
+      "fr": "Je suis touché ! Je vole encore !",
+      "ar": "أصبت! ما زلت أطير!" } },
+    "m01_wing_down": { "speaker": "NADIA", "voice": "nadia_07", "emotion": "shaken", "text": {
+      "en": "Falcon Two is down. Falcon One, stay focused.",
+      "fr": "Falcon Deux est à terre. Falcon Un, restez concentré.",
+      "ar": "فالكون اثنان سقط. فالكون واحد، حافظ على تركيزك." } },
+    "m01_missile_warning": { "speaker": "NADIA", "voice": "nadia_08", "emotion": "urgent", "text": {
+      "en": "Missile launch! Break and flares!",
+      "fr": "Tir de missile ! Virez et leurrez !",
+      "ar": "إطلاق صاروخ! انعطف وأطلق المشاعل!" } },
+    "m01_leave": { "speaker": "NADIA", "voice": "nadia_09", "emotion": "calm", "text": {
+      "en": "Falcon One, you are leaving the operations area. Turn back.",
+      "fr": "Falcon Un, vous quittez la zone d'opérations. Faites demi-tour.",
+      "ar": "فالكون واحد، أنت تغادر منطقة العمليات. عد أدراجك." } },
+    "m01_civil": { "speaker": "NADIA", "voice": "nadia_10", "emotion": "urgent", "text": {
+      "en": "Falcon One, you are over a populated zone. Cease fire.",
+      "fr": "Falcon Un, vous survolez une zone habitée. Cessez le feu.",
+      "ar": "فالكون واحد، أنت فوق منطقة مأهولة. أوقف النار." } },
+    "m01_roe": { "speaker": "NADIA", "voice": "nadia_11", "emotion": "firm", "text": {
+      "en": "Falcon One, identify the target first. No firing on unknown contacts.",
+      "fr": "Falcon Un, identifiez d'abord la cible. Pas de tir sur contact inconnu.",
+      "ar": "فالكون واحد، حدد هوية الهدف أولاً. لا إطلاق على أهداف مجهولة." } },
+    "m01_evidence1": { "speaker": "LEILA", "voice": "leila_01", "emotion": "analytical", "text": {
+      "en": "Falcon One, I'm reading the scout's data burst. The identification signals on those contacts were forged.",
+      "fr": "Falcon Un, je lis la rafale de données du drone. Les signaux d'identification de ces contacts étaient falsifiés.",
+      "ar": "فالكون واحد، أقرأ بيانات طائرة الاستطلاع. إشارات التعريف لتلك الأهداف كانت مزورة." } },
+    "m01_evidence2": { "speaker": "MOURAD", "voice": "mourad_02", "emotion": "stern", "text": {
+      "en": "Falcon flight, return to base. Do not discuss this on open channels.",
+      "fr": "Escadrille Falcon, retour à la base. N'en parlez pas sur les fréquences ouvertes.",
+      "ar": "سرب فالكون، عودوا إلى القاعدة. لا تناقشوا هذا على قنوات مفتوحة." } },
+    "m01_evidence3": { "speaker": "SALIM", "voice": "salim_04", "emotion": "analytical", "text": {
+      "en": "Understood. But this was never what Command reported. Someone built this incident.",
+      "fr": "Compris. Mais ce n'était pas ce que le Commandement a rapporté. Quelqu'un a fabriqué cet incident.",
+      "ar": "مفهوم. لكن هذا لم يكن ما أبلغت عنه القيادة. شخص ما صنع هذه الحادثة." } },
+    "gen_brief_ready": { "speaker": "NADIA", "voice": "nadia_12", "emotion": "calm", "text": {
+      "en": "Falcon One, you are cleared for launch.",
+      "fr": "Falcon Un, vous êtes autorisé au décollage.",
+      "ar": "فالكون واحد، مسموح لك بالإقلاع." } },
+    "gen_ff_welcome": { "speaker": "NADIA", "voice": "nadia_13", "emotion": "calm", "text": {
+      "en": "Free flight authorised. Airspace is yours, Falcon One.",
+      "fr": "Vol libre autorisé. L'espace aérien est à vous, Falcon Un.",
+      "ar": "الطيران الحر مصرح به. المجال الجوي لك يا فالكون واحد." } },
+    "gen_rtb": { "speaker": "NADIA", "voice": "nadia_14", "emotion": "calm", "text": {
+      "en": "Good work, Falcon flight. Return to base.",
+      "fr": "Bon travail, escadrille Falcon. Retour à la base.",
+      "ar": "عمل جيد يا سرب فالكون. عودوا إلى القاعدة." } },
+    "gen_asset_lost": { "speaker": "NADIA", "voice": "nadia_15", "emotion": "shaken", "text": {
+      "en": "Kestrel Seven is lost. Mission failed.",
+      "fr": "Kestrel Sept est perdu. Mission échouée.",
+      "ar": "كيستريل سبعة فُقدت. فشلت المهمة." } },
+    "gen_lock_hint": { "speaker": "LEILA", "voice": "leila_02", "emotion": "calm", "text": {
+      "en": "Reminder: T selects a target, I identifies it, hold the target in your radar cone to lock.",
+      "fr": "Rappel : T sélectionne une cible, I l'identifie, gardez-la dans le cône radar pour verrouiller.",
+      "ar": "تذكير: T لاختيار هدف، I لتحديد هويته، أبقه ضمن مخروط الرادار للقفل." } }
+  }
+}

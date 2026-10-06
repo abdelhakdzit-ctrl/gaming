@@ -1,0 +1,4301 @@
+{
+ "missions": [
+  {
+   "id": "m01",
+   "number": 1,
+   "title": "FIRST CONTACT",
+   "titleFr": "PREMIER CONTACT",
+   "titleAr": "\u0627\u0644\u0627\u062a\u0635\u0627\u0644 \u0627\u0644\u0623\u0648\u0644",
+   "type": "INTERCEPT",
+   "playable": true,
+   "requires": null,
+   "region": "MEDITERRANEAN COAST",
+   "regionAr": "\u0627\u0644\u0633\u0627\u062d\u0644 \u0627\u0644\u0645\u062a\u0648\u0633\u0637\u064a",
+   "map": {
+    "lon": 5.2,
+    "lat": 36.85
+   },
+   "threat": "UNKNOWN",
+   "threatLevel": 2,
+   "weatherLabel": "CLEAR / LIGHT WIND",
+   "clock": "03:12",
+   "env": {
+    "biome": "coast",
+    "time": "night",
+    "weather": "clear"
+   },
+   "narrative": "A routine night patrol becomes an unknown airspace incident. Three unidentified aircraft enter restricted airspace off the coast. Intercept them, identify each contact, and decide who is a threat before you fire.",
+   "intel": [
+    {
+     "label": "CENTRAL PICTURE",
+     "text": "Three tracks, no valid IFF. All tagged HOSTILE by the central picture.",
+     "confidence": "MEDIUM"
+    },
+    {
+     "label": "RADAR",
+     "text": "Coastal radar reports intermittent classification errors. Treat all tags as unverified.",
+     "confidence": "LOW"
+    },
+    {
+     "label": "RULES OF ENGAGEMENT",
+     "text": "Visual identification required before weapons release. A civilian zone lies west of the base.",
+     "confidence": "HIGH"
+    },
+    {
+     "label": "SIGNALS",
+     "text": "One track is transmitting an unrecognised repeating message on a military band.",
+     "confidence": "LOW"
+    }
+   ],
+   "base": {
+    "name": "BA-07 RAS EL-HADJAR",
+    "pos": [
+     0,
+     0,
+     1500
+    ],
+    "heading": 0,
+    "runwayLength": 2500
+   },
+   "spawn": {
+    "pos": [
+     0,
+     0,
+     2650
+    ],
+    "heading": 0,
+    "speed": 0,
+    "onRunway": true
+   },
+   "wingman": {
+    "enabled": true,
+    "callsign": "FALCON TWO"
+   },
+   "zones": [
+    {
+     "id": "city",
+     "type": "civilian",
+     "pos": [
+      -7500,
+      0,
+      -300
+     ],
+     "radius": 3200,
+     "label": "CIVILIAN ZONE"
+    },
+    {
+     "id": "ops",
+     "type": "boundary",
+     "pos": [
+      0,
+      0,
+      -14000
+     ],
+     "radius": 34000,
+     "label": "OPERATIONS AREA"
+    }
+   ],
+   "waypoints": [
+    {
+     "id": "intercept",
+     "pos": [
+      2500,
+      2600,
+      -14000
+     ],
+     "radius": 4500,
+     "label": "INTERCEPT AREA"
+    }
+   ],
+   "groups": [
+    {
+     "id": "kestrel",
+     "type": "transport",
+     "side": "friendly",
+     "name": "KESTREL-7",
+     "callsign": "U-3",
+     "spawn": "start",
+     "pos": [
+      1500,
+      2600,
+      -24500
+     ],
+     "heading": 190,
+     "speed": 130,
+     "route": [
+      [
+       0,
+       2600,
+       -8000
+      ],
+      [
+       0,
+       2000,
+       1500
+      ]
+     ],
+     "iffShown": "unknown"
+    },
+    {
+     "id": "scout",
+     "type": "scout",
+     "side": "hostile",
+     "name": "SCOUT",
+     "callsign": "U-1",
+     "spawn": "start",
+     "pos": [
+      7500,
+      3300,
+      -23500
+     ],
+     "heading": 200,
+     "speed": 170,
+     "route": [
+      [
+       2000,
+       3000,
+       -12000
+      ],
+      [
+       -3000,
+       2800,
+       -4000
+      ]
+     ],
+     "iffShown": "unknown",
+     "egress": [
+      14000,
+      4000,
+      -30000
+     ]
+    },
+    {
+     "id": "fighter",
+     "type": "fighter",
+     "side": "hostile",
+     "name": "FIGHTER",
+     "callsign": "U-2",
+     "spawn": "start",
+     "pos": [
+      9500,
+      3500,
+      -25500
+     ],
+     "heading": 200,
+     "speed": 190,
+     "route": [
+      [
+       3000,
+       3200,
+       -13000
+      ],
+      [
+       -1000,
+       3000,
+       -5000
+      ]
+     ],
+     "iffShown": "unknown",
+     "targetPriority": "asset",
+     "egress": [
+      14000,
+      4000,
+      -30000
+     ],
+     "engageWhenPlayerWithin": 16000
+    },
+    {
+     "id": "grey",
+     "type": "elite",
+     "side": "hostile",
+     "name": "GREY",
+     "callsign": "GREY",
+     "spawn": "event",
+     "pos": [
+      9000,
+      6800,
+      -9000
+     ],
+     "heading": 235,
+     "speed": 250,
+     "route": [
+      [
+       0,
+       3500,
+       -10000
+      ]
+     ],
+     "iffShown": "unknown",
+     "targetPriority": "player",
+     "identified": true,
+     "egress": [
+      20000,
+      8000,
+      -34000
+     ]
+    }
+   ],
+   "objectives": {
+    "primary": [
+     {
+      "id": "scramble",
+      "type": "airborne",
+      "label": "SCRAMBLE",
+      "params": {
+       "altitude": 150
+      }
+     },
+     {
+      "id": "reach",
+      "type": "reach_area",
+      "label": "REACH INTERCEPT AREA",
+      "params": {
+       "waypoints": [
+        "intercept"
+       ]
+      }
+     },
+     {
+      "id": "identify",
+      "type": "identify",
+      "label": "IDENTIFY ALL CONTACTS",
+      "params": {
+       "targets": [
+        "scout",
+        "fighter",
+        "kestrel"
+       ]
+      }
+     },
+     {
+      "id": "protect",
+      "type": "protect",
+      "label": "PROTECT KESTREL-7",
+      "params": {
+       "target": "kestrel",
+       "until": "neutralize"
+      }
+     },
+     {
+      "id": "neutralize",
+      "type": "destroy",
+      "label": "NEUTRALIZE CONFIRMED HOSTILES",
+      "params": {
+       "targets": [
+        "scout",
+        "fighter"
+       ],
+       "requireIdentified": true
+      }
+     }
+    ],
+    "secondary": [
+     {
+      "id": "wingman",
+      "type": "survive_entity",
+      "label": "MAINTAIN WINGMAN SURVIVAL",
+      "params": {
+       "target": "wingman"
+      }
+     },
+     {
+      "id": "civil",
+      "type": "avoid_zone_fire",
+      "label": "AVOID CIVILIAN-ZONE ENGAGEMENT",
+      "params": {
+       "zone": "city"
+      }
+     },
+     {
+      "id": "time",
+      "type": "time_limit",
+      "label": "COMPLETE INTERCEPTION WITHIN 10:00",
+      "params": {
+       "seconds": 600
+      }
+     }
+    ],
+    "optional": [
+     {
+      "id": "accuracy",
+      "type": "accuracy",
+      "label": "HIGH ACCURACY (35%+)",
+      "params": {
+       "min": 0.35
+      }
+     },
+     {
+      "id": "nodamage",
+      "type": "max_damage",
+      "label": "TAKE NO DAMAGE",
+      "params": {
+       "max": 0
+      }
+     },
+     {
+      "id": "formation",
+      "type": "formation",
+      "label": "MAINTAIN FORMATION UNTIL INTERCEPT",
+      "params": {
+       "range": 1500,
+       "ratio": 0.5
+      }
+     }
+    ]
+   },
+   "events": [
+    {
+     "id": "e_scramble",
+     "when": {
+      "type": "time",
+      "t": 2.5
+     },
+     "do": [
+      {
+       "say": "m01_scramble_1"
+      },
+      {
+       "say": "m01_scramble_2",
+       "delay": 1
+      }
+     ]
+    },
+    {
+     "id": "e_airborne",
+     "when": {
+      "type": "objective",
+      "id": "scramble"
+     },
+     "do": [
+      {
+       "music": "BUILDUP"
+      },
+      {
+       "say": "m01_airborne"
+      },
+      {
+       "say": "m01_mourad",
+       "delay": 1
+      }
+     ]
+    },
+    {
+     "id": "e_area",
+     "when": {
+      "type": "objective",
+      "id": "reach"
+     },
+     "do": [
+      {
+       "disrupt": {
+        "duration": 16,
+        "severity": 0.65
+       }
+      },
+      {
+       "say": "m01_area"
+      }
+     ]
+    },
+    {
+     "id": "e_unknown",
+     "when": {
+      "type": "range",
+      "a": "player",
+      "b": "kestrel",
+      "lt": 9000
+     },
+     "do": [
+      {
+       "say": "m01_unknown_msg"
+      },
+      {
+       "say": "m01_salim_doubt",
+       "delay": 1.5
+      }
+     ]
+    },
+    {
+     "id": "e_id_scout",
+     "when": {
+      "type": "identified",
+      "id": "scout"
+     },
+     "do": [
+      {
+       "say": "m01_id_scout"
+      }
+     ]
+    },
+    {
+     "id": "e_id_fighter",
+     "when": {
+      "type": "identified",
+      "id": "fighter"
+     },
+     "do": [
+      {
+       "say": "m01_id_fighter"
+      },
+      {
+       "music": "COMBAT"
+      },
+      {
+       "spawn": "grey",
+       "delay": 14
+      },
+      {
+       "say": "m01_grey_appear",
+       "delay": 14.5
+      },
+      {
+       "cinematic": "grey_pass",
+       "delay": 15
+      }
+     ]
+    },
+    {
+     "id": "e_id_asset",
+     "when": {
+      "type": "identified",
+      "id": "kestrel"
+     },
+     "do": [
+      {
+       "say": "m01_id_asset"
+      },
+      {
+       "say": "m01_id_asset2",
+       "delay": 1
+      }
+     ]
+    },
+    {
+     "id": "e_asset_threat",
+     "when": {
+      "type": "range",
+      "a": "fighter",
+      "b": "kestrel",
+      "lt": 4500
+     },
+     "do": [
+      {
+       "say": "m01_asset_threat"
+      }
+     ]
+    },
+    {
+     "id": "e_grey_leave",
+     "when": {
+      "type": "state",
+      "id": "grey",
+      "state": "DISENGAGE"
+     },
+     "do": [
+      {
+       "say": "m01_grey_leave"
+      }
+     ]
+    },
+    {
+     "id": "e_kill_scout",
+     "when": {
+      "type": "destroyed",
+      "id": "scout"
+     },
+     "do": [
+      {
+       "say": "m01_kill_scout"
+      },
+      {
+       "cinematic": "target_crash",
+       "args": {
+        "entity": "scout"
+       }
+      }
+     ]
+    },
+    {
+     "id": "e_kill_fighter",
+     "when": {
+      "type": "destroyed",
+      "id": "fighter"
+     },
+     "do": [
+      {
+       "say": "m01_kill_fighter"
+      },
+      {
+       "cinematic": "target_crash",
+       "args": {
+        "entity": "fighter"
+       }
+      }
+     ]
+    },
+    {
+     "id": "e_evidence",
+     "when": {
+      "type": "objective",
+      "id": "neutralize"
+     },
+     "do": [
+      {
+       "music": "RESOLUTION"
+      },
+      {
+       "say": "m01_evidence1",
+       "delay": 4
+      },
+      {
+       "say": "m01_evidence2",
+       "delay": 1
+      },
+      {
+       "say": "m01_evidence3",
+       "delay": 1
+      },
+      {
+       "evidence": {
+        "title": "RECOVERED DATA BURST \u2014 SCOUT U-1",
+        "lines": [
+         "IDENTIFICATION SIGNALS ON 3 CONTACTS: FORGED",
+         "TRANSPONDER CODE ORIGIN: UNRESOLVED (NETWORK 'VESPER')",
+         "KESTREL-7 FILED AS HOSTILE BY CENTRAL PICTURE 02:58",
+         "FILING AUTHORITY: [REDACTED]"
+        ]
+       },
+       "delay": 6
+      },
+      {
+       "endMission": {
+        "result": "complete"
+       },
+       "delay": 22
+      }
+     ]
+    },
+    {
+     "id": "e_missile",
+     "when": {
+      "type": "incoming_missile"
+     },
+     "cooldown": 25,
+     "do": [
+      {
+       "say": "m01_missile_warning"
+      }
+     ]
+    },
+    {
+     "id": "e_wing_hit",
+     "when": {
+      "type": "damaged",
+      "id": "wingman"
+     },
+     "cooldown": 30,
+     "do": [
+      {
+       "say": "m01_wing_hit"
+      }
+     ]
+    },
+    {
+     "id": "e_wing_down",
+     "when": {
+      "type": "destroyed",
+      "id": "wingman"
+     },
+     "do": [
+      {
+       "say": "m01_wing_down"
+      }
+     ]
+    },
+    {
+     "id": "e_leave",
+     "when": {
+      "type": "outside",
+      "zone": "ops"
+     },
+     "cooldown": 20,
+     "do": [
+      {
+       "say": "m01_leave"
+      }
+     ]
+    },
+    {
+     "id": "e_civil",
+     "when": {
+      "type": "fired_in_zone",
+      "zone": "city"
+     },
+     "cooldown": 15,
+     "do": [
+      {
+       "say": "m01_civil"
+      }
+     ]
+    },
+    {
+     "id": "e_roe",
+     "when": {
+      "type": "roe_violation"
+     },
+     "cooldown": 14,
+     "do": [
+      {
+       "say": "m01_roe"
+      }
+     ]
+    },
+    {
+     "id": "e_hint",
+     "when": {
+      "type": "objective",
+      "id": "reach"
+     },
+     "do": [
+      {
+       "say": "gen_lock_hint",
+       "delay": 14
+      }
+     ]
+    }
+   ],
+   "cinematics": {
+    "intro": {
+     "bars": true,
+     "locked": true,
+     "shots": [
+      {
+       "d": 4.2,
+       "anchor": "base",
+       "from": {
+        "off": [
+         190,
+         30,
+         320
+        ],
+        "look": [
+         0,
+         8,
+         140
+        ]
+       },
+       "to": {
+        "off": [
+         120,
+         16,
+         230
+        ],
+        "look": [
+         0,
+         6,
+         150
+        ]
+       },
+       "fov": 42
+      },
+      {
+       "d": 2.8,
+       "anchor": "cockpit",
+       "fov": 70
+      }
+     ]
+    },
+    "grey_pass": {
+     "bars": true,
+     "interruptible": true,
+     "shots": [
+      {
+       "d": 3.4,
+       "mode": "flyby",
+       "follow": "grey",
+       "fov": 40
+      }
+     ]
+    },
+    "target_crash": {
+     "bars": false,
+     "interruptible": true,
+     "shots": [
+      {
+       "d": 3.4,
+       "mode": "orbit",
+       "follow": "$entity",
+       "fov": 50,
+       "radius": 160
+      }
+     ]
+    }
+   },
+   "reward": {
+    "xp": 600,
+    "tokens": 3
+   },
+   "scoring": {
+    "parTime": 420
+   },
+   "briefing": {
+    "center": {
+     "lon": 5.2,
+     "lat": 37.3
+    },
+    "zoomKm": 150,
+    "playerPath": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      14
+     ],
+     [
+      12,
+      38
+     ],
+     [
+      16,
+      52
+     ]
+    ],
+    "enemyRoutes": [
+     {
+      "id": "U-1",
+      "label": "U-1",
+      "points": [
+       [
+        60,
+        105
+       ],
+       [
+        38,
+        78
+       ],
+       [
+        22,
+        56
+       ],
+       [
+        4,
+        22
+       ]
+      ]
+     },
+     {
+      "id": "U-2",
+      "label": "U-2",
+      "points": [
+       [
+        72,
+        112
+       ],
+       [
+        46,
+        80
+       ],
+       [
+        24,
+        58
+       ],
+       [
+        2,
+        18
+       ]
+      ]
+     },
+     {
+      "id": "U-3",
+      "label": "U-3",
+      "points": [
+       [
+        22,
+        100
+       ],
+       [
+        16,
+        72
+       ],
+       [
+        10,
+        50
+       ],
+       [
+        1,
+        8
+       ]
+      ],
+      "unknown": true
+     }
+    ],
+    "threatZones": [
+     {
+      "pos": [
+       16,
+       52
+      ],
+      "r": 22,
+      "label": "INTERCEPT AREA"
+     }
+    ],
+    "radar": {
+     "pos": [
+      0,
+      0
+     ],
+     "r": 92
+    },
+    "friendly": [
+     {
+      "id": "f1",
+      "path": [
+       [
+        0,
+        0
+       ],
+       [
+        4,
+        14
+       ],
+       [
+        12,
+        38
+       ],
+       [
+        16,
+        52
+       ]
+      ]
+     },
+     {
+      "id": "f2",
+      "path": [
+       [
+        -1,
+        -1
+       ],
+       [
+        3,
+        13
+       ],
+       [
+        11,
+        37
+       ],
+       [
+        15,
+        51
+       ]
+      ]
+     }
+    ],
+    "objectives": [
+     {
+      "label": "INTERCEPT",
+      "pos": [
+       16,
+       52
+      ]
+     },
+     {
+      "label": "CIVILIAN ZONE",
+      "pos": [
+       -22,
+       4
+      ],
+      "civil": true
+     }
+    ]
+   }
+  },
+  {
+   "id": "m02",
+   "number": 2,
+   "title": "GUARDIAN",
+   "titleAr": "\u0627\u0644\u062d\u0627\u0631\u0633",
+   "type": "ESCORT",
+   "playable": false,
+   "requires": "m01",
+   "region": "MEDITERRANEAN",
+   "map": {
+    "lon": 3.5,
+    "lat": 37.3
+   },
+   "threat": "LOW",
+   "threatLevel": 2,
+   "weatherLabel": "CLEAR / MODERATE WIND",
+   "clock": "09:40",
+   "env": {
+    "biome": "coast",
+    "time": "day",
+    "weather": "clear"
+   },
+   "narrative": "Escort a medical transport across contested Mediterranean airspace.",
+   "intel": [
+    {
+     "label": "CONVOY",
+     "text": "Single transport on a fixed corridor.",
+     "confidence": "HIGH"
+    },
+    {
+     "label": "THREAT",
+     "text": "Possible shadowing aircraft.",
+     "confidence": "LOW"
+    }
+   ],
+   "base": {
+    "name": "FORWARD STRIP",
+    "pos": [
+     0,
+     0,
+     1500
+    ],
+    "heading": 0,
+    "runwayLength": 2200
+   },
+   "spawn": {
+    "pos": [
+     0,
+     1800,
+     0
+    ],
+    "heading": 0,
+    "speed": 230,
+    "onRunway": false
+   },
+   "wingman": {
+    "enabled": true,
+    "callsign": "FALCON TWO"
+   },
+   "zones": [
+    {
+     "id": "ops",
+     "type": "boundary",
+     "pos": [
+      0,
+      0,
+      -12000
+     ],
+     "radius": 34000,
+     "label": "OPERATIONS AREA"
+    }
+   ],
+   "waypoints": [
+    {
+     "id": "objective",
+     "pos": [
+      0,
+      2500,
+      -14000
+     ],
+     "radius": 4000,
+     "label": "OBJECTIVE AREA"
+    }
+   ],
+   "groups": [
+    {
+     "id": "conv",
+     "type": "transport",
+     "side": "friendly",
+     "name": "CONV",
+     "callsign": "CONV",
+     "spawn": "start",
+     "pos": [
+      0,
+      3000,
+      4000
+     ],
+     "heading": 180,
+     "speed": 190,
+     "route": [
+      [
+       0,
+       3000,
+       0
+      ]
+     ],
+     "iffShown": "unknown"
+    },
+    {
+     "id": "b1",
+     "type": "scout",
+     "side": "hostile",
+     "name": "B1",
+     "callsign": "B1",
+     "spawn": "start",
+     "pos": [
+      6000,
+      3000,
+      -8000
+     ],
+     "heading": 180,
+     "speed": 190,
+     "route": [
+      [
+       0,
+       3000,
+       0
+      ]
+     ],
+     "iffShown": "unknown"
+    }
+   ],
+   "objectives": {
+    "primary": [
+     {
+      "id": "reach",
+      "type": "reach_area",
+      "label": "REACH OBJECTIVE AREA",
+      "params": {
+       "waypoints": [
+        "objective"
+       ]
+      }
+     },
+     {
+      "id": "guard",
+      "type": "protect",
+      "label": "ESCORT THE TRANSPORT",
+      "params": {
+       "target": "conv",
+       "until": "end"
+      }
+     }
+    ],
+    "secondary": [
+     {
+      "id": "wingman",
+      "type": "survive_entity",
+      "label": "MAINTAIN WINGMAN SURVIVAL",
+      "params": {
+       "target": "wingman"
+      }
+     }
+    ],
+    "optional": [
+     {
+      "id": "nodamage",
+      "type": "max_damage",
+      "label": "TAKE NO DAMAGE",
+      "params": {
+       "max": 0
+      }
+     }
+    ]
+   },
+   "events": [],
+   "cinematics": {},
+   "reward": {
+    "xp": 520,
+    "tokens": 2
+   },
+   "scoring": {
+    "parTime": 420
+   },
+   "briefing": {
+    "center": {
+     "lon": 3.5,
+     "lat": 37.3
+    },
+    "zoomKm": 160,
+    "playerPath": [
+     [
+      0,
+      0
+     ],
+     [
+      10,
+      40
+     ],
+     [
+      20,
+      80
+     ]
+    ],
+    "enemyRoutes": [
+     {
+      "id": "X-1",
+      "label": "X-1",
+      "points": [
+       [
+        70,
+        110
+       ],
+       [
+        40,
+        85
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "threatZones": [
+     {
+      "pos": [
+       20,
+       80
+      ],
+      "r": 20,
+      "label": "OBJECTIVE"
+     }
+    ],
+    "radar": {
+     "pos": [
+      0,
+      0
+     ],
+     "r": 80
+    },
+    "friendly": [
+     {
+      "id": "f1",
+      "path": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        40
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "objectives": [
+     {
+      "label": "OBJECTIVE",
+      "pos": [
+       20,
+       80
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "m03",
+   "number": 3,
+   "title": "RED VECTOR",
+   "titleAr": "\u0627\u0644\u0645\u0633\u0627\u0631 \u0627\u0644\u0623\u062d\u0645\u0631",
+   "type": "DOGFIGHT",
+   "playable": false,
+   "requires": "m02",
+   "region": "COAST",
+   "map": {
+    "lon": 7,
+    "lat": 36.9
+   },
+   "threat": "MEDIUM",
+   "threatLevel": 3,
+   "weatherLabel": "CLOUDY / STRONG WIND",
+   "clock": "18:05",
+   "env": {
+    "biome": "coast",
+    "time": "sunset",
+    "weather": "cloudy"
+   },
+   "narrative": "A fighter sweep enters the coastal sector. Win the fight.",
+   "intel": [
+    {
+     "label": "SWEEP",
+     "text": "Fighter sweep, mixed skill.",
+     "confidence": "MEDIUM"
+    }
+   ],
+   "base": {
+    "name": "FORWARD STRIP",
+    "pos": [
+     0,
+     0,
+     1500
+    ],
+    "heading": 0,
+    "runwayLength": 2200
+   },
+   "spawn": {
+    "pos": [
+     0,
+     1800,
+     0
+    ],
+    "heading": 0,
+    "speed": 230,
+    "onRunway": false
+   },
+   "wingman": {
+    "enabled": true,
+    "callsign": "FALCON TWO"
+   },
+   "zones": [
+    {
+     "id": "ops",
+     "type": "boundary",
+     "pos": [
+      0,
+      0,
+      -12000
+     ],
+     "radius": 34000,
+     "label": "OPERATIONS AREA"
+    }
+   ],
+   "waypoints": [
+    {
+     "id": "objective",
+     "pos": [
+      0,
+      2500,
+      -14000
+     ],
+     "radius": 4000,
+     "label": "OBJECTIVE AREA"
+    }
+   ],
+   "groups": [
+    {
+     "id": "b1",
+     "type": "fighter",
+     "side": "hostile",
+     "name": "B1",
+     "callsign": "B1",
+     "spawn": "start",
+     "pos": [
+      2000,
+      3000,
+      -9000
+     ],
+     "heading": 180,
+     "speed": 190,
+     "route": [
+      [
+       0,
+       3000,
+       0
+      ]
+     ],
+     "iffShown": "unknown"
+    }
+   ],
+   "objectives": {
+    "primary": [
+     {
+      "id": "reach",
+      "type": "reach_area",
+      "label": "REACH OBJECTIVE AREA",
+      "params": {
+       "waypoints": [
+        "objective"
+       ]
+      }
+     },
+     {
+      "id": "kill",
+      "type": "destroy",
+      "label": "NEUTRALIZE HOSTILES",
+      "params": {
+       "targets": [
+        "b1"
+       ],
+       "requireIdentified": true
+      }
+     }
+    ],
+    "secondary": [
+     {
+      "id": "wingman",
+      "type": "survive_entity",
+      "label": "MAINTAIN WINGMAN SURVIVAL",
+      "params": {
+       "target": "wingman"
+      }
+     }
+    ],
+    "optional": [
+     {
+      "id": "nodamage",
+      "type": "max_damage",
+      "label": "TAKE NO DAMAGE",
+      "params": {
+       "max": 0
+      }
+     }
+    ]
+   },
+   "events": [],
+   "cinematics": {},
+   "reward": {
+    "xp": 580,
+    "tokens": 2
+   },
+   "scoring": {
+    "parTime": 420
+   },
+   "briefing": {
+    "center": {
+     "lon": 7,
+     "lat": 36.9
+    },
+    "zoomKm": 160,
+    "playerPath": [
+     [
+      0,
+      0
+     ],
+     [
+      10,
+      40
+     ],
+     [
+      20,
+      80
+     ]
+    ],
+    "enemyRoutes": [
+     {
+      "id": "X-1",
+      "label": "X-1",
+      "points": [
+       [
+        70,
+        110
+       ],
+       [
+        40,
+        85
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "threatZones": [
+     {
+      "pos": [
+       20,
+       80
+      ],
+      "r": 20,
+      "label": "OBJECTIVE"
+     }
+    ],
+    "radar": {
+     "pos": [
+      0,
+      0
+     ],
+     "r": 80
+    },
+    "friendly": [
+     {
+      "id": "f1",
+      "path": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        40
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "objectives": [
+     {
+      "label": "OBJECTIVE",
+      "pos": [
+       20,
+       80
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "m04",
+   "number": 4,
+   "title": "EAGLE EYE",
+   "titleAr": "\u0639\u064a\u0646 \u0627\u0644\u0646\u0633\u0631",
+   "type": "RECONNAISSANCE",
+   "playable": false,
+   "requires": "m03",
+   "region": "ATLAS MOUNTAINS",
+   "map": {
+    "lon": 3.5,
+    "lat": 35.2
+   },
+   "threat": "LOW",
+   "threatLevel": 2,
+   "weatherLabel": "FOG / CALM",
+   "clock": "06:15",
+   "env": {
+    "biome": "atlas",
+    "time": "dawn",
+    "weather": "fog"
+   },
+   "narrative": "Photograph a suspected relay site hidden in the Atlas valleys.",
+   "intel": [
+    {
+     "label": "TARGET",
+     "text": "Valley relay site, marginal radar cover.",
+     "confidence": "LOW"
+    }
+   ],
+   "base": {
+    "name": "FORWARD STRIP",
+    "pos": [
+     0,
+     0,
+     1500
+    ],
+    "heading": 0,
+    "runwayLength": 2200
+   },
+   "spawn": {
+    "pos": [
+     0,
+     1800,
+     0
+    ],
+    "heading": 0,
+    "speed": 230,
+    "onRunway": false
+   },
+   "wingman": {
+    "enabled": true,
+    "callsign": "FALCON TWO"
+   },
+   "zones": [
+    {
+     "id": "ops",
+     "type": "boundary",
+     "pos": [
+      0,
+      0,
+      -12000
+     ],
+     "radius": 34000,
+     "label": "OPERATIONS AREA"
+    }
+   ],
+   "waypoints": [
+    {
+     "id": "objective",
+     "pos": [
+      0,
+      2500,
+      -14000
+     ],
+     "radius": 4000,
+     "label": "OBJECTIVE AREA"
+    }
+   ],
+   "groups": [],
+   "objectives": {
+    "primary": [
+     {
+      "id": "reach",
+      "type": "reach_area",
+      "label": "REACH OBJECTIVE AREA",
+      "params": {
+       "waypoints": [
+        "objective"
+       ]
+      }
+     }
+    ],
+    "secondary": [
+     {
+      "id": "wingman",
+      "type": "survive_entity",
+      "label": "MAINTAIN WINGMAN SURVIVAL",
+      "params": {
+       "target": "wingman"
+      }
+     }
+    ],
+    "optional": [
+     {
+      "id": "nodamage",
+      "type": "max_damage",
+      "label": "TAKE NO DAMAGE",
+      "params": {
+       "max": 0
+      }
+     }
+    ]
+   },
+   "events": [],
+   "cinematics": {},
+   "reward": {
+    "xp": 640,
+    "tokens": 2
+   },
+   "scoring": {
+    "parTime": 420
+   },
+   "briefing": {
+    "center": {
+     "lon": 3.5,
+     "lat": 35.2
+    },
+    "zoomKm": 160,
+    "playerPath": [
+     [
+      0,
+      0
+     ],
+     [
+      10,
+      40
+     ],
+     [
+      20,
+      80
+     ]
+    ],
+    "enemyRoutes": [
+     {
+      "id": "X-1",
+      "label": "X-1",
+      "points": [
+       [
+        70,
+        110
+       ],
+       [
+        40,
+        85
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "threatZones": [
+     {
+      "pos": [
+       20,
+       80
+      ],
+      "r": 20,
+      "label": "OBJECTIVE"
+     }
+    ],
+    "radar": {
+     "pos": [
+      0,
+      0
+     ],
+     "r": 80
+    },
+    "friendly": [
+     {
+      "id": "f1",
+      "path": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        40
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "objectives": [
+     {
+      "label": "OBJECTIVE",
+      "pos": [
+       20,
+       80
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "m05",
+   "number": 5,
+   "title": "DUST ROUTE",
+   "titleAr": "\u0637\u0631\u064a\u0642 \u0627\u0644\u063a\u0628\u0627\u0631",
+   "type": "AIR SUPPORT",
+   "playable": false,
+   "requires": "m04",
+   "region": "HIGH PLATEAUS",
+   "map": {
+    "lon": 3,
+    "lat": 34.6
+   },
+   "threat": "MEDIUM",
+   "threatLevel": 3,
+   "weatherLabel": "DUST / HIGH WIND",
+   "clock": "12:30",
+   "env": {
+    "biome": "plateaus",
+    "time": "day",
+    "weather": "dust"
+   },
+   "narrative": "Protect a ground column crossing the high plateaus.",
+   "intel": [
+    {
+     "label": "COLUMN",
+     "text": "Supply convoy on plateau road.",
+     "confidence": "HIGH"
+    }
+   ],
+   "base": {
+    "name": "FORWARD STRIP",
+    "pos": [
+     0,
+     0,
+     1500
+    ],
+    "heading": 0,
+    "runwayLength": 2200
+   },
+   "spawn": {
+    "pos": [
+     0,
+     1800,
+     0
+    ],
+    "heading": 0,
+    "speed": 230,
+    "onRunway": false
+   },
+   "wingman": {
+    "enabled": true,
+    "callsign": "FALCON TWO"
+   },
+   "zones": [
+    {
+     "id": "ops",
+     "type": "boundary",
+     "pos": [
+      0,
+      0,
+      -12000
+     ],
+     "radius": 34000,
+     "label": "OPERATIONS AREA"
+    }
+   ],
+   "waypoints": [
+    {
+     "id": "objective",
+     "pos": [
+      0,
+      2500,
+      -14000
+     ],
+     "radius": 4000,
+     "label": "OBJECTIVE AREA"
+    }
+   ],
+   "groups": [
+    {
+     "id": "b1",
+     "type": "fighter",
+     "side": "hostile",
+     "name": "B1",
+     "callsign": "B1",
+     "spawn": "start",
+     "pos": [
+      2000,
+      3000,
+      -9000
+     ],
+     "heading": 180,
+     "speed": 190,
+     "route": [
+      [
+       0,
+       3000,
+       0
+      ]
+     ],
+     "iffShown": "unknown"
+    }
+   ],
+   "objectives": {
+    "primary": [
+     {
+      "id": "reach",
+      "type": "reach_area",
+      "label": "REACH OBJECTIVE AREA",
+      "params": {
+       "waypoints": [
+        "objective"
+       ]
+      }
+     },
+     {
+      "id": "kill",
+      "type": "destroy",
+      "label": "NEUTRALIZE HOSTILES",
+      "params": {
+       "targets": [
+        "b1"
+       ],
+       "requireIdentified": true
+      }
+     }
+    ],
+    "secondary": [
+     {
+      "id": "wingman",
+      "type": "survive_entity",
+      "label": "MAINTAIN WINGMAN SURVIVAL",
+      "params": {
+       "target": "wingman"
+      }
+     }
+    ],
+    "optional": [
+     {
+      "id": "nodamage",
+      "type": "max_damage",
+      "label": "TAKE NO DAMAGE",
+      "params": {
+       "max": 0
+      }
+     }
+    ]
+   },
+   "events": [],
+   "cinematics": {},
+   "reward": {
+    "xp": 700,
+    "tokens": 2
+   },
+   "scoring": {
+    "parTime": 420
+   },
+   "briefing": {
+    "center": {
+     "lon": 3,
+     "lat": 34.6
+    },
+    "zoomKm": 160,
+    "playerPath": [
+     [
+      0,
+      0
+     ],
+     [
+      10,
+      40
+     ],
+     [
+      20,
+      80
+     ]
+    ],
+    "enemyRoutes": [
+     {
+      "id": "X-1",
+      "label": "X-1",
+      "points": [
+       [
+        70,
+        110
+       ],
+       [
+        40,
+        85
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "threatZones": [
+     {
+      "pos": [
+       20,
+       80
+      ],
+      "r": 20,
+      "label": "OBJECTIVE"
+     }
+    ],
+    "radar": {
+     "pos": [
+      0,
+      0
+     ],
+     "r": 80
+    },
+    "friendly": [
+     {
+      "id": "f1",
+      "path": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        40
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "objectives": [
+     {
+      "label": "OBJECTIVE",
+      "pos": [
+       20,
+       80
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "m06",
+   "number": 6,
+   "title": "BROKEN WING",
+   "titleAr": "\u062c\u0646\u0627\u062d \u0645\u0643\u0633\u0648\u0631",
+   "type": "RESCUE",
+   "playable": false,
+   "requires": "m05",
+   "region": "MOUNTAINS",
+   "map": {
+    "lon": 6.2,
+    "lat": 35.3
+   },
+   "threat": "MEDIUM",
+   "threatLevel": 3,
+   "weatherLabel": "CLOUDY / GUSTS",
+   "clock": "14:20",
+   "env": {
+    "biome": "atlas",
+    "time": "day",
+    "weather": "cloudy"
+   },
+   "narrative": "A downed crew signals from the mountains. Cover the rescue.",
+   "intel": [
+    {
+     "label": "BEACON",
+     "text": "Survivor beacon intermittent.",
+     "confidence": "MEDIUM"
+    }
+   ],
+   "base": {
+    "name": "FORWARD STRIP",
+    "pos": [
+     0,
+     0,
+     1500
+    ],
+    "heading": 0,
+    "runwayLength": 2200
+   },
+   "spawn": {
+    "pos": [
+     0,
+     1800,
+     0
+    ],
+    "heading": 0,
+    "speed": 230,
+    "onRunway": false
+   },
+   "wingman": {
+    "enabled": true,
+    "callsign": "FALCON TWO"
+   },
+   "zones": [
+    {
+     "id": "ops",
+     "type": "boundary",
+     "pos": [
+      0,
+      0,
+      -12000
+     ],
+     "radius": 34000,
+     "label": "OPERATIONS AREA"
+    }
+   ],
+   "waypoints": [
+    {
+     "id": "objective",
+     "pos": [
+      0,
+      2500,
+      -14000
+     ],
+     "radius": 4000,
+     "label": "OBJECTIVE AREA"
+    }
+   ],
+   "groups": [
+    {
+     "id": "b1",
+     "type": "fighter",
+     "side": "hostile",
+     "name": "B1",
+     "callsign": "B1",
+     "spawn": "start",
+     "pos": [
+      2000,
+      3000,
+      -9000
+     ],
+     "heading": 180,
+     "speed": 190,
+     "route": [
+      [
+       0,
+       3000,
+       0
+      ]
+     ],
+     "iffShown": "unknown"
+    }
+   ],
+   "objectives": {
+    "primary": [
+     {
+      "id": "reach",
+      "type": "reach_area",
+      "label": "REACH OBJECTIVE AREA",
+      "params": {
+       "waypoints": [
+        "objective"
+       ]
+      }
+     },
+     {
+      "id": "kill",
+      "type": "destroy",
+      "label": "NEUTRALIZE HOSTILES",
+      "params": {
+       "targets": [
+        "b1"
+       ],
+       "requireIdentified": true
+      }
+     }
+    ],
+    "secondary": [
+     {
+      "id": "wingman",
+      "type": "survive_entity",
+      "label": "MAINTAIN WINGMAN SURVIVAL",
+      "params": {
+       "target": "wingman"
+      }
+     }
+    ],
+    "optional": [
+     {
+      "id": "nodamage",
+      "type": "max_damage",
+      "label": "TAKE NO DAMAGE",
+      "params": {
+       "max": 0
+      }
+     }
+    ]
+   },
+   "events": [],
+   "cinematics": {},
+   "reward": {
+    "xp": 760,
+    "tokens": 2
+   },
+   "scoring": {
+    "parTime": 420
+   },
+   "briefing": {
+    "center": {
+     "lon": 6.2,
+     "lat": 35.3
+    },
+    "zoomKm": 160,
+    "playerPath": [
+     [
+      0,
+      0
+     ],
+     [
+      10,
+      40
+     ],
+     [
+      20,
+      80
+     ]
+    ],
+    "enemyRoutes": [
+     {
+      "id": "X-1",
+      "label": "X-1",
+      "points": [
+       [
+        70,
+        110
+       ],
+       [
+        40,
+        85
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "threatZones": [
+     {
+      "pos": [
+       20,
+       80
+      ],
+      "r": 20,
+      "label": "OBJECTIVE"
+     }
+    ],
+    "radar": {
+     "pos": [
+      0,
+      0
+     ],
+     "r": 80
+    },
+    "friendly": [
+     {
+      "id": "f1",
+      "path": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        40
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "objectives": [
+     {
+      "label": "OBJECTIVE",
+      "pos": [
+       20,
+       80
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "m07",
+   "number": 7,
+   "title": "NO SIGNAL",
+   "titleAr": "\u0644\u0627 \u0625\u0634\u0627\u0631\u0629",
+   "type": "NAVIGATION",
+   "playable": false,
+   "requires": "m06",
+   "region": "SAHARA",
+   "map": {
+    "lon": 2.5,
+    "lat": 31.5
+   },
+   "threat": "MEDIUM",
+   "threatLevel": 3,
+   "weatherLabel": "CLEAR / HEAT HAZE",
+   "clock": "11:00",
+   "env": {
+    "biome": "sahara",
+    "time": "day",
+    "weather": "clear"
+   },
+   "narrative": "Navigate through jammed airspace with degraded radar.",
+   "intel": [
+    {
+     "label": "JAMMING",
+     "text": "Wide-area radar jamming.",
+     "confidence": "HIGH"
+    }
+   ],
+   "base": {
+    "name": "FORWARD STRIP",
+    "pos": [
+     0,
+     0,
+     1500
+    ],
+    "heading": 0,
+    "runwayLength": 2200
+   },
+   "spawn": {
+    "pos": [
+     0,
+     1800,
+     0
+    ],
+    "heading": 0,
+    "speed": 230,
+    "onRunway": false
+   },
+   "wingman": {
+    "enabled": true,
+    "callsign": "FALCON TWO"
+   },
+   "zones": [
+    {
+     "id": "ops",
+     "type": "boundary",
+     "pos": [
+      0,
+      0,
+      -12000
+     ],
+     "radius": 34000,
+     "label": "OPERATIONS AREA"
+    }
+   ],
+   "waypoints": [
+    {
+     "id": "objective",
+     "pos": [
+      0,
+      2500,
+      -14000
+     ],
+     "radius": 4000,
+     "label": "OBJECTIVE AREA"
+    }
+   ],
+   "groups": [],
+   "objectives": {
+    "primary": [
+     {
+      "id": "reach",
+      "type": "reach_area",
+      "label": "REACH OBJECTIVE AREA",
+      "params": {
+       "waypoints": [
+        "objective"
+       ]
+      }
+     }
+    ],
+    "secondary": [
+     {
+      "id": "wingman",
+      "type": "survive_entity",
+      "label": "MAINTAIN WINGMAN SURVIVAL",
+      "params": {
+       "target": "wingman"
+      }
+     }
+    ],
+    "optional": [
+     {
+      "id": "nodamage",
+      "type": "max_damage",
+      "label": "TAKE NO DAMAGE",
+      "params": {
+       "max": 0
+      }
+     }
+    ]
+   },
+   "events": [],
+   "cinematics": {},
+   "reward": {
+    "xp": 820,
+    "tokens": 2
+   },
+   "scoring": {
+    "parTime": 420
+   },
+   "briefing": {
+    "center": {
+     "lon": 2.5,
+     "lat": 31.5
+    },
+    "zoomKm": 160,
+    "playerPath": [
+     [
+      0,
+      0
+     ],
+     [
+      10,
+      40
+     ],
+     [
+      20,
+      80
+     ]
+    ],
+    "enemyRoutes": [
+     {
+      "id": "X-1",
+      "label": "X-1",
+      "points": [
+       [
+        70,
+        110
+       ],
+       [
+        40,
+        85
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "threatZones": [
+     {
+      "pos": [
+       20,
+       80
+      ],
+      "r": 20,
+      "label": "OBJECTIVE"
+     }
+    ],
+    "radar": {
+     "pos": [
+      0,
+      0
+     ],
+     "r": 80
+    },
+    "friendly": [
+     {
+      "id": "f1",
+      "path": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        40
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "objectives": [
+     {
+      "label": "OBJECTIVE",
+      "pos": [
+       20,
+       80
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "m08",
+   "number": 8,
+   "title": "BLACK SAND",
+   "titleAr": "\u0627\u0644\u0631\u0645\u0627\u0644 \u0627\u0644\u0633\u0648\u062f\u0627\u0621",
+   "type": "STRIKE",
+   "playable": false,
+   "requires": "m07",
+   "region": "DEEP SAHARA",
+   "map": {
+    "lon": 3,
+    "lat": 28
+   },
+   "threat": "HIGH",
+   "threatLevel": 4,
+   "weatherLabel": "CLEAR / DRY WIND",
+   "clock": "17:45",
+   "env": {
+    "biome": "sahara",
+    "time": "sunset",
+    "weather": "clear"
+   },
+   "narrative": "Destroy a hidden VESPER relay site in the deep desert.",
+   "intel": [
+    {
+     "label": "RELAY",
+     "text": "Hardened relay antenna array.",
+     "confidence": "MEDIUM"
+    }
+   ],
+   "base": {
+    "name": "FORWARD STRIP",
+    "pos": [
+     0,
+     0,
+     1500
+    ],
+    "heading": 0,
+    "runwayLength": 2200
+   },
+   "spawn": {
+    "pos": [
+     0,
+     1800,
+     0
+    ],
+    "heading": 0,
+    "speed": 230,
+    "onRunway": false
+   },
+   "wingman": {
+    "enabled": true,
+    "callsign": "FALCON TWO"
+   },
+   "zones": [
+    {
+     "id": "ops",
+     "type": "boundary",
+     "pos": [
+      0,
+      0,
+      -12000
+     ],
+     "radius": 34000,
+     "label": "OPERATIONS AREA"
+    }
+   ],
+   "waypoints": [
+    {
+     "id": "objective",
+     "pos": [
+      0,
+      2500,
+      -14000
+     ],
+     "radius": 4000,
+     "label": "OBJECTIVE AREA"
+    }
+   ],
+   "groups": [
+    {
+     "id": "b1",
+     "type": "fighter",
+     "side": "hostile",
+     "name": "B1",
+     "callsign": "B1",
+     "spawn": "start",
+     "pos": [
+      2000,
+      3000,
+      -9000
+     ],
+     "heading": 180,
+     "speed": 190,
+     "route": [
+      [
+       0,
+       3000,
+       0
+      ]
+     ],
+     "iffShown": "unknown"
+    }
+   ],
+   "objectives": {
+    "primary": [
+     {
+      "id": "reach",
+      "type": "reach_area",
+      "label": "REACH OBJECTIVE AREA",
+      "params": {
+       "waypoints": [
+        "objective"
+       ]
+      }
+     },
+     {
+      "id": "kill",
+      "type": "destroy",
+      "label": "NEUTRALIZE HOSTILES",
+      "params": {
+       "targets": [
+        "b1"
+       ],
+       "requireIdentified": true
+      }
+     }
+    ],
+    "secondary": [
+     {
+      "id": "wingman",
+      "type": "survive_entity",
+      "label": "MAINTAIN WINGMAN SURVIVAL",
+      "params": {
+       "target": "wingman"
+      }
+     }
+    ],
+    "optional": [
+     {
+      "id": "nodamage",
+      "type": "max_damage",
+      "label": "TAKE NO DAMAGE",
+      "params": {
+       "max": 0
+      }
+     }
+    ]
+   },
+   "events": [],
+   "cinematics": {},
+   "reward": {
+    "xp": 880,
+    "tokens": 2
+   },
+   "scoring": {
+    "parTime": 420
+   },
+   "briefing": {
+    "center": {
+     "lon": 3,
+     "lat": 28
+    },
+    "zoomKm": 160,
+    "playerPath": [
+     [
+      0,
+      0
+     ],
+     [
+      10,
+      40
+     ],
+     [
+      20,
+      80
+     ]
+    ],
+    "enemyRoutes": [
+     {
+      "id": "X-1",
+      "label": "X-1",
+      "points": [
+       [
+        70,
+        110
+       ],
+       [
+        40,
+        85
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "threatZones": [
+     {
+      "pos": [
+       20,
+       80
+      ],
+      "r": 20,
+      "label": "OBJECTIVE"
+     }
+    ],
+    "radar": {
+     "pos": [
+      0,
+      0
+     ],
+     "r": 80
+    },
+    "friendly": [
+     {
+      "id": "f1",
+      "path": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        40
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "objectives": [
+     {
+      "label": "OBJECTIVE",
+      "pos": [
+       20,
+       80
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "m09",
+   "number": 9,
+   "title": "MIRAGE",
+   "titleAr": "\u0633\u0631\u0627\u0628",
+   "type": "HIGH-SPEED PURSUIT",
+   "playable": false,
+   "requires": "m08",
+   "region": "SOUTHERN ALGERIA",
+   "map": {
+    "lon": 6,
+    "lat": 23.5
+   },
+   "threat": "HIGH",
+   "threatLevel": 4,
+   "weatherLabel": "CLEAR / HEAT HAZE",
+   "clock": "13:10",
+   "env": {
+    "biome": "southern",
+    "time": "day",
+    "weather": "clear"
+   },
+   "narrative": "A fast courier jet flees south. Run it down.",
+   "intel": [
+    {
+     "label": "COURIER",
+     "text": "High-speed target on southern track.",
+     "confidence": "MEDIUM"
+    }
+   ],
+   "base": {
+    "name": "FORWARD STRIP",
+    "pos": [
+     0,
+     0,
+     1500
+    ],
+    "heading": 0,
+    "runwayLength": 2200
+   },
+   "spawn": {
+    "pos": [
+     0,
+     1800,
+     0
+    ],
+    "heading": 0,
+    "speed": 230,
+    "onRunway": false
+   },
+   "wingman": {
+    "enabled": true,
+    "callsign": "FALCON TWO"
+   },
+   "zones": [
+    {
+     "id": "ops",
+     "type": "boundary",
+     "pos": [
+      0,
+      0,
+      -12000
+     ],
+     "radius": 34000,
+     "label": "OPERATIONS AREA"
+    }
+   ],
+   "waypoints": [
+    {
+     "id": "objective",
+     "pos": [
+      0,
+      2500,
+      -14000
+     ],
+     "radius": 4000,
+     "label": "OBJECTIVE AREA"
+    }
+   ],
+   "groups": [
+    {
+     "id": "b1",
+     "type": "fighter",
+     "side": "hostile",
+     "name": "B1",
+     "callsign": "B1",
+     "spawn": "start",
+     "pos": [
+      2000,
+      3000,
+      -9000
+     ],
+     "heading": 180,
+     "speed": 190,
+     "route": [
+      [
+       0,
+       3000,
+       0
+      ]
+     ],
+     "iffShown": "unknown"
+    }
+   ],
+   "objectives": {
+    "primary": [
+     {
+      "id": "reach",
+      "type": "reach_area",
+      "label": "REACH OBJECTIVE AREA",
+      "params": {
+       "waypoints": [
+        "objective"
+       ]
+      }
+     },
+     {
+      "id": "kill",
+      "type": "destroy",
+      "label": "NEUTRALIZE HOSTILES",
+      "params": {
+       "targets": [
+        "b1"
+       ],
+       "requireIdentified": true
+      }
+     }
+    ],
+    "secondary": [
+     {
+      "id": "wingman",
+      "type": "survive_entity",
+      "label": "MAINTAIN WINGMAN SURVIVAL",
+      "params": {
+       "target": "wingman"
+      }
+     }
+    ],
+    "optional": [
+     {
+      "id": "nodamage",
+      "type": "max_damage",
+      "label": "TAKE NO DAMAGE",
+      "params": {
+       "max": 0
+      }
+     }
+    ]
+   },
+   "events": [],
+   "cinematics": {},
+   "reward": {
+    "xp": 940,
+    "tokens": 2
+   },
+   "scoring": {
+    "parTime": 420
+   },
+   "briefing": {
+    "center": {
+     "lon": 6,
+     "lat": 23.5
+    },
+    "zoomKm": 160,
+    "playerPath": [
+     [
+      0,
+      0
+     ],
+     [
+      10,
+      40
+     ],
+     [
+      20,
+      80
+     ]
+    ],
+    "enemyRoutes": [
+     {
+      "id": "X-1",
+      "label": "X-1",
+      "points": [
+       [
+        70,
+        110
+       ],
+       [
+        40,
+        85
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "threatZones": [
+     {
+      "pos": [
+       20,
+       80
+      ],
+      "r": 20,
+      "label": "OBJECTIVE"
+     }
+    ],
+    "radar": {
+     "pos": [
+      0,
+      0
+     ],
+     "r": 80
+    },
+    "friendly": [
+     {
+      "id": "f1",
+      "path": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        40
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "objectives": [
+     {
+      "label": "OBJECTIVE",
+      "pos": [
+       20,
+       80
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "m10",
+   "number": 10,
+   "title": "NIGHT WATCH",
+   "titleAr": "\u0645\u0631\u0627\u0642\u0628\u0629 \u0627\u0644\u0644\u064a\u0644",
+   "type": "NIGHT COMBAT",
+   "playable": false,
+   "requires": "m09",
+   "region": "SAHARA",
+   "map": {
+    "lon": -0.5,
+    "lat": 29.5
+   },
+   "threat": "HIGH",
+   "threatLevel": 4,
+   "weatherLabel": "CLEAR / CALM",
+   "clock": "01:50",
+   "env": {
+    "biome": "sahara",
+    "time": "night",
+    "weather": "clear"
+   },
+   "narrative": "Night patrol turns to night combat over the dunes.",
+   "intel": [
+    {
+     "label": "PATROL",
+     "text": "Intruders on a low track.",
+     "confidence": "MEDIUM"
+    }
+   ],
+   "base": {
+    "name": "FORWARD STRIP",
+    "pos": [
+     0,
+     0,
+     1500
+    ],
+    "heading": 0,
+    "runwayLength": 2200
+   },
+   "spawn": {
+    "pos": [
+     0,
+     1800,
+     0
+    ],
+    "heading": 0,
+    "speed": 230,
+    "onRunway": false
+   },
+   "wingman": {
+    "enabled": true,
+    "callsign": "FALCON TWO"
+   },
+   "zones": [
+    {
+     "id": "ops",
+     "type": "boundary",
+     "pos": [
+      0,
+      0,
+      -12000
+     ],
+     "radius": 34000,
+     "label": "OPERATIONS AREA"
+    }
+   ],
+   "waypoints": [
+    {
+     "id": "objective",
+     "pos": [
+      0,
+      2500,
+      -14000
+     ],
+     "radius": 4000,
+     "label": "OBJECTIVE AREA"
+    }
+   ],
+   "groups": [
+    {
+     "id": "b1",
+     "type": "fighter",
+     "side": "hostile",
+     "name": "B1",
+     "callsign": "B1",
+     "spawn": "start",
+     "pos": [
+      2000,
+      3000,
+      -9000
+     ],
+     "heading": 180,
+     "speed": 190,
+     "route": [
+      [
+       0,
+       3000,
+       0
+      ]
+     ],
+     "iffShown": "unknown"
+    }
+   ],
+   "objectives": {
+    "primary": [
+     {
+      "id": "reach",
+      "type": "reach_area",
+      "label": "REACH OBJECTIVE AREA",
+      "params": {
+       "waypoints": [
+        "objective"
+       ]
+      }
+     },
+     {
+      "id": "kill",
+      "type": "destroy",
+      "label": "NEUTRALIZE HOSTILES",
+      "params": {
+       "targets": [
+        "b1"
+       ],
+       "requireIdentified": true
+      }
+     }
+    ],
+    "secondary": [
+     {
+      "id": "wingman",
+      "type": "survive_entity",
+      "label": "MAINTAIN WINGMAN SURVIVAL",
+      "params": {
+       "target": "wingman"
+      }
+     }
+    ],
+    "optional": [
+     {
+      "id": "nodamage",
+      "type": "max_damage",
+      "label": "TAKE NO DAMAGE",
+      "params": {
+       "max": 0
+      }
+     }
+    ]
+   },
+   "events": [],
+   "cinematics": {},
+   "reward": {
+    "xp": 1000,
+    "tokens": 2
+   },
+   "scoring": {
+    "parTime": 420
+   },
+   "briefing": {
+    "center": {
+     "lon": -0.5,
+     "lat": 29.5
+    },
+    "zoomKm": 160,
+    "playerPath": [
+     [
+      0,
+      0
+     ],
+     [
+      10,
+      40
+     ],
+     [
+      20,
+      80
+     ]
+    ],
+    "enemyRoutes": [
+     {
+      "id": "X-1",
+      "label": "X-1",
+      "points": [
+       [
+        70,
+        110
+       ],
+       [
+        40,
+        85
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "threatZones": [
+     {
+      "pos": [
+       20,
+       80
+      ],
+      "r": 20,
+      "label": "OBJECTIVE"
+     }
+    ],
+    "radar": {
+     "pos": [
+      0,
+      0
+     ],
+     "r": 80
+    },
+    "friendly": [
+     {
+      "id": "f1",
+      "path": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        40
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "objectives": [
+     {
+      "label": "OBJECTIVE",
+      "pos": [
+       20,
+       80
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "m11",
+   "number": 11,
+   "title": "STORM LINE",
+   "titleAr": "\u062e\u0637 \u0627\u0644\u0639\u0627\u0635\u0641\u0629",
+   "type": "WEATHER COMBAT",
+   "playable": false,
+   "requires": "m10",
+   "region": "ATLAS",
+   "map": {
+    "lon": 1.5,
+    "lat": 35.5
+   },
+   "threat": "HIGH",
+   "threatLevel": 4,
+   "weatherLabel": "STORM / SEVERE",
+   "clock": "15:30",
+   "env": {
+    "biome": "atlas",
+    "time": "day",
+    "weather": "storm"
+   },
+   "narrative": "Fight through a storm front over the Atlas.",
+   "intel": [
+    {
+     "label": "STORM",
+     "text": "Severe turbulence expected.",
+     "confidence": "HIGH"
+    }
+   ],
+   "base": {
+    "name": "FORWARD STRIP",
+    "pos": [
+     0,
+     0,
+     1500
+    ],
+    "heading": 0,
+    "runwayLength": 2200
+   },
+   "spawn": {
+    "pos": [
+     0,
+     1800,
+     0
+    ],
+    "heading": 0,
+    "speed": 230,
+    "onRunway": false
+   },
+   "wingman": {
+    "enabled": true,
+    "callsign": "FALCON TWO"
+   },
+   "zones": [
+    {
+     "id": "ops",
+     "type": "boundary",
+     "pos": [
+      0,
+      0,
+      -12000
+     ],
+     "radius": 34000,
+     "label": "OPERATIONS AREA"
+    }
+   ],
+   "waypoints": [
+    {
+     "id": "objective",
+     "pos": [
+      0,
+      2500,
+      -14000
+     ],
+     "radius": 4000,
+     "label": "OBJECTIVE AREA"
+    }
+   ],
+   "groups": [
+    {
+     "id": "b1",
+     "type": "fighter",
+     "side": "hostile",
+     "name": "B1",
+     "callsign": "B1",
+     "spawn": "start",
+     "pos": [
+      2000,
+      3000,
+      -9000
+     ],
+     "heading": 180,
+     "speed": 190,
+     "route": [
+      [
+       0,
+       3000,
+       0
+      ]
+     ],
+     "iffShown": "unknown"
+    }
+   ],
+   "objectives": {
+    "primary": [
+     {
+      "id": "reach",
+      "type": "reach_area",
+      "label": "REACH OBJECTIVE AREA",
+      "params": {
+       "waypoints": [
+        "objective"
+       ]
+      }
+     },
+     {
+      "id": "kill",
+      "type": "destroy",
+      "label": "NEUTRALIZE HOSTILES",
+      "params": {
+       "targets": [
+        "b1"
+       ],
+       "requireIdentified": true
+      }
+     }
+    ],
+    "secondary": [
+     {
+      "id": "wingman",
+      "type": "survive_entity",
+      "label": "MAINTAIN WINGMAN SURVIVAL",
+      "params": {
+       "target": "wingman"
+      }
+     }
+    ],
+    "optional": [
+     {
+      "id": "nodamage",
+      "type": "max_damage",
+      "label": "TAKE NO DAMAGE",
+      "params": {
+       "max": 0
+      }
+     }
+    ]
+   },
+   "events": [],
+   "cinematics": {},
+   "reward": {
+    "xp": 1060,
+    "tokens": 2
+   },
+   "scoring": {
+    "parTime": 420
+   },
+   "briefing": {
+    "center": {
+     "lon": 1.5,
+     "lat": 35.5
+    },
+    "zoomKm": 160,
+    "playerPath": [
+     [
+      0,
+      0
+     ],
+     [
+      10,
+      40
+     ],
+     [
+      20,
+      80
+     ]
+    ],
+    "enemyRoutes": [
+     {
+      "id": "X-1",
+      "label": "X-1",
+      "points": [
+       [
+        70,
+        110
+       ],
+       [
+        40,
+        85
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "threatZones": [
+     {
+      "pos": [
+       20,
+       80
+      ],
+      "r": 20,
+      "label": "OBJECTIVE"
+     }
+    ],
+    "radar": {
+     "pos": [
+      0,
+      0
+     ],
+     "r": 80
+    },
+    "friendly": [
+     {
+      "id": "f1",
+      "path": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        40
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "objectives": [
+     {
+      "label": "OBJECTIVE",
+      "pos": [
+       20,
+       80
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "m12",
+   "number": 12,
+   "title": "BLIND SKY",
+   "titleAr": "\u0633\u0645\u0627\u0621 \u0639\u0645\u064a\u0627\u0621",
+   "type": "RADAR DISRUPTION",
+   "playable": false,
+   "requires": "m11",
+   "region": "COAST",
+   "map": {
+    "lon": -0.6,
+    "lat": 35.9
+   },
+   "threat": "HIGH",
+   "threatLevel": 4,
+   "weatherLabel": "CLEAR / LIGHT WIND",
+   "clock": "05:40",
+   "env": {
+    "biome": "coast",
+    "time": "dawn",
+    "weather": "clear"
+   },
+   "narrative": "Radar fails across the coast. Fly by eye.",
+   "intel": [
+    {
+     "label": "RADAR",
+     "text": "Total radar disruption.",
+     "confidence": "HIGH"
+    }
+   ],
+   "base": {
+    "name": "FORWARD STRIP",
+    "pos": [
+     0,
+     0,
+     1500
+    ],
+    "heading": 0,
+    "runwayLength": 2200
+   },
+   "spawn": {
+    "pos": [
+     0,
+     1800,
+     0
+    ],
+    "heading": 0,
+    "speed": 230,
+    "onRunway": false
+   },
+   "wingman": {
+    "enabled": true,
+    "callsign": "FALCON TWO"
+   },
+   "zones": [
+    {
+     "id": "ops",
+     "type": "boundary",
+     "pos": [
+      0,
+      0,
+      -12000
+     ],
+     "radius": 34000,
+     "label": "OPERATIONS AREA"
+    }
+   ],
+   "waypoints": [
+    {
+     "id": "objective",
+     "pos": [
+      0,
+      2500,
+      -14000
+     ],
+     "radius": 4000,
+     "label": "OBJECTIVE AREA"
+    }
+   ],
+   "groups": [
+    {
+     "id": "b1",
+     "type": "fighter",
+     "side": "hostile",
+     "name": "B1",
+     "callsign": "B1",
+     "spawn": "start",
+     "pos": [
+      2000,
+      3000,
+      -9000
+     ],
+     "heading": 180,
+     "speed": 190,
+     "route": [
+      [
+       0,
+       3000,
+       0
+      ]
+     ],
+     "iffShown": "unknown"
+    }
+   ],
+   "objectives": {
+    "primary": [
+     {
+      "id": "reach",
+      "type": "reach_area",
+      "label": "REACH OBJECTIVE AREA",
+      "params": {
+       "waypoints": [
+        "objective"
+       ]
+      }
+     },
+     {
+      "id": "kill",
+      "type": "destroy",
+      "label": "NEUTRALIZE HOSTILES",
+      "params": {
+       "targets": [
+        "b1"
+       ],
+       "requireIdentified": true
+      }
+     }
+    ],
+    "secondary": [
+     {
+      "id": "wingman",
+      "type": "survive_entity",
+      "label": "MAINTAIN WINGMAN SURVIVAL",
+      "params": {
+       "target": "wingman"
+      }
+     }
+    ],
+    "optional": [
+     {
+      "id": "nodamage",
+      "type": "max_damage",
+      "label": "TAKE NO DAMAGE",
+      "params": {
+       "max": 0
+      }
+     }
+    ]
+   },
+   "events": [],
+   "cinematics": {},
+   "reward": {
+    "xp": 1120,
+    "tokens": 2
+   },
+   "scoring": {
+    "parTime": 420
+   },
+   "briefing": {
+    "center": {
+     "lon": -0.6,
+     "lat": 35.9
+    },
+    "zoomKm": 160,
+    "playerPath": [
+     [
+      0,
+      0
+     ],
+     [
+      10,
+      40
+     ],
+     [
+      20,
+      80
+     ]
+    ],
+    "enemyRoutes": [
+     {
+      "id": "X-1",
+      "label": "X-1",
+      "points": [
+       [
+        70,
+        110
+       ],
+       [
+        40,
+        85
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "threatZones": [
+     {
+      "pos": [
+       20,
+       80
+      ],
+      "r": 20,
+      "label": "OBJECTIVE"
+     }
+    ],
+    "radar": {
+     "pos": [
+      0,
+      0
+     ],
+     "r": 80
+    },
+    "friendly": [
+     {
+      "id": "f1",
+      "path": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        40
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "objectives": [
+     {
+      "label": "OBJECTIVE",
+      "pos": [
+       20,
+       80
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "m13",
+   "number": 13,
+   "title": "FALSE FLAG",
+   "titleAr": "\u0627\u0644\u0639\u0644\u0645 \u0627\u0644\u0643\u0627\u0630\u0628",
+   "type": "IDENTIFY & ESCORT",
+   "playable": false,
+   "requires": "m12",
+   "region": "MEDITERRANEAN",
+   "map": {
+    "lon": 1,
+    "lat": 37.2
+   },
+   "threat": "EXTREME",
+   "threatLevel": 5,
+   "weatherLabel": "CLOUDY / MODERATE",
+   "clock": "23:15",
+   "env": {
+    "biome": "coast",
+    "time": "night",
+    "weather": "cloudy"
+   },
+   "narrative": "Identify who is real. Escort what is true.",
+   "intel": [
+    {
+     "label": "IFF",
+     "text": "All tracks unreliable.",
+     "confidence": "LOW"
+    }
+   ],
+   "base": {
+    "name": "FORWARD STRIP",
+    "pos": [
+     0,
+     0,
+     1500
+    ],
+    "heading": 0,
+    "runwayLength": 2200
+   },
+   "spawn": {
+    "pos": [
+     0,
+     1800,
+     0
+    ],
+    "heading": 0,
+    "speed": 230,
+    "onRunway": false
+   },
+   "wingman": {
+    "enabled": true,
+    "callsign": "FALCON TWO"
+   },
+   "zones": [
+    {
+     "id": "ops",
+     "type": "boundary",
+     "pos": [
+      0,
+      0,
+      -12000
+     ],
+     "radius": 34000,
+     "label": "OPERATIONS AREA"
+    }
+   ],
+   "waypoints": [
+    {
+     "id": "objective",
+     "pos": [
+      0,
+      2500,
+      -14000
+     ],
+     "radius": 4000,
+     "label": "OBJECTIVE AREA"
+    }
+   ],
+   "groups": [
+    {
+     "id": "b1",
+     "type": "fighter",
+     "side": "hostile",
+     "name": "B1",
+     "callsign": "B1",
+     "spawn": "start",
+     "pos": [
+      2000,
+      3000,
+      -9000
+     ],
+     "heading": 180,
+     "speed": 190,
+     "route": [
+      [
+       0,
+       3000,
+       0
+      ]
+     ],
+     "iffShown": "unknown"
+    }
+   ],
+   "objectives": {
+    "primary": [
+     {
+      "id": "reach",
+      "type": "reach_area",
+      "label": "REACH OBJECTIVE AREA",
+      "params": {
+       "waypoints": [
+        "objective"
+       ]
+      }
+     },
+     {
+      "id": "kill",
+      "type": "destroy",
+      "label": "NEUTRALIZE HOSTILES",
+      "params": {
+       "targets": [
+        "b1"
+       ],
+       "requireIdentified": true
+      }
+     }
+    ],
+    "secondary": [
+     {
+      "id": "wingman",
+      "type": "survive_entity",
+      "label": "MAINTAIN WINGMAN SURVIVAL",
+      "params": {
+       "target": "wingman"
+      }
+     }
+    ],
+    "optional": [
+     {
+      "id": "nodamage",
+      "type": "max_damage",
+      "label": "TAKE NO DAMAGE",
+      "params": {
+       "max": 0
+      }
+     }
+    ]
+   },
+   "events": [],
+   "cinematics": {},
+   "reward": {
+    "xp": 1180,
+    "tokens": 2
+   },
+   "scoring": {
+    "parTime": 420
+   },
+   "briefing": {
+    "center": {
+     "lon": 1,
+     "lat": 37.2
+    },
+    "zoomKm": 160,
+    "playerPath": [
+     [
+      0,
+      0
+     ],
+     [
+      10,
+      40
+     ],
+     [
+      20,
+      80
+     ]
+    ],
+    "enemyRoutes": [
+     {
+      "id": "X-1",
+      "label": "X-1",
+      "points": [
+       [
+        70,
+        110
+       ],
+       [
+        40,
+        85
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "threatZones": [
+     {
+      "pos": [
+       20,
+       80
+      ],
+      "r": 20,
+      "label": "OBJECTIVE"
+     }
+    ],
+    "radar": {
+     "pos": [
+      0,
+      0
+     ],
+     "r": 80
+    },
+    "friendly": [
+     {
+      "id": "f1",
+      "path": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        40
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "objectives": [
+     {
+      "label": "OBJECTIVE",
+      "pos": [
+       20,
+       80
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "m14",
+   "number": 14,
+   "title": "GREY",
+   "titleAr": "\u0627\u0644\u0631\u0645\u0627\u062f\u064a",
+   "type": "ACE DUEL",
+   "playable": false,
+   "requires": "m13",
+   "region": "MULTIPLE REGIONS",
+   "map": {
+    "lon": 5,
+    "lat": 31
+   },
+   "threat": "EXTREME",
+   "threatLevel": 5,
+   "weatherLabel": "CLEAR / WIND",
+   "clock": "18:30",
+   "env": {
+    "biome": "southern",
+    "time": "sunset",
+    "weather": "clear"
+   },
+   "narrative": "One-on-one against the pilot called Grey.",
+   "intel": [
+    {
+     "label": "GREY",
+     "text": "Unmatched discipline.",
+     "confidence": "HIGH"
+    }
+   ],
+   "base": {
+    "name": "FORWARD STRIP",
+    "pos": [
+     0,
+     0,
+     1500
+    ],
+    "heading": 0,
+    "runwayLength": 2200
+   },
+   "spawn": {
+    "pos": [
+     0,
+     1800,
+     0
+    ],
+    "heading": 0,
+    "speed": 230,
+    "onRunway": false
+   },
+   "wingman": {
+    "enabled": true,
+    "callsign": "FALCON TWO"
+   },
+   "zones": [
+    {
+     "id": "ops",
+     "type": "boundary",
+     "pos": [
+      0,
+      0,
+      -12000
+     ],
+     "radius": 34000,
+     "label": "OPERATIONS AREA"
+    }
+   ],
+   "waypoints": [
+    {
+     "id": "objective",
+     "pos": [
+      0,
+      2500,
+      -14000
+     ],
+     "radius": 4000,
+     "label": "OBJECTIVE AREA"
+    }
+   ],
+   "groups": [
+    {
+     "id": "b1",
+     "type": "elite",
+     "side": "hostile",
+     "name": "B1",
+     "callsign": "B1",
+     "spawn": "start",
+     "pos": [
+      2000,
+      3000,
+      -9000
+     ],
+     "heading": 180,
+     "speed": 190,
+     "route": [
+      [
+       0,
+       3000,
+       0
+      ]
+     ],
+     "iffShown": "unknown"
+    }
+   ],
+   "objectives": {
+    "primary": [
+     {
+      "id": "reach",
+      "type": "reach_area",
+      "label": "REACH OBJECTIVE AREA",
+      "params": {
+       "waypoints": [
+        "objective"
+       ]
+      }
+     },
+     {
+      "id": "kill",
+      "type": "destroy",
+      "label": "NEUTRALIZE HOSTILES",
+      "params": {
+       "targets": [
+        "b1"
+       ],
+       "requireIdentified": true
+      }
+     }
+    ],
+    "secondary": [
+     {
+      "id": "wingman",
+      "type": "survive_entity",
+      "label": "MAINTAIN WINGMAN SURVIVAL",
+      "params": {
+       "target": "wingman"
+      }
+     }
+    ],
+    "optional": [
+     {
+      "id": "nodamage",
+      "type": "max_damage",
+      "label": "TAKE NO DAMAGE",
+      "params": {
+       "max": 0
+      }
+     }
+    ]
+   },
+   "events": [],
+   "cinematics": {},
+   "reward": {
+    "xp": 1240,
+    "tokens": 2
+   },
+   "scoring": {
+    "parTime": 420
+   },
+   "briefing": {
+    "center": {
+     "lon": 5,
+     "lat": 31
+    },
+    "zoomKm": 160,
+    "playerPath": [
+     [
+      0,
+      0
+     ],
+     [
+      10,
+      40
+     ],
+     [
+      20,
+      80
+     ]
+    ],
+    "enemyRoutes": [
+     {
+      "id": "X-1",
+      "label": "X-1",
+      "points": [
+       [
+        70,
+        110
+       ],
+       [
+        40,
+        85
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "threatZones": [
+     {
+      "pos": [
+       20,
+       80
+      ],
+      "r": 20,
+      "label": "OBJECTIVE"
+     }
+    ],
+    "radar": {
+     "pos": [
+      0,
+      0
+     ],
+     "r": 80
+    },
+    "friendly": [
+     {
+      "id": "f1",
+      "path": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        40
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "objectives": [
+     {
+      "label": "OBJECTIVE",
+      "pos": [
+       20,
+       80
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "m15",
+   "number": 15,
+   "title": "SHADOW LINE",
+   "titleAr": "\u062e\u0637 \u0627\u0644\u0638\u0644",
+   "type": "FINAL OPERATION",
+   "playable": false,
+   "requires": "m14",
+   "region": "MULTIPLE REGIONS",
+   "map": {
+    "lon": 4,
+    "lat": 27
+   },
+   "threat": "EXTREME",
+   "threatLevel": 5,
+   "weatherLabel": "STORM / SEVERE",
+   "clock": "03:00",
+   "env": {
+    "biome": "southern",
+    "time": "night",
+    "weather": "storm"
+   },
+   "narrative": "End VESPER\u2019s operation before the line is crossed.",
+   "intel": [
+    {
+     "label": "VESPER",
+     "text": "Network command node.",
+     "confidence": "MEDIUM"
+    }
+   ],
+   "base": {
+    "name": "FORWARD STRIP",
+    "pos": [
+     0,
+     0,
+     1500
+    ],
+    "heading": 0,
+    "runwayLength": 2200
+   },
+   "spawn": {
+    "pos": [
+     0,
+     1800,
+     0
+    ],
+    "heading": 0,
+    "speed": 230,
+    "onRunway": false
+   },
+   "wingman": {
+    "enabled": true,
+    "callsign": "FALCON TWO"
+   },
+   "zones": [
+    {
+     "id": "ops",
+     "type": "boundary",
+     "pos": [
+      0,
+      0,
+      -12000
+     ],
+     "radius": 34000,
+     "label": "OPERATIONS AREA"
+    }
+   ],
+   "waypoints": [
+    {
+     "id": "objective",
+     "pos": [
+      0,
+      2500,
+      -14000
+     ],
+     "radius": 4000,
+     "label": "OBJECTIVE AREA"
+    }
+   ],
+   "groups": [
+    {
+     "id": "b1",
+     "type": "elite",
+     "side": "hostile",
+     "name": "B1",
+     "callsign": "B1",
+     "spawn": "start",
+     "pos": [
+      2000,
+      3000,
+      -9000
+     ],
+     "heading": 180,
+     "speed": 190,
+     "route": [
+      [
+       0,
+       3000,
+       0
+      ]
+     ],
+     "iffShown": "unknown"
+    }
+   ],
+   "objectives": {
+    "primary": [
+     {
+      "id": "reach",
+      "type": "reach_area",
+      "label": "REACH OBJECTIVE AREA",
+      "params": {
+       "waypoints": [
+        "objective"
+       ]
+      }
+     },
+     {
+      "id": "kill",
+      "type": "destroy",
+      "label": "NEUTRALIZE HOSTILES",
+      "params": {
+       "targets": [
+        "b1"
+       ],
+       "requireIdentified": true
+      }
+     }
+    ],
+    "secondary": [
+     {
+      "id": "wingman",
+      "type": "survive_entity",
+      "label": "MAINTAIN WINGMAN SURVIVAL",
+      "params": {
+       "target": "wingman"
+      }
+     }
+    ],
+    "optional": [
+     {
+      "id": "nodamage",
+      "type": "max_damage",
+      "label": "TAKE NO DAMAGE",
+      "params": {
+       "max": 0
+      }
+     }
+    ]
+   },
+   "events": [],
+   "cinematics": {},
+   "reward": {
+    "xp": 1300,
+    "tokens": 2
+   },
+   "scoring": {
+    "parTime": 420
+   },
+   "briefing": {
+    "center": {
+     "lon": 4,
+     "lat": 27
+    },
+    "zoomKm": 160,
+    "playerPath": [
+     [
+      0,
+      0
+     ],
+     [
+      10,
+      40
+     ],
+     [
+      20,
+      80
+     ]
+    ],
+    "enemyRoutes": [
+     {
+      "id": "X-1",
+      "label": "X-1",
+      "points": [
+       [
+        70,
+        110
+       ],
+       [
+        40,
+        85
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "threatZones": [
+     {
+      "pos": [
+       20,
+       80
+      ],
+      "r": 20,
+      "label": "OBJECTIVE"
+     }
+    ],
+    "radar": {
+     "pos": [
+      0,
+      0
+     ],
+     "r": 80
+    },
+    "friendly": [
+     {
+      "id": "f1",
+      "path": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        40
+       ],
+       [
+        20,
+        80
+       ]
+      ]
+     }
+    ],
+    "objectives": [
+     {
+      "label": "OBJECTIVE",
+      "pos": [
+       20,
+       80
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

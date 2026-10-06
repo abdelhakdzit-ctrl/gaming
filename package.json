@@ -1,0 +1,15 @@
+{
+  "name": "shadow-line-sky-of-algeria",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SHADOW LINE — SKY OF ALGERIA: cinematic browser air-combat vertical slice (Three.js)",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "validate": "node scripts/validate-data.mjs"
+  },
+  "dependencies": { "three": "^0.170.0" },
+  "devDependencies": { "vite": "^5.4.0" }
+}

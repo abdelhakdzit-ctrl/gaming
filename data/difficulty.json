@@ -1,0 +1,45 @@
+{
+  "default": "PILOT",
+  "levels": {
+    "RECRUIT": {
+      "desc": "Aim assist, strong warnings, forgiving flight, easier AI.",
+      "aimAssist": 0.7, "warning": 1.0, "assistBonus": 0.5, "stallForgiveness": 1.0, "groundAssist": true,
+      "ai": { "skill": -0.25, "aggression": -0.2, "reaction": 1.7, "flareChance": 0.3, "missileRate": 0.5 },
+      "missile": { "playerLockTime": 0.7, "seeker": 1.0, "flareSeduction": 1.0, "enemyAgility": 0.75 },
+      "radar": { "range": 1.2, "noise": 0.0, "disruption": 0.6 }, "hud": { "minimal": false },
+      "damageTaken": 0.55, "energyBleed": 0.8, "scoreMult": 0.8
+    },
+    "PILOT": {
+      "desc": "Balanced default experience.",
+      "aimAssist": 0.3, "warning": 0.8, "assistBonus": 0.2, "stallForgiveness": 0.8, "groundAssist": true,
+      "ai": { "skill": 0, "aggression": 0, "reaction": 1.0, "flareChance": 0.5, "missileRate": 1.0 },
+      "missile": { "playerLockTime": 1.0, "seeker": 1.0, "flareSeduction": 0.85, "enemyAgility": 1.0 },
+      "radar": { "range": 1.0, "noise": 0.05, "disruption": 1.0 }, "hud": { "minimal": false },
+      "damageTaken": 1.0, "energyBleed": 1.0, "scoreMult": 1.0
+    },
+    "VETERAN": {
+      "desc": "Aggressive AI, reduced assistance, stricter missile behaviour.",
+      "aimAssist": 0.1, "warning": 0.6, "assistBonus": 0.0, "stallForgiveness": 0.6, "groundAssist": false,
+      "ai": { "skill": 0.12, "aggression": 0.2, "reaction": 0.8, "flareChance": 0.65, "missileRate": 1.3 },
+      "missile": { "playerLockTime": 1.3, "seeker": 0.85, "flareSeduction": 0.7, "enemyAgility": 1.15 },
+      "radar": { "range": 0.9, "noise": 0.1, "disruption": 1.2 }, "hud": { "minimal": false },
+      "damageTaken": 1.2, "energyBleed": 1.15, "scoreMult": 1.25
+    },
+    "ACE": {
+      "desc": "Highly reactive AI, minimal assistance, harder energy management.",
+      "aimAssist": 0.0, "warning": 0.45, "assistBonus": -0.1, "stallForgiveness": 0.4, "groundAssist": false,
+      "ai": { "skill": 0.22, "aggression": 0.3, "reaction": 0.55, "flareChance": 0.8, "missileRate": 1.6 },
+      "missile": { "playerLockTime": 1.6, "seeker": 0.75, "flareSeduction": 0.6, "enemyAgility": 1.3 },
+      "radar": { "range": 0.8, "noise": 0.16, "disruption": 1.4 }, "hud": { "minimal": false },
+      "damageTaken": 1.4, "energyBleed": 1.35, "scoreMult": 1.6
+    },
+    "BLACK SKY": {
+      "desc": "Limited radar, minimal HUD support, aggressive AI, reduced recovery tolerance.",
+      "aimAssist": 0.0, "warning": 0.3, "assistBonus": -0.2, "stallForgiveness": 0.2, "groundAssist": false,
+      "ai": { "skill": 0.3, "aggression": 0.4, "reaction": 0.45, "flareChance": 0.9, "missileRate": 1.9 },
+      "missile": { "playerLockTime": 1.9, "seeker": 0.7, "flareSeduction": 0.5, "enemyAgility": 1.4 },
+      "radar": { "range": 0.55, "noise": 0.3, "disruption": 1.8 }, "hud": { "minimal": true },
+      "damageTaken": 1.7, "energyBleed": 1.5, "scoreMult": 2.2
+    }
+  }
+}

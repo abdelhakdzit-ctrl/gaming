@@ -1,0 +1,23 @@
+{
+  "ranks": [
+    { "id": "ROOKIE", "xp": 0 },
+    { "id": "WINGMAN", "xp": 400 },
+    { "id": "FLIGHT LEAD", "xp": 1100 },
+    { "id": "SHADOW", "xp": 2200 },
+    { "id": "ACE", "xp": 4000 }
+  ],
+  "grades": [
+    { "grade": "S", "min": 9000 }, { "grade": "A", "min": 7000 }, { "grade": "B", "min": 5000 },
+    { "grade": "C", "min": 3000 }, { "grade": "D", "min": 0 }
+  ],
+  "score": {
+    "perTarget": 1500, "primaryObjective": 800, "secondaryObjective": 700, "optionalObjective": 500,
+    "accuracyMax": 1200, "damageMax": 1200, "allySurvival": 600, "timeMax": 800
+  },
+  "medals": [
+    { "id": "sharpshooter", "name": "SHARPSHOOTER", "desc": "Accuracy above 45%" },
+    { "id": "untouched", "name": "UNTOUCHED", "desc": "No damage taken" },
+    { "id": "wingman", "name": "NO MAN LEFT", "desc": "Wingman survives" },
+    { "id": "swift", "name": "SWIFT HAND", "desc": "Finish under par time" }
+  ]
+}
