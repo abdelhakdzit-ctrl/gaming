@@ -336,7 +336,7 @@ export class Game {
     this.pullUp = f.airborne && tImpact < 1.5 + 3 * d.warning && f.vspeed < -10;
     const input = { ...inp };
     if (inp.mouseAim && !locked && this.state !== 'dead') this.applyMouseAim(input, inp.mouseAim);
-    if (this.state === 'takeoff') { input.throttleSet = 1; }
+    if (this.state === 'takeoff') { input.throttleSet = 1; if (this.input.touch?.active && f.onGround && f.speed > 98 && f.pitchDeg < 9) input.pitch = Math.max(input.pitch, 0.45); }
     if (d.groundAssist && S.flightMode !== 'EXPERT' && f.airborne && tImpact < 1.8 && !locked) { input.pitch = Math.max(input.pitch, clamp((1.8 - tImpact) * 0.9, 0, 1)); input.roll *= 0.4; if (!this.autoPull) { this.autoPull = true; this.hud.centerMsg('AUTO PULL-UP', 1.2, 'warn'); } } else this.autoPull = false;
     const assistBonus = d.assistBonus + (S.assistLevel - 0.5) * 0.4;
     f.update(dt, input, { mode: S.flightMode, autoLevel: S.autoLevel, groundY: gy, locked, autoTakeoff: this.state === 'takeoff' || this.state === 'intro', diff: { stallForgiveness: d.stallForgiveness, energyBleed: d.energyBleed, assistBonus } });
@@ -376,15 +376,18 @@ export class Game {
     input.yaw = clamp(input.yaw + cr, -1, 1);
     this.mouseAimPx = { x: (m.x * 0.5 + 0.5) * innerWidth, y: (m.y * 0.5 + 0.5) * innerHeight };
   }
+  /** Control names for on-screen hints (keyboard vs touch buttons). */
+  keys() { return this.input.touch?.active ? { tgt: 'TAP TGT', id: 'HOLD ID', fire: 'TAP MSL' } : { tgt: 'T', id: 'HOLD I', fire: 'F / RIGHT CLICK' }; }
   fireHint() {
-    const r = this.radar, sel = r.selected, p = this.player; if (!p.alive) return '';
+    const r = this.radar, sel = r.selected, p = this.player, K = this.keys(); if (!p.alive) return '';
+    if (this.state === 'takeoff') return this.flight.speed < 85 ? 'ACCELERATING…' : this.flight.onGround ? 'PULL BACK TO TAKE OFF' : '';
     if (p.missilesLeft <= 0) return 'NO MISSILES — USE CANNON';
-    if (!sel) return r.contacts.some((k) => k.visible) ? 'T: SELECT TARGET' : '';
+    if (!sel) return r.contacts.some((k) => k.visible) ? `${K.tgt}: SELECT TARGET` : '';
     const k = r.selectedContact();
-    if (!sel.identified) return k && k.range > 7500 ? 'CLOSE TO 7 KM — THEN HOLD I TO IDENTIFY' : r.locked ? 'LOCKED — HOLD I TO IDENTIFY (ROE)' : 'HOLD I: IDENTIFY  ·  KEEP NOSE ON TARGET TO LOCK';
+    if (!sel.identified) return k && k.range > 7500 ? `CLOSE TO 7 KM — THEN ${K.id} TO IDENTIFY` : r.locked ? `LOCKED — ${K.id} TO IDENTIFY (ROE)` : `${K.id}: IDENTIFY  ·  KEEP NOSE ON TARGET TO LOCK`;
     if (sel.side !== 'hostile') return 'FRIENDLY — DO NOT FIRE';
     if (!r.locked) return r.severity > 0.85 ? 'RADAR JAMMED — NO LOCK' : k && k.range > r.lockRange ? 'OUT OF MISSILE RANGE' : 'KEEP NOSE ON TARGET TO LOCK';
-    return 'F / RIGHT CLICK: FIRE MISSILE';
+    return `${K.fire}: FIRE MISSILE`;
   }
 
   /** Storm / mountain-wave buffeting: smooth noise on attitude and vertical speed plus an occasional hard gust. */
@@ -442,7 +445,7 @@ export class Game {
     const r = this.radar; if (locked) return;
     if (inp.cycle) { const t = r.cycle(); this.audio.play(t ? 'lock' : 'denied'); this.idProgress = 0; if (t) this.hud.centerMsg(`TRACKING ${t.identified ? t.callsign : 'UNKNOWN CONTACT'}`, 1.1); }
     if (!r.selected && this.settings.targetAssist) {
-      const c = r.contacts.filter((k) => k.visible && k.off < 55 * DEG && !(k.entity.identified && k.entity.side !== 'hostile'))[0]; if (c) { r.selected = c.entity; r.lockProgress = 0; this.hud.centerMsg('CONTACT — PRESS T TO SWITCH, HOLD I TO IDENTIFY', 2.4, 'warn'); this.audio.play('lock'); }
+      const c = r.contacts.filter((k) => k.visible && k.off < 55 * DEG && !(k.entity.identified && k.entity.side !== 'hostile'))[0]; if (c) { r.selected = c.entity; r.lockProgress = 0; this.hud.centerMsg(this.input.touch?.active ? 'CONTACT — TAP TGT TO SWITCH, HOLD ID TO IDENTIFY' : 'CONTACT — PRESS T TO SWITCH, HOLD I TO IDENTIFY', 2.4, 'warn'); this.audio.play('lock'); }
     }
     const c = r.selectedContact();
     if (inp.identify && c && c.visible && c.range < 7500 && c.off < 36 * DEG && !c.entity.identified) {
@@ -534,6 +537,8 @@ export class Game {
   renderCamera(dt, inp) {
     const contacts = this.radar.contacts, inc = this.weapons.incoming(this.player);
     this.camRig.settings = { shake: this.settings.cameraShake, reducedMotion: this.settings.reducedMotion };
+    const playing = !this.paused && !this.ended && this.state !== 'dead' && this.state !== 'intro' && !this.cine?.def.locked;
+    document.body.classList.toggle('playing', playing); this.input.touch?.setThrottle(this.flight.throttle);
     this.camRig.update(dt, { p: this.player, f: this.flight, missile: this.weapons.lastPlayerMissile, contacts, look: inp && inp.look, buffet: this.flight.buffet });
     this.camera.aspect = innerWidth / innerHeight; this.camera.updateProjectionMatrix();
     this.particles.update(dt);
@@ -542,7 +547,7 @@ export class Game {
     const hud = {
       player: this.player, flight: this.flight, camera: this.camera, radar: this.radar, weapons: this.weapons, director: this.director, diff: this.diffData, camMode: this.camRig.override ? 'cine' : this.camRig.mode,
       incoming: inc, missionTime: this.missionTime, missileStatus: this.missileHud, ammo: this.ammo, hpFrac: this.player.hp / this.player.maxHp, pullUp: this.pullUp, boundary: this.boundary,
-      idProgress: this.idProgress, waypoint: wp, mouseFlight: !!this.mouseFlight, mouseAim: this.mouseFlight && !this.cine ? this.mouseAimPx : null, fireHint: this.fireHint(), samLock: this.samLock, markers: this.director.markers(), recon: this.director.objectives.find((o) => o.live && o.state === 'active'), hudHidden: this.hudHidden || !!this.cine?.def.locked || this.state === 'dead'
+      idProgress: this.idProgress, waypoint: wp, mouseFlight: !!this.mouseFlight, mouseAim: (this.mouseFlight || this.input.touch?.active) && !this.cine ? this.mouseAimPx : null, fireHint: this.fireHint(), samLock: this.samLock, markers: this.director.markers(), recon: this.director.objectives.find((o) => o.live && o.state === 'active'), hudHidden: this.hudHidden || !!this.cine?.def.locked || this.state === 'dead'
     };
     document.body.classList.toggle('aim-mouse', !!this.mouseFlight && !this.paused && !this.ended);
     this.hud.update(dt, hud); this.lastHud = hud;
@@ -554,7 +559,7 @@ export class Game {
   }
 
   dispose() {
-    document.body.classList.remove('aim-mouse');
+    document.body.classList.remove('aim-mouse', 'playing'); this.input.touch?.reset();
     this.hud.show(false); this.hud.cinematic(false); this.comms.clear(); this.audio.setEngine(false); this.audio.setAmbience('off'); this.input.setMouseFlight(false);
     this.input.enabled = false; window.speechSynthesis?.cancel?.();
     this.scene.traverse((o) => { o.geometry?.dispose?.(); if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { m.map?.dispose?.(); m.dispose?.(); }); });

@@ -3,6 +3,7 @@ import difficultyData from '../data/difficulty.json';
 import { createRenderer } from './renderer.js';
 import { AudioEngine } from './audio/audio.js';
 import { Input } from './input/input.js';
+import { TouchControls } from './input/touch.js';
 import { Hud } from './ui/hud.js';
 import { Comms } from './ui/comms.js';
 import { MISSIONS } from './missions/registry.js';
@@ -23,6 +24,7 @@ class App {
     this.canvas = document.getElementById('gl'); this.gl = createRenderer(this.canvas); this.renderer = this.gl.renderer;
     this.audio = new AudioEngine(() => Settings.s); this.input = new Input(this.canvas, live);
     const hudRoot = document.getElementById('hud-root'); this.hudRoot = hudRoot;
+    this.input.touch = new TouchControls(document.getElementById('touch-ui'), { onFullscreen: () => this.toggleFullscreen() });
     this.hud = new Hud(hudRoot); this.comms = new Comms(hudRoot, this.audio); this.hangar = new Hangar();
     this.screens = new Screens(this, document.getElementById('screens'));
     this.game = null; this.replay = null; this.lastReplay = null; this.lastLaunch = null; this.unlockedCameras = unlockedCameraSet();
@@ -32,7 +34,9 @@ class App {
     document.addEventListener('visibilitychange', () => { if (document.hidden && this.game && !this.game.paused && !this.game.ended) this.togglePause(); });
   }
   boot() {
-    Save.load(); Settings.apply(); this.applySettings(); this.unlockedCameras = unlockedCameraSet();
+    const firstRun = !Save.has(); Save.load();
+    if (firstRun && Settings.touchMode()) { Save.data.settings.quality = 'medium'; Save.commit(); }   // phones start on the lighter preset
+    Settings.apply(); this.applySettings(); this.unlockedCameras = unlockedCameraSet();
     const q = new URLSearchParams(location.search);
     if (q.get('quick')) { this.audio.ensure(); this.launchMission(MISSIONS[0]); } else this.screens.show('title');
     requestAnimationFrame((t) => this.frame(t));
@@ -42,7 +46,12 @@ class App {
     this.hudRoot.appendChild(d); setTimeout(() => d.classList.add('out'), 2200); setTimeout(() => d.remove(), 2800);
   }
   cameraName(id) { return (aircraftData.cameras.find((c) => c.id === id)?.name || id).toUpperCase() + ' CAMERA'; }
-  applySettings() { const s = Settings.s; this.gl.setQuality(s.quality); this.gl.setDynamic(s.dynamicRes); this.audio.applyVolumes(); }
+  applySettings() { const s = Settings.s; this.gl.setQuality(s.quality); this.gl.setDynamic(s.dynamicRes); this.audio.applyVolumes(); this.hud.resize(); }
+  toggleFullscreen() {
+    const d = document, el = d.documentElement;
+    if (d.fullscreenElement) { d.exitFullscreen?.(); return; }
+    el.requestFullscreen?.({ navigationUI: 'hide' }).then(() => screen.orientation?.lock?.('landscape').catch(() => {})).catch(() => {});
+  }
 
   // ------------------------------------------------------------------ launching
   normalize(def) {

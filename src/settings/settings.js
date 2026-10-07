@@ -17,7 +17,13 @@ export const Settings = {
     root.style.setProperty('--c-hostile', pal.hostile); root.style.setProperty('--c-friend', pal.friend); root.style.setProperty('--c-unknown', pal.unknown);
     root.style.setProperty('--sub-size', SUBTITLE_SIZES[s.subtitleSize] + 'px');
     document.body.classList.toggle('reduced-motion', !!s.reducedMotion);
+    document.body.classList.toggle('touch-on', this.touchMode()); document.body.classList.toggle('touch-left', !!s.touchLeft);
     document.body.classList.toggle('no-subs', !s.subtitles);
+  },
+  /** Touch layout: forced on/off, or automatic on devices whose primary pointer is coarse (phones, tablets). */
+  touchMode() {
+    const m = this.s.touchControls || 'auto'; if (m === 'on') return true; if (m === 'off') return false;
+    return window.matchMedia?.('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && !window.matchMedia?.('(any-pointer: fine)').matches);
   },
   palette() { return PALETTES[this.s.colorblind] || PALETTES.none; }
 };

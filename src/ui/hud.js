@@ -39,7 +39,7 @@ export class Hud {
   resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2); this.W = window.innerWidth; this.H = window.innerHeight; this.dpr = dpr;
     this.fc.width = this.W * dpr; this.fc.height = this.H * dpr; this.fc.style.width = this.W + 'px'; this.fc.style.height = this.H + 'px';
-    this.u = clamp(this.H / 1080, 0.62, 1.5); const rs = Math.round(clamp(this.H * 0.21, 130, 230));
+    this.u = clamp(this.H / 1080, document.body.classList.contains('touch-on') ? 0.85 : 0.62, 1.5); const rs = Math.round(clamp(this.H * 0.21, document.body.classList.contains('touch-on') ? 100 : 130, 230));
     this.rs = rs; this.rc.width = rs * dpr; this.rc.height = rs * dpr; this.rc.style.width = rs + 'px'; this.rc.style.height = rs + 'px';
   }
   fade(on) { this.fadeEl.classList.toggle('on', !!on); }
@@ -219,7 +219,7 @@ export class Hud {
     const p = S.player, st = S.missileStatus;
     g.textAlign = 'center';
     const colr = { MOUNTED: this.theme, READY: '#ffcf3d', LOCKED: '#ff5348', LAUNCHED: '#7fdcff', EMPTY: '#8a8f94' }[st] || this.theme;
-    if (S.fireHint) { g.save(); g.fillStyle = S.fireHint.startsWith('F /') ? '#ff5348' : '#ffcf3d'; g.shadowColor = g.fillStyle; g.font = `${Math.round(14 * u)}px "Share Tech Mono", ui-monospace, monospace`; g.fillText(S.fireHint, cx, y - 56 * u); g.restore(); }
+    if (S.fireHint) { g.save(); g.fillStyle = S.fireHint.includes('FIRE MISSILE') ? '#ff5348' : '#ffcf3d'; g.shadowColor = g.fillStyle; g.font = `${Math.round(14 * u)}px "Share Tech Mono", ui-monospace, monospace`; g.fillText(S.fireHint, cx, y - 56 * u); g.restore(); }
     g.save(); g.fillStyle = colr; g.shadowColor = colr; g.font = `bold ${Math.round(18 * u)}px "Share Tech Mono", ui-monospace, monospace`;
     const blink = st === 'LOCKED' && Math.floor(this.t * 6) % 2 === 0;
     g.globalAlpha = blink ? 0.55 : 1; g.fillText(`MISSILE STATUS: ${st}`, cx, y - 28 * u); g.restore();

@@ -221,3 +221,45 @@ svg .mk-in { transform: scale(calc(var(--u, 19) / 4.7)); }
 .credit { display: flex; flex-direction: column; margin: 18px 0; } .credit span { letter-spacing: 0.3em; color: var(--accent); font-size: 13px; } .credit b { font-size: clamp(16px, 1.8vw, 24px); letter-spacing: 0.14em; font-weight: 500; }
 .end-menu { position: absolute; right: clamp(18px, 3vw, 44px); bottom: 24px; z-index: 5; cursor: pointer; pointer-events: auto; }
 @media (max-width: 800px) { .end-card { grid-template-columns: 1fr; } .end-card .portrait-art { max-width: 240px; } }
+
+/* ------------------------------------------------------------------ touch controls (phones / tablets, landscape) */
+html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+body.touch-on.playing { touch-action: none; }
+.map-wrap svg { touch-action: none; }
+#touch-ui { position: fixed; inset: 0; z-index: 3; display: none; pointer-events: none; direction: ltr; touch-action: none; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+body.touch-left #touch-ui { direction: rtl; }
+body.touch-on.playing #touch-ui { display: block; }
+.t-zone { position: absolute; inset-block: 0; inset-inline-start: 0; width: 50%; pointer-events: auto; touch-action: none; }
+.t-ring { position: absolute; inset-inline-start: 13vmin; bottom: 34vmin; width: 26vmin; height: 26vmin; border: 2px dashed rgba(93, 255, 168, 0.35); border-radius: 50%; }
+.t-hint { position: absolute; inset-inline-start: 13vmin; bottom: 28.5vmin; width: 26vmin; text-align: center; font: 600 clamp(9px, 2.6vmin, 13px) var(--mono); letter-spacing: 0.18em; color: rgba(93, 255, 168, 0.6); }
+.t-zone.used .t-ring, .t-zone.used .t-hint { opacity: 0; transition: opacity 0.6s; }
+.t-base { position: absolute; display: none; border: 2px solid rgba(93, 255, 168, 0.55); border-radius: 50%; background: rgba(93, 255, 168, 0.07); transform: translate(-50%, -50%); pointer-events: none; }
+.t-base.on { display: block; }
+.t-base i { position: absolute; left: 50%; top: 50%; width: 38%; height: 38%; margin: -19% 0 0 -19%; border-radius: 50%; background: rgba(93, 255, 168, 0.5); border: 2px solid #5dffa8; box-shadow: 0 0 14px rgba(93, 255, 168, 0.5); }
+.t-btn { --s: max(50px, 14vmin); position: absolute; width: var(--s); height: var(--s); padding: 0; border-radius: 50%; display: grid; place-items: center; pointer-events: auto; touch-action: none;
+  border: 2px solid rgba(93, 255, 168, 0.6); background: rgba(6, 16, 20, 0.55); color: #e4fff3; font: 700 clamp(11px, 3.3vmin, 16px) var(--mono); letter-spacing: 0.06em; -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+.t-btn.down { background: rgba(93, 255, 168, 0.45); transform: scale(0.93); }
+.t-fire { --s: max(72px, 20vmin); inset-inline-end: 13vmin; bottom: 3vmin; border-color: rgba(255, 83, 72, 0.85); font-size: clamp(13px, 4vmin, 20px); } .t-fire.down { background: rgba(255, 83, 72, 0.5); }
+.t-missile { inset-inline-end: 35vmin; bottom: 3vmin; border-color: rgba(255, 207, 61, 0.85); }
+.t-flare { inset-inline-end: 35vmin; bottom: 19vmin; border-color: rgba(255, 176, 86, 0.85); }
+.t-identify { inset-inline-end: 18vmin; bottom: 25.5vmin; --s: max(46px, 13vmin); }
+.t-cycle { inset-inline-end: 35vmin; bottom: 35vmin; --s: max(46px, 13vmin); }
+.t-brake { inset-inline-end: 2vmin; bottom: 46.5vmin; --s: max(42px, 11.5vmin); }
+.t-btn.top { --s: max(40px, 10.5vmin); inset-inline-start: 2vmin; border-color: rgba(138, 160, 154, 0.7); font-size: clamp(11px, 3vmin, 15px); }
+.t-pause { top: 2vmin; } .t-camera { top: 14.5vmin; } .t-fullscreen { top: 27vmin; }
+.t-throttle { position: absolute; inset-inline-end: 2vmin; bottom: 3vmin; width: max(40px, 9.5vmin); height: 40vmin; border: 2px solid rgba(93, 255, 168, 0.55); border-radius: 12px; background: rgba(6, 16, 20, 0.5); pointer-events: auto; touch-action: none; }
+.t-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 70%; background: rgba(93, 255, 168, 0.32); border-radius: 0 0 9px 9px; }
+.t-knob { position: absolute; left: -4px; right: -4px; height: 1em; font-size: 3.2vmin; min-height: 12px; border-radius: 5px; background: #5dffa8; box-shadow: 0 0 10px rgba(93, 255, 168, 0.6); }
+.t-throttle > span { position: absolute; left: 0; right: 0; top: -4.2vmin; text-align: center; font: 600 clamp(9px, 2.6vmin, 12px) var(--mono); letter-spacing: 0.15em; color: rgba(93, 255, 168, 0.8); pointer-events: none; }
+.t-rotate { display: none; position: fixed; inset: 0; align-items: center; justify-content: center; text-align: center; padding: 30px; background: rgba(2, 6, 9, 0.94); color: var(--accent); letter-spacing: 0.2em; font-size: 18px; pointer-events: auto; }
+@media (orientation: portrait) { body.touch-on.playing .t-rotate { display: flex; } }
+/* HUD adjustments on touch devices: keep the picture clear of the thumbs */
+body.touch-on .portrait { left: max(60px, 15vmin); width: clamp(140px, 17vw, 190px); }
+body.touch-on .pt-meta span { display: none; } body.touch-on .pt-meta b { font-size: 11px; letter-spacing: 0.1em; }
+body.touch-on .hud-objectives { width: min(260px, 27vw); font-size: 11px; padding: 6px 10px; } body.touch-on .hud-objectives li.complete { display: none; }
+body.touch-on .hud-objectives h5, body.touch-on .hud-objectives ul.sec { display: none; }
+body.touch-on .hud-clock { display: none; }
+body.touch-on .subs { bottom: clamp(60px, 22vh, 190px); width: min(50vw, 560px); } body.touch-on .sub-line { font-size: min(var(--sub-size), 15px); padding: 4px 10px; }
+body.touch-left .hud-objectives { right: auto; left: max(60px, 15vmin); border-right: 0; border-left: 3px solid var(--hud); }
+body.touch-left .portrait { left: auto; right: max(60px, 15vmin); }
+body.touch-left .hud canvas#hud-radar { left: auto; right: clamp(10px, 1.5vw, 28px); }

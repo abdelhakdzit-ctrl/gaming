@@ -16,6 +16,9 @@ npm run sim        # headless regression: drives all 15 missions end to end (dev
 
 (Windows PowerShell 5: run `npm install` and `npm run dev` as two separate commands — `&&` is not supported.)
 
+### Playing on a phone or tablet
+Run `npm run dev` on your PC, then open `http://<your-PC-IP>:5173` in the phone's browser (same Wi-Fi; allow Node through the firewall if asked). Hold the device in landscape. Touch controls turn on automatically on touch devices (Settings → Controls to force on/off or switch to a left-handed layout). The ⛶ button goes fullscreen (Android Chrome; on iPhone use *Add to Home Screen*).
+
 Dev shortcut: `http://localhost:5173/?quick=1` skips the menus and starts Mission 01.
 
 ## The campaign
@@ -45,6 +48,7 @@ Also: Free Flight, 8 Challenges, Replay viewer (multi-region aware), Settings, E
 `W/↑` nose up · `S/↓` nose down · `A/D` roll · `Q/E` yaw · `Shift/Ctrl` or wheel throttle · mouse = aim cursor (cursor up = nose up) ·
 `Space`/click cannon · `T` select/cycle target (keep it in the radar cone to **LOCK**) · `I` (hold) identify · `F`/right-click missile · `X` flares · `B` airbrake ·
 `C` or `1-8` cameras · `M` mouse flight · `H` HUD · `Esc`/`P` pause. Gamepad supported (Extras → Controls).
+**Touch:** drag anywhere on the left half to steer (up = nose up, release = level flight) · FIRE (hold) · MSL / FLR / TGT (tap) · ID, BRK (hold) · slider = throttle · CAM, II (pause), ⛶ (fullscreen) top-left. Takeoff rotates automatically on touch devices.
 
 Rules of engagement: a missile can only be launched at a **locked, identified hostile**. Radar classification is deliberately unreliable (flicker, ghosting, forged IFF) until you identify a contact. With the radar jammed or dead (missions 07, 12) only eyeball/heat-seeker lock works and Overwatch calls bandits by bearing.
 

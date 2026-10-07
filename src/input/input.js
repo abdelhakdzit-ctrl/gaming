@@ -3,11 +3,12 @@ import { clamp } from '../util/math.js';
 // Keyboard + mouse + gamepad -> one normalised control frame per poll().
 // Keys: W/Up nose up, S/Down nose down, A/D roll, Q/E yaw, Shift/Ctrl throttle, Space gun, F missile, X flares,
 // T cycle target, I identify (hold), B airbrake, C camera, 1-8 direct camera, M mouse-flight, Esc/P pause.
+// Touch devices: see ./touch.js (floating aim stick, action buttons, throttle slider).
 export class Input {
   constructor(canvasEl, settings) {
     this.settings = settings; this.keys = new Set(); this.pressed = new Set(); this.mouse = { x: 0, y: 0, dx: 0, dy: 0, left: false, right: false };
     this.stick = { x: 0, y: 0 }; this.enabled = false; this.pad = null; this.padPrev = [];
-    this.mouseFlight = false; this.wheel = 0; this.lastDevice = 'keyboard';
+    this.mouseFlight = false; this.wheel = 0; this.lastDevice = 'keyboard'; this.touch = null;
     const kd = (e) => {
       if (!this.enabled) return;
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault();
@@ -18,12 +19,12 @@ export class Input {
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
     window.addEventListener('blur', () => this.keys.clear());
     window.addEventListener('mousemove', (e) => {
-      if (!this.enabled) return;
+      if (!this.enabled || this.touch?.active) return;
       this.mouse.dx += e.movementX || 0; this.mouse.dy += e.movementY || 0;
       this.mouse.x = (e.clientX / innerWidth) * 2 - 1; this.mouse.y = (e.clientY / innerHeight) * 2 - 1;
     });
     window.addEventListener('mousedown', (e) => {
-      if (!this.enabled || e.target.closest?.('.ui-block')) return;
+      if (!this.enabled || this.touch?.active || e.target.closest?.('.ui-block')) return;
       if (e.button === 0) this.mouse.left = true; if (e.button === 2) this.mouse.right = true;
     });
     window.addEventListener('mouseup', (e) => { if (e.button === 0) this.mouse.left = false; if (e.button === 2) this.mouse.right = false; });
@@ -63,6 +64,15 @@ export class Input {
     // mouse flight: the cursor offset from the screen centre is the aim demand (resolved in Game against the camera FOV)
     out.mouseAim = this.mouseFlight ? { x: clamp(this.mouse.x, -1, 1), y: clamp(this.mouse.y, -1, 1), sens, inv } : null;
     out.look.dx = this.mouse.dx; out.look.dy = this.mouse.dy; this.mouse.dx = this.mouse.dy = 0;
+    // touch: the floating stick is an aim demand just like the mouse cursor (neutral = hold attitude, wings level)
+    const tc = this.touch;
+    if (tc && tc.active) {
+      const t = tc.read(); this.lastDevice = 'touch';
+      out.mouseAim = { x: t.x * 0.7, y: t.y * 0.7, sens, inv };
+      out.fire = out.fire || t.fire; out.identify = out.identify || t.identify; out.brake = out.brake || t.brake;
+      out.missile = out.missile || t.missile; out.flare = out.flare || t.flare; out.cycle = out.cycle || t.cycle;
+      if (t.camera) out.camera = 1; if (t.pause) out.pause = true; if (t.throttle !== undefined) out.throttleSet = t.throttle;
+    }
     // gamepad
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     const p = pads && [...pads].find((q) => q && q.connected);
