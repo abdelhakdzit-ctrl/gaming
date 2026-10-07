@@ -1,0 +1,655 @@
+{
+ "id": "m03",
+ "number": 3,
+ "title": "RED VECTOR",
+ "titleFr": "VECTEUR ROUGE",
+ "titleAr": "المسار الأحمر",
+ "type": "DOGFIGHT",
+ "playable": true,
+ "requires": "m02",
+ "region": "COAST",
+ "regionAr": "الساحل",
+ "map": {
+  "lon": 7,
+  "lat": 36.9
+ },
+ "threat": "HIGH",
+ "threatLevel": 3,
+ "weatherLabel": "CLOUDY / STRONG WIND",
+ "clock": "18:05",
+ "env": {
+  "biome": "coast",
+  "time": "sunset",
+  "weather": "cloudy"
+ },
+ "narrative": "A red-marked fighter sweep has just sunk a coastal patrol boat. They are inbound for the shore. Command has cleared weapons free. Win the fight and bring everyone home.",
+ "intel": [
+  {
+   "label": "SWEEP",
+   "text": "Four fighters in two pairs, red tail markings, confirmed hostile after the patrol boat attack.",
+   "confidence": "HIGH"
+  },
+  {
+   "label": "TACTICS",
+   "text": "Pairs split high and low. Expect a second pair to come in behind you.",
+   "confidence": "MEDIUM"
+  },
+  {
+   "label": "NOTE",
+   "text": "Pilots fly a rehearsed script. An unknown observer may be on frequency.",
+   "confidence": "LOW"
+  }
+ ],
+ "base": null,
+ "spawn": {
+  "onRunway": false,
+  "heading": 0,
+  "speed": 230,
+  "pos": [
+   0,
+   3000,
+   0
+  ]
+ },
+ "wingman": {
+  "enabled": true,
+  "callsign": "Falcon TWO"
+ },
+ "noWingman": false,
+ "zones": [
+  {
+   "id": "boundary",
+   "type": "boundary",
+   "pos": [
+    0,
+    0,
+    -12000
+   ],
+   "radius": 36000,
+   "label": "OPERATIONS AREA"
+  }
+ ],
+ "waypoints": [],
+ "groups": [
+  {
+   "id": "v1",
+   "type": "fighter",
+   "side": "hostile",
+   "name": "RED-1",
+   "callsign": "RED-1",
+   "spawn": "start",
+   "pos": [
+    3500,
+    3400,
+    -15000
+   ],
+   "heading": 180,
+   "speed": 210,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "v2",
+   "type": "fighter",
+   "side": "hostile",
+   "name": "RED-2",
+   "callsign": "RED-2",
+   "spawn": "start",
+   "pos": [
+    4500,
+    3000,
+    -15800
+   ],
+   "heading": 180,
+   "speed": 210,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "v3",
+   "type": "fighter",
+   "side": "hostile",
+   "name": "RED-3",
+   "callsign": "RED-3",
+   "spawn": "event",
+   "pos": [
+    -5000,
+    3000,
+    7000
+   ],
+   "heading": 0,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "v4",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RED-4",
+   "callsign": "RED-4",
+   "spawn": "event",
+   "pos": [
+    -5800,
+    3300,
+    7800
+   ],
+   "heading": 0,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "grey",
+   "type": "grey",
+   "side": "hostile",
+   "name": "GREY",
+   "callsign": "GREY",
+   "spawn": "event",
+   "pos": [
+    9000,
+    6200,
+    -7000
+   ],
+   "heading": 235,
+   "speed": 255,
+   "route": [
+    [
+     0,
+     4000,
+     -9000
+    ]
+   ],
+   "iffShown": "unknown",
+   "identified": true,
+   "egress": [
+    22000,
+    9000,
+    -36000
+   ]
+  }
+ ],
+ "objectives": {
+  "primary": [
+   {
+    "id": "clear",
+    "type": "destroy",
+    "label": "DESTROY ALL FOUR RED BANDITS",
+    "params": {
+     "targets": [
+      "v1",
+      "v2",
+      "v3",
+      "v4"
+     ]
+    }
+   }
+  ],
+  "secondary": [
+   {
+    "id": "wingman",
+    "type": "survive_entity",
+    "label": "MAINTAIN WINGMAN SURVIVAL",
+    "params": {
+     "target": "wingman"
+    }
+   },
+   {
+    "id": "time",
+    "type": "time_limit",
+    "label": "FINISH WITHIN 6:00",
+    "params": {
+     "seconds": 360
+    }
+   }
+  ],
+  "optional": [
+   {
+    "id": "nodamage",
+    "type": "max_damage",
+    "label": "TAKE NO DAMAGE",
+    "params": {
+     "max": 0
+    }
+   },
+   {
+    "id": "acc",
+    "type": "accuracy",
+    "label": "HIGH ACCURACY (30%+)",
+    "params": {
+     "min": 0.3
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "when": {
+    "type": "time",
+    "t": 2
+   },
+   "do": [
+    {
+     "say": "m03_1"
+    },
+    {
+     "say": "m03_2",
+     "delay": 1
+    },
+    {
+     "music": "BUILDUP"
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "when": {
+    "type": "range",
+    "a": "player",
+    "b": "v1",
+    "lt": 15000
+   },
+   "do": [
+    {
+     "music": "COMBAT"
+    },
+    {
+     "callout": {
+      "nearest": "hostile"
+     }
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "when": {
+    "type": "all_destroyed",
+    "ids": [
+     "v1",
+     "v2"
+    ]
+   },
+   "do": [
+    {
+     "spawn": [
+      "v3",
+      "v4"
+     ]
+    },
+    {
+     "say": "m03_3"
+    },
+    {
+     "callout": {
+      "nearest": "hostile"
+     },
+     "delay": 3
+    }
+   ]
+  },
+  {
+   "id": "e4",
+   "when": {
+    "type": "objective",
+    "id": "clear"
+   },
+   "do": [
+    {
+     "music": "RESOLUTION"
+    },
+    {
+     "spawn": [
+      "grey"
+     ],
+     "delay": 2
+    },
+    {
+     "order": {
+      "id": "grey",
+      "order": "flee"
+     },
+     "delay": 2.2
+    },
+    {
+     "cinematic": "grey_pass",
+     "delay": 3
+    },
+    {
+     "say": "m03_4",
+     "delay": 5
+    },
+    {
+     "say": "m03_5",
+     "delay": 5.5
+    },
+    {
+     "say": "m03_6",
+     "delay": 6.5
+    },
+    {
+     "endMission": {
+      "result": "complete"
+     },
+     "delay": 14
+    }
+   ]
+  },
+  {
+   "id": "e5",
+   "when": {
+    "type": "destroyed",
+    "id": "v1"
+   },
+   "do": [
+    {
+     "say": "m03_7"
+    }
+   ]
+  },
+  {
+   "id": "c_missile",
+   "when": {
+    "type": "incoming_missile"
+   },
+   "cooldown": 25,
+   "do": [
+    {
+     "say": "m01_missile_warning"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_hit",
+   "when": {
+    "type": "damaged",
+    "id": "wingman"
+   },
+   "cooldown": 30,
+   "do": [
+    {
+     "say": "m01_wing_hit"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_down",
+   "when": {
+    "type": "destroyed",
+    "id": "wingman"
+   },
+   "do": [
+    {
+     "say": "m01_wing_down"
+    }
+   ]
+  },
+  {
+   "id": "c_leave",
+   "when": {
+    "type": "outside",
+    "zone": "boundary"
+   },
+   "cooldown": 20,
+   "do": [
+    {
+     "say": "m01_leave"
+    }
+   ]
+  },
+  {
+   "id": "c_roe",
+   "when": {
+    "type": "roe_violation"
+   },
+   "cooldown": 14,
+   "do": [
+    {
+     "say": "m01_roe"
+    }
+   ]
+  }
+ ],
+ "cinematics": {
+  "grey_pass": {
+   "bars": true,
+   "interruptible": true,
+   "shots": [
+    {
+     "dur": 3.6,
+     "mode": "flyby",
+     "follow": "grey",
+     "fov": 40
+    }
+   ]
+  },
+  "target_crash": {
+   "bars": false,
+   "interruptible": true,
+   "shots": [
+    {
+     "dur": 3.4,
+     "mode": "orbit",
+     "follow": "$entity",
+     "fov": 50,
+     "radius": 160
+    }
+   ]
+  }
+ },
+ "flags": {},
+ "reward": {
+  "xp": 760,
+  "tokens": 3
+ },
+ "scoring": {
+  "parTime": 300
+ },
+ "lines": {
+  "m03_1": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Four bandits inbound, red tail markings. They sank a patrol boat ten minutes ago. Weapons free, Falcon.",
+    "fr": "Quatre bandits en approche, empennages rouges. Ils ont coulé une vedette il y a dix minutes. Armes libres, Falcon.",
+    "ar": "أربع طائرات معادية بعلامات حمراء. أغرقت زورق دورية قبل عشر دقائق. الإطلاق مسموح يا فالكون."
+   }
+  },
+  "m03_2": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "playful",
+   "text": {
+    "en": "Bandits at twelve. Let's dance, Salim.",
+    "fr": "Bandits à midi. On danse, Salim.",
+    "ar": "أعداء أمامنا. لنرقص يا سليم."
+   }
+  },
+  "m03_3": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "Two more, six o'clock — they came in low behind you!",
+    "fr": "Deux autres, à six heures — ils sont arrivés bas derrière vous !",
+    "ar": "اثنان آخران خلفك — جاءا على ارتفاع منخفض!"
+   }
+  },
+  "m03_4": {
+   "speaker": "GREY",
+   "voice": null,
+   "emotion": "cold",
+   "text": {
+    "en": "You fly like him.",
+    "fr": "Tu voles comme lui.",
+    "ar": "تطير مثله."
+   }
+  },
+  "m03_5": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "Like who? Say again, unknown caller.",
+    "fr": "Comme qui ? Répétez, appelant inconnu.",
+    "ar": "مثل من؟ أعد يا متصل مجهول."
+   }
+  },
+  "m03_6": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "shaken",
+   "text": {
+    "en": "Contact is leaving at speed. He never fired. Falcon One, he was only watching.",
+    "fr": "Le contact s'éloigne vite. Il n'a pas tiré. Falcon Un, il observait seulement.",
+    "ar": "الهدف يبتعد بسرعة. لم يطلق النار. فالكون واحد، كان يراقب فقط."
+   }
+  },
+  "m03_7": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "playful",
+   "text": {
+    "en": "Red One's down! These guys fly like they're reading a manual.",
+    "fr": "Rouge Un est tombé ! Ils volent comme s'ils lisaient un manuel.",
+    "ar": "سقط الأحمر واحد! يطيرون كأنهم يقرؤون من كتيّب."
+   }
+  }
+ },
+ "briefing": {
+  "center": {
+   "lon": 7,
+   "lat": 37
+  },
+  "zoomKm": 90,
+  "playerPath": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    40
+   ]
+  ],
+  "enemyRoutes": [
+   {
+    "id": "RED-1",
+    "label": "RED-1",
+    "points": [
+     [
+      3.5,
+      15
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RED-2",
+    "label": "RED-2",
+    "points": [
+     [
+      4.5,
+      15.8
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RED-3",
+    "label": "RED-3",
+    "points": [
+     [
+      -5,
+      -7
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RED-4",
+    "label": "RED-4",
+    "points": [
+     [
+      -5.8,
+      -7.8
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "GREY",
+    "label": "GREY",
+    "points": [
+     [
+      9,
+      7
+     ],
+     [
+      0,
+      9
+     ]
+    ],
+    "unknown": true
+   }
+  ],
+  "threatZones": [],
+  "radar": {
+   "pos": [
+    0,
+    0
+   ],
+   "r": 70
+  },
+  "friendly": [
+   {
+    "id": "f1",
+    "path": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      40
+     ]
+    ]
+   },
+   {
+    "id": "f2",
+    "path": [
+     [
+      -1,
+      -1
+     ],
+     [
+      -1,
+      39
+     ]
+    ]
+   }
+  ],
+  "objectives": []
+ }
+}

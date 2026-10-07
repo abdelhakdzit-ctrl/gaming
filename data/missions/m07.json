@@ -1,0 +1,759 @@
+{
+ "id": "m07",
+ "number": 7,
+ "title": "NO SIGNAL",
+ "titleFr": "AUCUN SIGNAL",
+ "titleAr": "لا إشارة",
+ "type": "NAVIGATION",
+ "playable": true,
+ "requires": "m06",
+ "region": "SAHARA",
+ "regionAr": "الصحراء",
+ "map": {
+  "lon": 2.5,
+  "lat": 31.5
+ },
+ "threat": "HIGH",
+ "threatLevel": 3,
+ "weatherLabel": "CLEAR / HEAT HAZE",
+ "clock": "11:00",
+ "env": {
+  "biome": "sahara",
+  "time": "day",
+  "weather": "clear"
+ },
+ "narrative": "Hard jamming has wiped the radar picture across the Sahara sector. Fly four navigation gates on Overwatch headings, survive an ambush you cannot see, and find the airborne jammer hiding behind a friendly tag.",
+ "intel": [
+  {
+   "label": "JAMMING",
+   "text": "Wide-area radar jamming. Contacts flicker or vanish; classification is unreliable.",
+   "confidence": "HIGH"
+  },
+  {
+   "label": "GATES",
+   "text": "Four gates across the dunes, around 12 km apart. Follow the gold markers and heading calls.",
+   "confidence": "HIGH"
+  },
+  {
+   "label": "SOURCE",
+   "text": "The jammer is airborne. Expect it to wear a friendly tag.",
+   "confidence": "LOW"
+  }
+ ],
+ "base": null,
+ "spawn": {
+  "onRunway": false,
+  "heading": 0,
+  "speed": 230,
+  "pos": [
+   0,
+   3600,
+   0
+  ]
+ },
+ "wingman": {
+  "enabled": true,
+  "callsign": "Falcon TWO"
+ },
+ "noWingman": false,
+ "zones": [
+  {
+   "id": "boundary",
+   "type": "boundary",
+   "pos": [
+    0,
+    0,
+    -12000
+   ],
+   "radius": 36000,
+   "label": "OPERATIONS AREA"
+  }
+ ],
+ "waypoints": [
+  {
+   "id": "g1",
+   "pos": [
+    3000,
+    3200,
+    -12000
+   ],
+   "radius": 1800,
+   "label": "GATE 1"
+  },
+  {
+   "id": "g2",
+   "pos": [
+    -4000,
+    3000,
+    -24000
+   ],
+   "radius": 1800,
+   "label": "GATE 2"
+  },
+  {
+   "id": "g3",
+   "pos": [
+    2000,
+    2800,
+    -36000
+   ],
+   "radius": 1800,
+   "label": "GATE 3"
+  },
+  {
+   "id": "g4",
+   "pos": [
+    -1000,
+    2600,
+    -46000
+   ],
+   "radius": 1800,
+   "label": "GATE 4"
+  }
+ ],
+ "groups": [
+  {
+   "id": "mirage",
+   "type": "jammer",
+   "side": "hostile",
+   "name": "MIRAGE-0",
+   "callsign": "MIRAGE-0",
+   "spawn": "start",
+   "pos": [
+    -3000,
+    3200,
+    -54000
+   ],
+   "heading": 90,
+   "speed": 100,
+   "route": [
+    [
+     3000,
+     3200,
+     -54000
+    ],
+    [
+     3000,
+     3200,
+     -58000
+    ],
+    [
+     -3000,
+     3200,
+     -58000
+    ],
+    [
+     -3000,
+     3200,
+     -54000
+    ]
+   ],
+   "iffShown": "friendly",
+   "loop": true
+  },
+  {
+   "id": "r1",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-1",
+   "callsign": "RAIDER-1",
+   "spawn": "event",
+   "pos": [
+    3000,
+    3400,
+    -17000
+   ],
+   "heading": 0,
+   "speed": 240,
+   "route": [],
+   "iffShown": "unknown"
+  },
+  {
+   "id": "r2",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-2",
+   "callsign": "RAIDER-2",
+   "spawn": "event",
+   "pos": [
+    3800,
+    3500,
+    -17800
+   ],
+   "heading": 0,
+   "speed": 240,
+   "route": [],
+   "iffShown": "unknown"
+  }
+ ],
+ "objectives": {
+  "primary": [
+   {
+    "id": "gates",
+    "type": "reach_area",
+    "label": "FLY ALL FOUR NAVIGATION GATES",
+    "params": {
+     "waypoints": [
+      "g1",
+      "g2",
+      "g3",
+      "g4"
+     ],
+     "sequence": true
+    }
+   },
+   {
+    "id": "clear",
+    "type": "destroy",
+    "label": "DESTROY THE AMBUSH PAIR",
+    "params": {
+     "targets": [
+      "r1",
+      "r2"
+     ]
+    }
+   },
+   {
+    "id": "jam",
+    "type": "destroy",
+    "label": "FIND AND DESTROY THE JAMMER",
+    "params": {
+     "targets": [
+      "mirage"
+     ]
+    }
+   }
+  ],
+  "secondary": [
+   {
+    "id": "wingman",
+    "type": "survive_entity",
+    "label": "MAINTAIN WINGMAN SURVIVAL",
+    "params": {
+     "target": "wingman"
+    }
+   },
+   {
+    "id": "time",
+    "type": "time_limit",
+    "label": "COMPLETE WITHIN 9:00",
+    "params": {
+     "seconds": 540
+    }
+   }
+  ],
+  "optional": [
+   {
+    "id": "nodamage",
+    "type": "max_damage",
+    "label": "TAKE NO DAMAGE",
+    "params": {
+     "max": 0
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e0",
+   "when": {
+    "type": "time",
+    "t": 0.5
+   },
+   "do": [
+    {
+     "radar": {
+      "mode": "on",
+      "severity": 0.95,
+      "duration": 9999
+     }
+    }
+   ]
+  },
+  {
+   "id": "e1",
+   "when": {
+    "type": "time",
+    "t": 2
+   },
+   "do": [
+    {
+     "say": "shopsoakmind_1"
+    },
+    {
+     "music": "BUILDUP"
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "when": {
+    "type": "in_area",
+    "waypoint": "g1"
+   },
+   "do": [
+    {
+     "say": "shopsoakmind_2"
+    }
+   ]
+  },
+  {
+   "id": "e4",
+   "when": {
+    "type": "in_area",
+    "waypoint": "g2"
+   },
+   "do": [
+    {
+     "spawn": [
+      "r1",
+      "r2"
+     ]
+    },
+    {
+     "music": "COMBAT"
+    },
+    {
+     "say": "shopsoakmind_3"
+    },
+    {
+     "callout": {
+      "nearest": "hostile"
+     },
+     "delay": 3.5
+    }
+   ]
+  },
+  {
+   "id": "e5",
+   "when": {
+    "type": "in_area",
+    "waypoint": "g3"
+   },
+   "do": [
+    {
+     "say": "shopsoakmind_4"
+    }
+   ]
+  },
+  {
+   "id": "e6",
+   "when": {
+    "type": "in_area",
+    "waypoint": "g4"
+   },
+   "do": [
+    {
+     "say": "shopsoakmind_5"
+    },
+    {
+     "music": "DANGER"
+    }
+   ]
+  },
+  {
+   "id": "e7",
+   "when": {
+    "type": "objective",
+    "id": "gates"
+   },
+   "cooldown": 28,
+   "do": [
+    {
+     "callout": {
+      "id": "mirage",
+      "label": "target",
+      "only": true
+     },
+     "delay": 6
+    }
+   ]
+  },
+  {
+   "id": "e8",
+   "when": {
+    "type": "identified",
+    "id": "mirage"
+   },
+   "do": [
+    {
+     "say": "shopsoakmind_6"
+    }
+   ]
+  },
+  {
+   "id": "e9",
+   "when": {
+    "type": "destroyed",
+    "id": "mirage"
+   },
+   "do": [
+    {
+     "radar": {
+      "mode": "on",
+      "severity": 0,
+      "duration": 0.1
+     }
+    },
+    {
+     "music": "RESOLUTION"
+    },
+    {
+     "say": "shopsoakmind_7",
+     "delay": 1
+    },
+    {
+     "say": "shopsoakmind_8",
+     "delay": 1
+    }
+   ]
+  },
+  {
+   "id": "c_missile",
+   "when": {
+    "type": "incoming_missile"
+   },
+   "cooldown": 25,
+   "do": [
+    {
+     "say": "m01_missile_warning"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_hit",
+   "when": {
+    "type": "damaged",
+    "id": "wingman"
+   },
+   "cooldown": 30,
+   "do": [
+    {
+     "say": "m01_wing_hit"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_down",
+   "when": {
+    "type": "destroyed",
+    "id": "wingman"
+   },
+   "do": [
+    {
+     "say": "m01_wing_down"
+    }
+   ]
+  },
+  {
+   "id": "c_leave",
+   "when": {
+    "type": "outside",
+    "zone": "boundary"
+   },
+   "cooldown": 20,
+   "do": [
+    {
+     "say": "m01_leave"
+    }
+   ]
+  },
+  {
+   "id": "c_roe",
+   "when": {
+    "type": "roe_violation"
+   },
+   "cooldown": 14,
+   "do": [
+    {
+     "say": "m01_roe"
+    }
+   ]
+  }
+ ],
+ "cinematics": {
+  "target_crash": {
+   "bars": false,
+   "interruptible": true,
+   "shots": [
+    {
+     "dur": 3.4,
+     "mode": "orbit",
+     "follow": "$entity",
+     "fov": 50,
+     "radius": 160
+    }
+   ]
+  }
+ },
+ "flags": {},
+ "reward": {
+  "xp": 1000,
+  "tokens": 3
+ },
+ "scoring": {
+  "parTime": 420
+ },
+ "lines": {
+  "shopsoakmind_1": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "All radar is down across the sector — hard jamming. I will give you gates by heading. Gate one: zero-one-five, twelve kilometres.",
+    "fr": "Tous les radars sont HS sur le secteur — brouillage dur. Je vous donne les points par cap. Point un : zéro-un-cinq, douze kilomètres.",
+    "ar": "كل الرادارات معطّلة في القطاع — تشويش شديد. سأعطيك البوابات بالاتجاه. البوابة الأولى: صفر-واحد-خمسة، اثنا عشر كيلومترًا."
+   }
+  },
+  "shopsoakmind_2": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Gate passed. Next gate: three-one-five, thirteen kilometres. Stay low over the dunes.",
+    "fr": "Point franchi. Prochain point : trois-un-cinq, treize kilomètres. Restez bas sur les dunes.",
+    "ar": "عبرت البوابة. التالية: ثلاثة-واحد-خمسة، ثلاثة عشر كيلومترًا. ابقَ منخفضًا فوق الكثبان."
+   }
+  },
+  "shopsoakmind_3": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "I cannot paint them — calling by eye. Bandits behind you!",
+    "fr": "Je ne les vois pas au radar — annonce à vue. Bandits derrière vous !",
+    "ar": "لا أراهم على الرادار — أنادي بالعين. أعداء خلفك!"
+   }
+  },
+  "shopsoakmind_4": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Gate three passed. Last gate: three-five-five, eleven kilometres.",
+    "fr": "Point trois franchi. Dernier point : trois-cinq-cinq, onze kilomètres.",
+    "ar": "عبرت البوابة الثالثة. الأخيرة: ثلاثة-خمسة-خمسة، أحد عشر كيلومترًا."
+   }
+  },
+  "shopsoakmind_5": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "The jamming is airborne — a cargo hull tagged friendly, orbiting near gate four. Do not trust the tag.",
+    "fr": "Le brouillage est aéroporté — une cellule cargo marquée amie, en orbite près du point quatre. Ne faites pas confiance au tag.",
+    "ar": "التشويش محمول جوًا — بدن شحن بعلامة صديق يدور قرب البوابة الرابعة. لا تثق بالعلامة."
+   }
+  },
+  "shopsoakmind_6": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "Visual. Cargo hull, no markings, antennas all along the belly. Hostile.",
+    "fr": "Visuel. Cellule cargo sans marquage, antennes sous le ventre. Hostile.",
+    "ar": "رؤية مباشرة. بدن شحن بلا علامات وهوائيات تحت البطن. معادٍ."
+   }
+  },
+  "shopsoakmind_7": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Picture's back — all of it. Salim, your eyes were right and the tags were wrong.",
+    "fr": "L'image est revenue — toute. Salim, tes yeux avaient raison, les tags avaient tort.",
+    "ar": "عادت الصورة كاملة. سليم، عيناك كانتا على حق والعلامات على خطأ."
+   }
+  },
+  "shopsoakmind_8": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "Whoever built that jammer built it to look like one of ours.",
+    "fr": "Celui qui a construit ce brouilleur l'a fait pour ressembler à l'un des nôtres.",
+    "ar": "من بنى هذا المشوّش صنعه ليبدو واحدًا منا."
+   }
+  }
+ },
+ "briefing": {
+  "center": {
+   "lon": 2.5,
+   "lat": 31.7
+  },
+  "zoomKm": 90,
+  "playerPath": [
+   [
+    0,
+    0
+   ],
+   [
+    3,
+    12
+   ],
+   [
+    -4,
+    24
+   ],
+   [
+    2,
+    36
+   ],
+   [
+    -1,
+    46
+   ]
+  ],
+  "enemyRoutes": [
+   {
+    "id": "MIRAGE-0",
+    "label": "MIRAGE-0",
+    "points": [
+     [
+      -3,
+      54
+     ],
+     [
+      3,
+      54
+     ],
+     [
+      3,
+      58
+     ],
+     [
+      -3,
+      58
+     ],
+     [
+      -3,
+      54
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-1",
+    "label": "RAIDER-1",
+    "points": [
+     [
+      3,
+      17
+     ],
+     [
+      3,
+      12
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-2",
+    "label": "RAIDER-2",
+    "points": [
+     [
+      3.8,
+      17.8
+     ],
+     [
+      3,
+      12
+     ]
+    ],
+    "unknown": true
+   }
+  ],
+  "threatZones": [
+   {
+    "pos": [
+     3,
+     12
+    ],
+    "r": 6,
+    "label": "GATE 1"
+   }
+  ],
+  "radar": {
+   "pos": [
+    0,
+    0
+   ],
+   "r": 70
+  },
+  "friendly": [
+   {
+    "id": "f1",
+    "path": [
+     [
+      0,
+      0
+     ],
+     [
+      3,
+      12
+     ],
+     [
+      -4,
+      24
+     ],
+     [
+      2,
+      36
+     ],
+     [
+      -1,
+      46
+     ]
+    ]
+   },
+   {
+    "id": "f2",
+    "path": [
+     [
+      -1,
+      -1
+     ],
+     [
+      2,
+      11
+     ],
+     [
+      -5,
+      23
+     ],
+     [
+      1,
+      35
+     ],
+     [
+      -2,
+      45
+     ]
+    ]
+   }
+  ],
+  "objectives": [
+   {
+    "label": "GATE 1",
+    "pos": [
+     3,
+     12
+    ]
+   },
+   {
+    "label": "GATE 2",
+    "pos": [
+     -4,
+     24
+    ]
+   },
+   {
+    "label": "GATE 3",
+    "pos": [
+     2,
+     36
+    ]
+   }
+  ]
+ }
+}

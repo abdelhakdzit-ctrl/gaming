@@ -1,0 +1,911 @@
+{
+ "id": "m01",
+ "number": 1,
+ "title": "FIRST CONTACT",
+ "titleFr": "PREMIER CONTACT",
+ "titleAr": "الاتصال الأول",
+ "type": "INTERCEPT",
+ "playable": true,
+ "requires": null,
+ "region": "MEDITERRANEAN COAST",
+ "regionAr": "الساحل المتوسطي",
+ "map": {
+  "lon": 5.2,
+  "lat": 36.85
+ },
+ "threat": "UNKNOWN",
+ "threatLevel": 2,
+ "weatherLabel": "CLEAR / LIGHT WIND",
+ "clock": "03:12",
+ "env": {
+  "biome": "coast",
+  "time": "night",
+  "weather": "clear"
+ },
+ "narrative": "A routine night patrol becomes an unknown airspace incident. Three unidentified aircraft enter restricted airspace off the coast. Intercept them, identify each contact, and decide who is a threat before you fire.",
+ "intel": [
+  {
+   "label": "CENTRAL PICTURE",
+   "text": "Three tracks, no valid IFF. All tagged HOSTILE by the central picture.",
+   "confidence": "MEDIUM"
+  },
+  {
+   "label": "RADAR",
+   "text": "Coastal radar reports intermittent classification errors. Treat all tags as unverified.",
+   "confidence": "LOW"
+  },
+  {
+   "label": "RULES OF ENGAGEMENT",
+   "text": "Visual identification required before weapons release. A civilian zone lies west of the base.",
+   "confidence": "HIGH"
+  },
+  {
+   "label": "SIGNALS",
+   "text": "One track is transmitting an unrecognised repeating message on a military band.",
+   "confidence": "LOW"
+  }
+ ],
+ "base": {
+  "name": "BA-07 RAS EL-HADJAR",
+  "pos": [
+   0,
+   0,
+   1500
+  ],
+  "heading": 0,
+  "runwayLength": 2500
+ },
+ "spawn": {
+  "pos": [
+   0,
+   0,
+   2650
+  ],
+  "heading": 0,
+  "speed": 0,
+  "onRunway": true
+ },
+ "wingman": {
+  "enabled": true,
+  "callsign": "FALCON TWO"
+ },
+ "zones": [
+  {
+   "id": "city",
+   "type": "civilian",
+   "pos": [
+    -7500,
+    0,
+    -300
+   ],
+   "radius": 3200,
+   "label": "CIVILIAN ZONE"
+  },
+  {
+   "id": "ops",
+   "type": "boundary",
+   "pos": [
+    0,
+    0,
+    -14000
+   ],
+   "radius": 34000,
+   "label": "OPERATIONS AREA"
+  }
+ ],
+ "waypoints": [
+  {
+   "id": "intercept",
+   "pos": [
+    2500,
+    2600,
+    -14000
+   ],
+   "radius": 4500,
+   "label": "INTERCEPT AREA"
+  }
+ ],
+ "groups": [
+  {
+   "id": "kestrel",
+   "type": "transport",
+   "side": "friendly",
+   "name": "KESTREL-7",
+   "callsign": "U-3",
+   "spawn": "start",
+   "pos": [
+    1500,
+    2600,
+    -24500
+   ],
+   "heading": 190,
+   "speed": 130,
+   "route": [
+    [
+     0,
+     2600,
+     -8000
+    ],
+    [
+     0,
+     2000,
+     1500
+    ]
+   ],
+   "iffShown": "unknown"
+  },
+  {
+   "id": "scout",
+   "type": "scout",
+   "side": "hostile",
+   "name": "SCOUT",
+   "callsign": "U-1",
+   "spawn": "start",
+   "pos": [
+    7500,
+    3300,
+    -23500
+   ],
+   "heading": 200,
+   "speed": 170,
+   "route": [
+    [
+     2000,
+     3000,
+     -12000
+    ],
+    [
+     -3000,
+     2800,
+     -4000
+    ]
+   ],
+   "iffShown": "unknown",
+   "egress": [
+    14000,
+    4000,
+    -30000
+   ]
+  },
+  {
+   "id": "fighter",
+   "type": "fighter",
+   "side": "hostile",
+   "name": "FIGHTER",
+   "callsign": "U-2",
+   "spawn": "start",
+   "pos": [
+    9500,
+    3500,
+    -25500
+   ],
+   "heading": 200,
+   "speed": 190,
+   "route": [
+    [
+     3000,
+     3200,
+     -13000
+    ],
+    [
+     -1000,
+     3000,
+     -5000
+    ]
+   ],
+   "iffShown": "unknown",
+   "targetPriority": "asset",
+   "egress": [
+    14000,
+    4000,
+    -30000
+   ],
+   "engageWhenPlayerWithin": 16000
+  },
+  {
+   "id": "grey",
+   "type": "elite",
+   "side": "hostile",
+   "name": "GREY",
+   "callsign": "GREY",
+   "spawn": "event",
+   "pos": [
+    9000,
+    6800,
+    -9000
+   ],
+   "heading": 235,
+   "speed": 250,
+   "route": [
+    [
+     0,
+     3500,
+     -10000
+    ]
+   ],
+   "iffShown": "unknown",
+   "targetPriority": "player",
+   "identified": true,
+   "egress": [
+    20000,
+    8000,
+    -34000
+   ]
+  }
+ ],
+ "objectives": {
+  "primary": [
+   {
+    "id": "scramble",
+    "type": "airborne",
+    "label": "SCRAMBLE",
+    "params": {
+     "altitude": 150
+    }
+   },
+   {
+    "id": "reach",
+    "type": "reach_area",
+    "label": "REACH INTERCEPT AREA",
+    "params": {
+     "waypoints": [
+      "intercept"
+     ]
+    }
+   },
+   {
+    "id": "identify",
+    "type": "identify",
+    "label": "IDENTIFY ALL CONTACTS",
+    "params": {
+     "targets": [
+      "scout",
+      "fighter",
+      "kestrel"
+     ]
+    }
+   },
+   {
+    "id": "protect",
+    "type": "protect",
+    "label": "PROTECT KESTREL-7",
+    "params": {
+     "target": "kestrel",
+     "until": "neutralize"
+    }
+   },
+   {
+    "id": "neutralize",
+    "type": "destroy",
+    "label": "NEUTRALIZE CONFIRMED HOSTILES",
+    "params": {
+     "targets": [
+      "scout",
+      "fighter"
+     ],
+     "requireIdentified": true
+    }
+   }
+  ],
+  "secondary": [
+   {
+    "id": "wingman",
+    "type": "survive_entity",
+    "label": "MAINTAIN WINGMAN SURVIVAL",
+    "params": {
+     "target": "wingman"
+    }
+   },
+   {
+    "id": "civil",
+    "type": "avoid_zone_fire",
+    "label": "AVOID CIVILIAN-ZONE ENGAGEMENT",
+    "params": {
+     "zone": "city"
+    }
+   },
+   {
+    "id": "time",
+    "type": "time_limit",
+    "label": "COMPLETE INTERCEPTION WITHIN 10:00",
+    "params": {
+     "seconds": 600
+    }
+   }
+  ],
+  "optional": [
+   {
+    "id": "accuracy",
+    "type": "accuracy",
+    "label": "HIGH ACCURACY (35%+)",
+    "params": {
+     "min": 0.35
+    }
+   },
+   {
+    "id": "nodamage",
+    "type": "max_damage",
+    "label": "TAKE NO DAMAGE",
+    "params": {
+     "max": 0
+    }
+   },
+   {
+    "id": "formation",
+    "type": "formation",
+    "label": "MAINTAIN FORMATION UNTIL INTERCEPT",
+    "params": {
+     "range": 1500,
+     "ratio": 0.5
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e_scramble",
+   "when": {
+    "type": "time",
+    "t": 2.5
+   },
+   "do": [
+    {
+     "say": "m01_scramble_1"
+    },
+    {
+     "say": "m01_scramble_2",
+     "delay": 1
+    }
+   ]
+  },
+  {
+   "id": "e_airborne",
+   "when": {
+    "type": "objective",
+    "id": "scramble"
+   },
+   "do": [
+    {
+     "music": "BUILDUP"
+    },
+    {
+     "say": "m01_airborne"
+    },
+    {
+     "say": "m01_mourad",
+     "delay": 1
+    }
+   ]
+  },
+  {
+   "id": "e_area",
+   "when": {
+    "type": "objective",
+    "id": "reach"
+   },
+   "do": [
+    {
+     "disrupt": {
+      "duration": 16,
+      "severity": 0.65
+     }
+    },
+    {
+     "say": "m01_area"
+    }
+   ]
+  },
+  {
+   "id": "e_unknown",
+   "when": {
+    "type": "range",
+    "a": "player",
+    "b": "kestrel",
+    "lt": 9000
+   },
+   "do": [
+    {
+     "say": "m01_unknown_msg"
+    },
+    {
+     "say": "m01_salim_doubt",
+     "delay": 1.5
+    }
+   ]
+  },
+  {
+   "id": "e_id_scout",
+   "when": {
+    "type": "identified",
+    "id": "scout"
+   },
+   "do": [
+    {
+     "say": "m01_id_scout"
+    }
+   ]
+  },
+  {
+   "id": "e_id_fighter",
+   "when": {
+    "type": "identified",
+    "id": "fighter"
+   },
+   "do": [
+    {
+     "say": "m01_id_fighter"
+    },
+    {
+     "music": "COMBAT"
+    },
+    {
+     "spawn": "grey",
+     "delay": 14
+    },
+    {
+     "say": "m01_grey_appear",
+     "delay": 14.5
+    },
+    {
+     "cinematic": "grey_pass",
+     "delay": 15
+    }
+   ]
+  },
+  {
+   "id": "e_id_asset",
+   "when": {
+    "type": "identified",
+    "id": "kestrel"
+   },
+   "do": [
+    {
+     "say": "m01_id_asset"
+    },
+    {
+     "say": "m01_id_asset2",
+     "delay": 1
+    }
+   ]
+  },
+  {
+   "id": "e_asset_threat",
+   "when": {
+    "type": "range",
+    "a": "fighter",
+    "b": "kestrel",
+    "lt": 4500
+   },
+   "do": [
+    {
+     "say": "m01_asset_threat"
+    }
+   ]
+  },
+  {
+   "id": "e_grey_leave",
+   "when": {
+    "type": "state",
+    "id": "grey",
+    "state": "DISENGAGE"
+   },
+   "do": [
+    {
+     "say": "m01_grey_leave"
+    }
+   ]
+  },
+  {
+   "id": "e_kill_scout",
+   "when": {
+    "type": "destroyed",
+    "id": "scout"
+   },
+   "do": [
+    {
+     "say": "m01_kill_scout"
+    },
+    {
+     "cinematic": "target_crash",
+     "args": {
+      "entity": "scout"
+     }
+    }
+   ]
+  },
+  {
+   "id": "e_kill_fighter",
+   "when": {
+    "type": "destroyed",
+    "id": "fighter"
+   },
+   "do": [
+    {
+     "say": "m01_kill_fighter"
+    },
+    {
+     "cinematic": "target_crash",
+     "args": {
+      "entity": "fighter"
+     }
+    }
+   ]
+  },
+  {
+   "id": "e_evidence",
+   "when": {
+    "type": "objective",
+    "id": "neutralize"
+   },
+   "do": [
+    {
+     "music": "RESOLUTION"
+    },
+    {
+     "say": "m01_evidence1",
+     "delay": 4
+    },
+    {
+     "say": "m01_evidence2",
+     "delay": 1
+    },
+    {
+     "say": "m01_evidence3",
+     "delay": 1
+    },
+    {
+     "evidence": {
+      "title": "RECOVERED DATA BURST — SCOUT U-1",
+      "lines": [
+       "IDENTIFICATION SIGNALS ON 3 CONTACTS: FORGED",
+       "TRANSPONDER CODE ORIGIN: UNRESOLVED (NETWORK 'VESPER')",
+       "KESTREL-7 FILED AS HOSTILE BY CENTRAL PICTURE 02:58",
+       "FILING AUTHORITY: [REDACTED]"
+      ]
+     },
+     "delay": 6
+    },
+    {
+     "endMission": {
+      "result": "complete"
+     },
+     "delay": 22
+    }
+   ]
+  },
+  {
+   "id": "e_missile",
+   "when": {
+    "type": "incoming_missile"
+   },
+   "cooldown": 25,
+   "do": [
+    {
+     "say": "m01_missile_warning"
+    }
+   ]
+  },
+  {
+   "id": "e_wing_hit",
+   "when": {
+    "type": "damaged",
+    "id": "wingman"
+   },
+   "cooldown": 30,
+   "do": [
+    {
+     "say": "m01_wing_hit"
+    }
+   ]
+  },
+  {
+   "id": "e_wing_down",
+   "when": {
+    "type": "destroyed",
+    "id": "wingman"
+   },
+   "do": [
+    {
+     "say": "m01_wing_down"
+    }
+   ]
+  },
+  {
+   "id": "e_leave",
+   "when": {
+    "type": "outside",
+    "zone": "ops"
+   },
+   "cooldown": 20,
+   "do": [
+    {
+     "say": "m01_leave"
+    }
+   ]
+  },
+  {
+   "id": "e_civil",
+   "when": {
+    "type": "fired_in_zone",
+    "zone": "city"
+   },
+   "cooldown": 15,
+   "do": [
+    {
+     "say": "m01_civil"
+    }
+   ]
+  },
+  {
+   "id": "e_roe",
+   "when": {
+    "type": "roe_violation"
+   },
+   "cooldown": 14,
+   "do": [
+    {
+     "say": "m01_roe"
+    }
+   ]
+  },
+  {
+   "id": "e_hint",
+   "when": {
+    "type": "objective",
+    "id": "reach"
+   },
+   "do": [
+    {
+     "say": "gen_lock_hint",
+     "delay": 14
+    }
+   ]
+  }
+ ],
+ "cinematics": {
+  "intro": {
+   "bars": true,
+   "locked": true,
+   "shots": [
+    {
+     "d": 4.2,
+     "anchor": "base",
+     "from": {
+      "off": [
+       190,
+       30,
+       320
+      ],
+      "look": [
+       0,
+       8,
+       140
+      ]
+     },
+     "to": {
+      "off": [
+       120,
+       16,
+       230
+      ],
+      "look": [
+       0,
+       6,
+       150
+      ]
+     },
+     "fov": 42
+    },
+    {
+     "d": 2.8,
+     "anchor": "cockpit",
+     "fov": 70
+    }
+   ]
+  },
+  "grey_pass": {
+   "bars": true,
+   "interruptible": true,
+   "shots": [
+    {
+     "d": 3.4,
+     "mode": "flyby",
+     "follow": "grey",
+     "fov": 40
+    }
+   ]
+  },
+  "target_crash": {
+   "bars": false,
+   "interruptible": true,
+   "shots": [
+    {
+     "d": 3.4,
+     "mode": "orbit",
+     "follow": "$entity",
+     "fov": 50,
+     "radius": 160
+    }
+   ]
+  }
+ },
+ "reward": {
+  "xp": 600,
+  "tokens": 3
+ },
+ "scoring": {
+  "parTime": 420
+ },
+ "briefing": {
+  "center": {
+   "lon": 5.2,
+   "lat": 37.3
+  },
+  "zoomKm": 150,
+  "playerPath": [
+   [
+    0,
+    0
+   ],
+   [
+    4,
+    14
+   ],
+   [
+    12,
+    38
+   ],
+   [
+    16,
+    52
+   ]
+  ],
+  "enemyRoutes": [
+   {
+    "id": "U-1",
+    "label": "U-1",
+    "points": [
+     [
+      60,
+      105
+     ],
+     [
+      38,
+      78
+     ],
+     [
+      22,
+      56
+     ],
+     [
+      4,
+      22
+     ]
+    ]
+   },
+   {
+    "id": "U-2",
+    "label": "U-2",
+    "points": [
+     [
+      72,
+      112
+     ],
+     [
+      46,
+      80
+     ],
+     [
+      24,
+      58
+     ],
+     [
+      2,
+      18
+     ]
+    ]
+   },
+   {
+    "id": "U-3",
+    "label": "U-3",
+    "points": [
+     [
+      22,
+      100
+     ],
+     [
+      16,
+      72
+     ],
+     [
+      10,
+      50
+     ],
+     [
+      1,
+      8
+     ]
+    ],
+    "unknown": true
+   }
+  ],
+  "threatZones": [
+   {
+    "pos": [
+     16,
+     52
+    ],
+    "r": 22,
+    "label": "INTERCEPT AREA"
+   }
+  ],
+  "radar": {
+   "pos": [
+    0,
+    0
+   ],
+   "r": 92
+  },
+  "friendly": [
+   {
+    "id": "f1",
+    "path": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      14
+     ],
+     [
+      12,
+      38
+     ],
+     [
+      16,
+      52
+     ]
+    ]
+   },
+   {
+    "id": "f2",
+    "path": [
+     [
+      -1,
+      -1
+     ],
+     [
+      3,
+      13
+     ],
+     [
+      11,
+      37
+     ],
+     [
+      15,
+      51
+     ]
+    ]
+   }
+  ],
+  "objectives": [
+   {
+    "label": "INTERCEPT",
+    "pos": [
+     16,
+     52
+    ]
+   },
+   {
+    "label": "CIVILIAN ZONE",
+    "pos": [
+     -22,
+     4
+    ],
+    "civil": true
+   }
+  ]
+ }
+}

@@ -1,0 +1,754 @@
+{
+ "id": "m08",
+ "number": 8,
+ "title": "BLACK SAND",
+ "titleFr": "SABLE NOIR",
+ "titleAr": "الرمال السوداء",
+ "type": "STRIKE",
+ "playable": true,
+ "requires": "m07",
+ "region": "DEEP SAHARA",
+ "regionAr": "عمق الصحراء",
+ "map": {
+  "lon": 3,
+  "lat": 28
+ },
+ "threat": "HIGH",
+ "threatLevel": 4,
+ "weatherLabel": "CLEAR / DRY WIND",
+ "clock": "17:45",
+ "env": {
+  "biome": "sahara",
+  "time": "sunset",
+  "weather": "clear"
+ },
+ "narrative": "Black Sand is the relay that writes the forged tags for the whole grid. Three SAM batteries and a CAP pair defend it. Destroy the mast and the fuel depot that powers it, using the dunes and the sunset glare.",
+ "intel": [
+  {
+   "label": "TARGET",
+   "text": "Relay mast plus fuel depot feeding its backup generators.",
+   "confidence": "HIGH"
+  },
+  {
+   "label": "DEFENCES",
+   "text": "Three SAM batteries, one radar site and a raider pair sleeping under camouflage nets.",
+   "confidence": "MEDIUM"
+  },
+  {
+   "label": "TIP",
+   "text": "Break lock with flares and terrain. Mast first, depot second — or the other way round.",
+   "confidence": "HIGH"
+  }
+ ],
+ "base": null,
+ "spawn": {
+  "onRunway": false,
+  "heading": 0,
+  "speed": 240,
+  "pos": [
+   0,
+   3200,
+   0
+  ]
+ },
+ "wingman": {
+  "enabled": true,
+  "callsign": "Falcon TWO"
+ },
+ "noWingman": false,
+ "zones": [
+  {
+   "id": "boundary",
+   "type": "boundary",
+   "pos": [
+    0,
+    0,
+    -12000
+   ],
+   "radius": 36000,
+   "label": "OPERATIONS AREA"
+  }
+ ],
+ "waypoints": [],
+ "groups": [
+  {
+   "id": "relay",
+   "type": "relay",
+   "side": "hostile",
+   "name": "BLACK SAND MAST",
+   "callsign": "BLACK SAND MAST",
+   "spawn": "start",
+   "pos": [
+    1500,
+    0,
+    -26000
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "depot",
+   "type": "depot",
+   "side": "hostile",
+   "name": "FUEL DEPOT",
+   "callsign": "FUEL DEPOT",
+   "spawn": "start",
+   "pos": [
+    -1200,
+    0,
+    -26800
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "rs",
+   "type": "radar_site",
+   "side": "hostile",
+   "name": "RADAR SITE",
+   "callsign": "RADAR SITE",
+   "spawn": "start",
+   "pos": [
+    2500,
+    0,
+    -25000
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "s1",
+   "type": "sam",
+   "side": "hostile",
+   "name": "SAM-1",
+   "callsign": "SAM-1",
+   "spawn": "start",
+   "pos": [
+    4000,
+    0,
+    -24500
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "reload": 16
+  },
+  {
+   "id": "s2",
+   "type": "sam",
+   "side": "hostile",
+   "name": "SAM-2",
+   "callsign": "SAM-2",
+   "spawn": "start",
+   "pos": [
+    -3500,
+    0,
+    -27500
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "reload": 16
+  },
+  {
+   "id": "s3",
+   "type": "sam",
+   "side": "hostile",
+   "name": "SAM-3",
+   "callsign": "SAM-3",
+   "spawn": "start",
+   "pos": [
+    200,
+    0,
+    -23200
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "reload": 16
+  },
+  {
+   "id": "r1",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-1",
+   "callsign": "RAIDER-1",
+   "spawn": "event",
+   "pos": [
+    12000,
+    3500,
+    -30000
+   ],
+   "heading": 250,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "r2",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-2",
+   "callsign": "RAIDER-2",
+   "spawn": "event",
+   "pos": [
+    12800,
+    3400,
+    -31000
+   ],
+   "heading": 250,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  }
+ ],
+ "objectives": {
+  "primary": [
+   {
+    "id": "mast",
+    "type": "destroy",
+    "label": "DESTROY THE RELAY MAST",
+    "params": {
+     "targets": [
+      "relay"
+     ]
+    }
+   },
+   {
+    "id": "depotk",
+    "type": "destroy",
+    "label": "DESTROY THE FUEL DEPOT",
+    "params": {
+     "targets": [
+      "depot"
+     ]
+    }
+   }
+  ],
+  "secondary": [
+   {
+    "id": "wingman",
+    "type": "survive_entity",
+    "label": "MAINTAIN WINGMAN SURVIVAL",
+    "params": {
+     "target": "wingman"
+    }
+   },
+   {
+    "id": "sams",
+    "type": "destroy",
+    "label": "SUPPRESS ALL THREE SAM BATTERIES",
+    "params": {
+     "targets": [
+      "s1",
+      "s2",
+      "s3"
+     ]
+    }
+   }
+  ],
+  "optional": [
+   {
+    "id": "nodamage",
+    "type": "max_damage",
+    "label": "TAKE NO DAMAGE",
+    "params": {
+     "max": 0
+    }
+   },
+   {
+    "id": "rsk",
+    "type": "destroy",
+    "label": "DESTROY THE RADAR SITE",
+    "params": {
+     "targets": [
+      "rs"
+     ]
+    }
+   },
+   {
+    "id": "cap",
+    "type": "destroy",
+    "label": "SHOOT DOWN THE CAP PAIR",
+    "params": {
+     "targets": [
+      "r1",
+      "r2"
+     ]
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "when": {
+    "type": "time",
+    "t": 2
+   },
+   "do": [
+    {
+     "say": "blackbasketsand_1"
+    },
+    {
+     "say": "blackbasketsand_2",
+     "delay": 0.5
+    },
+    {
+     "music": "BUILDUP"
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "when": {
+    "type": "range",
+    "a": "player",
+    "b": "relay",
+    "lt": 16000
+   },
+   "do": [
+    {
+     "spawn": [
+      "r1",
+      "r2"
+     ]
+    },
+    {
+     "music": "COMBAT"
+    },
+    {
+     "say": "blackbasketsand_3"
+    },
+    {
+     "say": "blackbasketsand_4",
+     "delay": 5
+    },
+    {
+     "callout": {
+      "nearest": "hostile"
+     },
+     "delay": 9
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "when": {
+    "type": "destroyed",
+    "id": "relay"
+   },
+   "do": [
+    {
+     "say": "blackbasketsand_5"
+    },
+    {
+     "cinematic": "target_crash",
+     "args": {
+      "entity": "relay"
+     }
+    }
+   ]
+  },
+  {
+   "id": "e4",
+   "when": {
+    "type": "destroyed",
+    "id": "depot"
+   },
+   "do": [
+    {
+     "say": "blackbasketsand_6"
+    }
+   ]
+  },
+  {
+   "id": "e5",
+   "when": {
+    "type": "all_destroyed",
+    "ids": [
+     "relay",
+     "depot"
+    ]
+   },
+   "do": [
+    {
+     "music": "RESOLUTION"
+    },
+    {
+     "say": "blackbasketsand_7",
+     "delay": 2
+    },
+    {
+     "say": "blackbasketsand_8",
+     "delay": 2
+    },
+    {
+     "say": "blackbasketsand_9",
+     "delay": 2
+    },
+    {
+     "evidence": {
+      "title": "BLACK SAND LOGS — LAST BURST",
+      "lines": [
+       "RELAY HEARTBEAT ADDRESSED TO: CMD NET BA-07",
+       "ORDER SIGNATURE: M.B.A.",
+       "MESSAGE: \"TAGS SYNCHRONISED — PROCEED TO SHADOW LINE\"",
+       "COMMAND NET BA-07 IS THE SQUADRON'S OWN"
+      ]
+     },
+     "delay": 3
+    },
+    {
+     "endMission": {
+      "result": "complete"
+     },
+     "delay": 16
+    }
+   ]
+  },
+  {
+   "id": "c_missile",
+   "when": {
+    "type": "incoming_missile"
+   },
+   "cooldown": 25,
+   "do": [
+    {
+     "say": "m01_missile_warning"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_hit",
+   "when": {
+    "type": "damaged",
+    "id": "wingman"
+   },
+   "cooldown": 30,
+   "do": [
+    {
+     "say": "m01_wing_hit"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_down",
+   "when": {
+    "type": "destroyed",
+    "id": "wingman"
+   },
+   "do": [
+    {
+     "say": "m01_wing_down"
+    }
+   ]
+  },
+  {
+   "id": "c_leave",
+   "when": {
+    "type": "outside",
+    "zone": "boundary"
+   },
+   "cooldown": 20,
+   "do": [
+    {
+     "say": "m01_leave"
+    }
+   ]
+  },
+  {
+   "id": "c_roe",
+   "when": {
+    "type": "roe_violation"
+   },
+   "cooldown": 14,
+   "do": [
+    {
+     "say": "m01_roe"
+    }
+   ]
+  }
+ ],
+ "cinematics": {
+  "target_crash": {
+   "bars": false,
+   "interruptible": true,
+   "shots": [
+    {
+     "dur": 3.4,
+     "mode": "orbit",
+     "follow": "$entity",
+     "fov": 50,
+     "radius": 260
+    }
+   ]
+  }
+ },
+ "flags": {},
+ "reward": {
+  "xp": 1060,
+  "tokens": 4
+ },
+ "scoring": {
+  "parTime": 420
+ },
+ "lines": {
+  "blackbasketsand_1": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Black Sand relay: the master node behind the forged tags. Three SAM batteries, one radar, one fuel depot. Kill the mast and the depot.",
+    "fr": "Relais Sable Noir : le noeud maître des faux tags. Trois SAM, un radar, un dépôt de carburant. Détruisez le mât et le dépôt.",
+    "ar": "محطة الرمال السوداء: العقدة الرئيسية خلف العلامات المزوّرة. ثلاث بطاريات صواريخ ورادار ومستودع وقود. دمّروا الصاري والمستودع."
+   }
+  },
+  "blackbasketsand_2": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "The depot feeds the backup generators. Burn it and the mast goes dark in minutes.",
+    "fr": "Le dépôt alimente les groupes de secours. Brûlez-le et le mât s'éteint en quelques minutes.",
+    "ar": "المستودع يغذي المولدات الاحتياطية. أحرقه فيظلم الصاري خلال دقائق."
+   }
+  },
+  "blackbasketsand_3": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "SAM radars are lit. Flares, terrain, and keep your speed up.",
+    "fr": "Radars SAM allumés. Leurres, relief, et gardez votre vitesse.",
+    "ar": "رادارات الصواريخ تعمل. مشاعل وتضاريس وحافظ على سرعتك."
+   }
+  },
+  "blackbasketsand_4": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "Raiders off the east — they were sleeping under camo nets.",
+    "fr": "Raiders par l'est — ils dormaient sous des filets de camouflage.",
+    "ar": "مغيرون من الشرق — كانوا نائمين تحت شباك التمويه."
+   }
+  },
+  "blackbasketsand_5": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "playful",
+   "text": {
+    "en": "Mast is down! That is a lot of copper on fire.",
+    "fr": "Le mât est tombé ! Beaucoup de cuivre en feu.",
+    "ar": "سقط الصاري! الكثير من النحاس يحترق."
+   }
+  },
+  "blackbasketsand_6": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Depot burning. Black Sand is dark.",
+    "fr": "Dépôt en feu. Sable Noir est éteint.",
+    "ar": "المستودع يحترق. الرمال السوداء مظلمة."
+   }
+  },
+  "blackbasketsand_7": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "shaken",
+   "text": {
+    "en": "We caught the relay's last burst. It was addressed to a Command net — BA-07.",
+    "fr": "Nous avons capté la dernière émission du relais. Elle était adressée à un réseau du Commandement — BA-07.",
+    "ar": "التقطنا آخر بث للمحطة. كان موجّهًا إلى شبكة قيادة — بي أيه-07."
+   }
+  },
+  "blackbasketsand_8": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "Command? Which Command, exactly?",
+    "fr": "Le Commandement ? Lequel, exactement ?",
+    "ar": "القيادة؟ أي قيادة بالضبط؟"
+   }
+  },
+  "blackbasketsand_9": {
+   "speaker": "MOURAD",
+   "voice": null,
+   "emotion": "stern",
+   "text": {
+    "en": "Return to base, Falcon One. Debrief — immediately.",
+    "fr": "Retour à la base, Falcon Un. Compte rendu — immédiatement.",
+    "ar": "عد إلى القاعدة يا فالكون واحد. جلسة تقرير — فورًا."
+   }
+  }
+ },
+ "briefing": {
+  "center": {
+   "lon": 3,
+   "lat": 28.1
+  },
+  "zoomKm": 90,
+  "playerPath": [
+   [
+    0,
+    0
+   ],
+   [
+    1.5,
+    26
+   ]
+  ],
+  "enemyRoutes": [
+   {
+    "id": "RAIDER-1",
+    "label": "RAIDER-1",
+    "points": [
+     [
+      12,
+      30
+     ],
+     [
+      1.5,
+      26
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-2",
+    "label": "RAIDER-2",
+    "points": [
+     [
+      12.8,
+      31
+     ],
+     [
+      1.5,
+      26
+     ]
+    ],
+    "unknown": true
+   }
+  ],
+  "threatZones": [
+   {
+    "pos": [
+     4,
+     24.5
+    ],
+    "r": 9,
+    "label": "SAM"
+   },
+   {
+    "pos": [
+     -3.5,
+     27.5
+    ],
+    "r": 9,
+    "label": "SAM"
+   },
+   {
+    "pos": [
+     0.2,
+     23.2
+    ],
+    "r": 9,
+    "label": "SAM"
+   },
+   {
+    "pos": [
+     1.5,
+     26
+    ],
+    "r": 7,
+    "label": "BLACK SAND MAST"
+   },
+   {
+    "pos": [
+     -1.2,
+     26.8
+    ],
+    "r": 7,
+    "label": "FUEL DEPOT"
+   }
+  ],
+  "radar": {
+   "pos": [
+    0,
+    0
+   ],
+   "r": 70
+  },
+  "friendly": [
+   {
+    "id": "f1",
+    "path": [
+     [
+      0,
+      0
+     ],
+     [
+      1.5,
+      26
+     ]
+    ]
+   },
+   {
+    "id": "f2",
+    "path": [
+     [
+      -1,
+      -1
+     ],
+     [
+      0.5,
+      25
+     ]
+    ]
+   }
+  ],
+  "objectives": [
+   {
+    "label": "BLACK SAND MAST",
+    "pos": [
+     1.5,
+     26
+    ]
+   },
+   {
+    "label": "FUEL DEPOT",
+    "pos": [
+     -1.2,
+     26.8
+    ]
+   },
+   {
+    "label": "RADAR SITE",
+    "pos": [
+     2.5,
+     25
+    ]
+   }
+  ]
+ }
+}

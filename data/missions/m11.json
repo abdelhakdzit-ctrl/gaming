@@ -1,0 +1,631 @@
+{
+ "id": "m11",
+ "number": 11,
+ "title": "STORM LINE",
+ "titleFr": "LIGNE D'ORAGE",
+ "titleAr": "خط العاصفة",
+ "type": "WEATHER COMBAT",
+ "playable": true,
+ "requires": "m10",
+ "region": "ATLAS",
+ "regionAr": "الأطلس",
+ "map": {
+  "lon": 1.5,
+  "lat": 35.5
+ },
+ "threat": "HIGH",
+ "threatLevel": 4,
+ "weatherLabel": "STORM / SEVERE",
+ "clock": "15:30",
+ "env": {
+  "biome": "atlas",
+  "time": "day",
+  "weather": "storm",
+  "turbulence": 0.6
+ },
+ "narrative": "A VESPER strike package is flying through the storm front toward the Ouled Taher dam. The weather is brutal and the radar is noisy. Fly through the turbulence, get there first, and protect the dam.",
+ "intel": [
+  {
+   "label": "PACKAGE",
+   "text": "Three raiders and one fighter lead, flying low through the valleys toward the dam.",
+   "confidence": "MEDIUM"
+  },
+  {
+   "label": "WEATHER",
+   "text": "Storm front: severe turbulence, heavy cloud, lightning. Radar returns are degraded.",
+   "confidence": "HIGH"
+  },
+  {
+   "label": "TARGET",
+   "text": "Ouled Taher dam power station. Raiders prefer ground targets over aircraft.",
+   "confidence": "HIGH"
+  }
+ ],
+ "base": null,
+ "spawn": {
+  "onRunway": false,
+  "heading": 0,
+  "speed": 240,
+  "pos": [
+   0,
+   3800,
+   0
+  ]
+ },
+ "wingman": {
+  "enabled": true,
+  "callsign": "Falcon TWO"
+ },
+ "noWingman": false,
+ "zones": [
+  {
+   "id": "boundary",
+   "type": "boundary",
+   "pos": [
+    0,
+    0,
+    -12000
+   ],
+   "radius": 36000,
+   "label": "OPERATIONS AREA"
+  }
+ ],
+ "waypoints": [],
+ "groups": [
+  {
+   "id": "dam",
+   "type": "plant",
+   "side": "friendly",
+   "name": "OULED TAHER DAM",
+   "callsign": "DAM",
+   "spawn": "start",
+   "pos": [
+    0,
+    0,
+    -26000
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "r1",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-1",
+   "callsign": "RAIDER-1",
+   "spawn": "start",
+   "pos": [
+    11000,
+    3500,
+    -58000
+   ],
+   "heading": 200,
+   "speed": 235,
+   "route": [
+    [
+     500,
+     2300,
+     -27500
+    ]
+   ],
+   "iffShown": "unknown",
+   "targetPriority": "asset",
+   "identified": true
+  },
+  {
+   "id": "r2",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-2",
+   "callsign": "RAIDER-2",
+   "spawn": "start",
+   "pos": [
+    12000,
+    3400,
+    -59000
+   ],
+   "heading": 200,
+   "speed": 235,
+   "route": [
+    [
+     500,
+     2300,
+     -27500
+    ]
+   ],
+   "iffShown": "unknown",
+   "targetPriority": "asset",
+   "identified": true
+  },
+  {
+   "id": "r3",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-3",
+   "callsign": "RAIDER-3",
+   "spawn": "start",
+   "pos": [
+    10000,
+    3600,
+    -59500
+   ],
+   "heading": 200,
+   "speed": 235,
+   "route": [
+    [
+     500,
+     2300,
+     -27500
+    ]
+   ],
+   "iffShown": "unknown",
+   "targetPriority": "asset",
+   "identified": true
+  },
+  {
+   "id": "f1",
+   "type": "fighter",
+   "side": "hostile",
+   "name": "LEAD",
+   "callsign": "LEAD",
+   "spawn": "start",
+   "pos": [
+    11000,
+    3700,
+    -61000
+   ],
+   "heading": 200,
+   "speed": 240,
+   "route": [
+    [
+     500,
+     2600,
+     -27500
+    ]
+   ],
+   "iffShown": "unknown",
+   "identified": true
+  }
+ ],
+ "objectives": {
+  "primary": [
+   {
+    "id": "guard",
+    "type": "protect",
+    "label": "PROTECT THE OULED TAHER DAM",
+    "params": {
+     "target": "dam",
+     "until": "clear"
+    }
+   },
+   {
+    "id": "clear",
+    "type": "destroy",
+    "label": "DESTROY THE STRIKE PACKAGE",
+    "params": {
+     "targets": [
+      "r1",
+      "r2",
+      "r3",
+      "f1"
+     ]
+    }
+   }
+  ],
+  "secondary": [
+   {
+    "id": "wingman",
+    "type": "survive_entity",
+    "label": "MAINTAIN WINGMAN SURVIVAL",
+    "params": {
+     "target": "wingman"
+    }
+   },
+   {
+    "id": "time",
+    "type": "time_limit",
+    "label": "FINISH WITHIN 8:00",
+    "params": {
+     "seconds": 480
+    }
+   }
+  ],
+  "optional": [
+   {
+    "id": "nodamage",
+    "type": "max_damage",
+    "label": "TAKE NO DAMAGE",
+    "params": {
+     "max": 0
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e0",
+   "when": {
+    "type": "time",
+    "t": 0.5
+   },
+   "do": [
+    {
+     "radar": {
+      "mode": "on",
+      "severity": 0.4,
+      "duration": 9999
+     }
+    }
+   ]
+  },
+  {
+   "id": "e1",
+   "when": {
+    "type": "time",
+    "t": 2
+   },
+   "do": [
+    {
+     "say": "stormlinesky_1"
+    },
+    {
+     "say": "stormlinesky_2",
+     "delay": 0.5
+    },
+    {
+     "music": "BUILDUP"
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "when": {
+    "type": "time",
+    "t": 40
+   },
+   "do": [
+    {
+     "say": "stormlinesky_3"
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "when": {
+    "type": "range",
+    "a": "player",
+    "b": "r1",
+    "lt": 14000
+   },
+   "do": [
+    {
+     "music": "COMBAT"
+    },
+    {
+     "callout": {
+      "nearest": "hostile"
+     }
+    }
+   ]
+  },
+  {
+   "id": "e4",
+   "when": {
+    "type": "hp_below",
+    "id": "dam",
+    "frac": 0.75
+   },
+   "do": [
+    {
+     "say": "stormlinesky_4"
+    }
+   ]
+  },
+  {
+   "id": "e5",
+   "when": {
+    "type": "objective",
+    "id": "clear"
+   },
+   "do": [
+    {
+     "music": "RESOLUTION"
+    },
+    {
+     "say": "stormlinesky_5",
+     "delay": 2
+    },
+    {
+     "say": "stormlinesky_6",
+     "delay": 2
+    },
+    {
+     "say": "stormlinesky_7",
+     "delay": 2
+    },
+    {
+     "endMission": {
+      "result": "complete"
+     },
+     "delay": 14
+    }
+   ]
+  },
+  {
+   "id": "c_missile",
+   "when": {
+    "type": "incoming_missile"
+   },
+   "cooldown": 25,
+   "do": [
+    {
+     "say": "m01_missile_warning"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_hit",
+   "when": {
+    "type": "damaged",
+    "id": "wingman"
+   },
+   "cooldown": 30,
+   "do": [
+    {
+     "say": "m01_wing_hit"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_down",
+   "when": {
+    "type": "destroyed",
+    "id": "wingman"
+   },
+   "do": [
+    {
+     "say": "m01_wing_down"
+    }
+   ]
+  },
+  {
+   "id": "c_leave",
+   "when": {
+    "type": "outside",
+    "zone": "boundary"
+   },
+   "cooldown": 20,
+   "do": [
+    {
+     "say": "m01_leave"
+    }
+   ]
+  },
+  {
+   "id": "c_roe",
+   "when": {
+    "type": "roe_violation"
+   },
+   "cooldown": 14,
+   "do": [
+    {
+     "say": "m01_roe"
+    }
+   ]
+  }
+ ],
+ "cinematics": {
+  "target_crash": {
+   "bars": false,
+   "interruptible": true,
+   "shots": [
+    {
+     "dur": 3.4,
+     "mode": "orbit",
+     "follow": "$entity",
+     "fov": 50,
+     "radius": 160
+    }
+   ]
+  }
+ },
+ "flags": {},
+ "reward": {
+  "xp": 1240,
+  "tokens": 4
+ },
+ "scoring": {
+  "parTime": 400
+ },
+ "lines": {
+  "stormlinesky_1": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "VESPER strike package heading for the Ouled Taher dam through the storm front. Weather is brutal. Get there before they do.",
+    "fr": "Paquet de frappe VESPER vers le barrage d'Ouled Taher à travers le front orageux. Météo brutale. Arrivez avant eux.",
+    "ar": "رزمة ضربة فيسبر تتجه إلى سد أولاد طاهر عبر جبهة العاصفة. الطقس قاسٍ. ابلغوه قبلهم."
+   }
+  },
+  "stormlinesky_2": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "Radar returns are noisy in the storm. Trust your eyes and the callouts.",
+    "fr": "Les échos radar sont bruités dans l'orage. Fiez-vous à vos yeux et aux annonces.",
+    "ar": "أصداء الرادار مضطربة في العاصفة. ثق بعينيك وبالنداءات."
+   }
+  },
+  "stormlinesky_3": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "Turbulence is throwing me around! Stay loose on the stick, Salim.",
+    "fr": "Les turbulences me secouent ! Souple sur le manche, Salim.",
+    "ar": "الاضطراب يقذف بي! كن مرنًا على العصا يا سليم."
+   }
+  },
+  "stormlinesky_4": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "Dam under fire! They are over the spillway — Falcon, cover it!",
+    "fr": "Le barrage est attaqué ! Ils sont au-dessus de la crête — Falcon, couvrez-le !",
+    "ar": "السد تحت النار! هم فوق المفيض — فالكون، غطّوه!"
+   }
+  },
+  "stormlinesky_5": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Last one down. The sky is clear of them.",
+    "fr": "Le dernier est tombé. Le ciel est dégagé.",
+    "ar": "سقط الأخير. السماء خالية منهم."
+   }
+  },
+  "stormlinesky_6": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "The dam is intact. Good flying in that weather, Falcon.",
+    "fr": "Le barrage est intact. Beau pilotage dans cette météo, Falcon.",
+    "ar": "السد سليم. طيران ممتاز في هذا الطقس يا فالكون."
+   }
+  },
+  "stormlinesky_7": {
+   "speaker": "MOURAD",
+   "voice": null,
+   "emotion": "shaken",
+   "text": {
+    "en": "Falcon One, report to me when you land. We need to speak.",
+    "fr": "Falcon Un, présentez-vous à moi à l'atterrissage. Nous devons parler.",
+    "ar": "فالكون واحد، قابلني عند الهبوط. علينا أن نتحدث."
+   }
+  }
+ },
+ "briefing": {
+  "center": {
+   "lon": 1.6,
+   "lat": 35.8
+  },
+  "zoomKm": 90,
+  "playerPath": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    40
+   ]
+  ],
+  "enemyRoutes": [
+   {
+    "id": "RAIDER-1",
+    "label": "RAIDER-1",
+    "points": [
+     [
+      11,
+      58
+     ],
+     [
+      0.5,
+      27.5
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-2",
+    "label": "RAIDER-2",
+    "points": [
+     [
+      12,
+      59
+     ],
+     [
+      0.5,
+      27.5
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-3",
+    "label": "RAIDER-3",
+    "points": [
+     [
+      10,
+      59.5
+     ],
+     [
+      0.5,
+      27.5
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "LEAD",
+    "label": "LEAD",
+    "points": [
+     [
+      11,
+      61
+     ],
+     [
+      0.5,
+      27.5
+     ]
+    ],
+    "unknown": true
+   }
+  ],
+  "threatZones": [],
+  "radar": {
+   "pos": [
+    0,
+    0
+   ],
+   "r": 70
+  },
+  "friendly": [
+   {
+    "id": "f1",
+    "path": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      40
+     ]
+    ]
+   },
+   {
+    "id": "f2",
+    "path": [
+     [
+      -1,
+      -1
+     ],
+     [
+      -1,
+      39
+     ]
+    ]
+   }
+  ],
+  "objectives": []
+ }
+}

@@ -1,0 +1,1051 @@
+{
+ "id": "m05",
+ "number": 5,
+ "title": "DUST ROUTE",
+ "titleFr": "ROUTE DE POUSSIÈRE",
+ "titleAr": "طريق الغبار",
+ "type": "AIR SUPPORT",
+ "playable": true,
+ "requires": "m04",
+ "region": "HIGH PLATEAUS",
+ "regionAr": "الهضاب العليا",
+ "map": {
+  "lon": 3,
+  "lat": 34.6
+ },
+ "threat": "HIGH",
+ "threatLevel": 3,
+ "weatherLabel": "DUST / HIGH WIND",
+ "clock": "12:30",
+ "env": {
+  "biome": "plateaus",
+  "time": "day",
+  "weather": "dust"
+ },
+ "narrative": "A five-truck convoy is moving Echo-Four's transponder core, salvaged by Leila's team, across the plateau road. VESPER raiders will try to strafe it into the dust. Keep at least three trucks rolling to the depot.",
+ "intel": [
+  {
+   "label": "CONVOY",
+   "text": "Five armoured trucks on the plateau road, about 26 m/s. Cargo: the Echo-Four transponder core.",
+   "confidence": "HIGH"
+  },
+  {
+   "label": "THREAT",
+   "text": "Three waves of raiders from east and west. Dust limits visibility to under 6 km.",
+   "confidence": "MEDIUM"
+  },
+  {
+   "label": "NOTE",
+   "text": "Raiders prioritise trucks over aircraft. Draw them off.",
+   "confidence": "MEDIUM"
+  }
+ ],
+ "base": null,
+ "spawn": {
+  "onRunway": false,
+  "heading": 0,
+  "speed": 230,
+  "pos": [
+   300,
+   2600,
+   2400
+  ]
+ },
+ "wingman": {
+  "enabled": true,
+  "callsign": "Falcon TWO"
+ },
+ "noWingman": false,
+ "zones": [
+  {
+   "id": "boundary",
+   "type": "boundary",
+   "pos": [
+    0,
+    0,
+    -12000
+   ],
+   "radius": 36000,
+   "label": "OPERATIONS AREA"
+  }
+ ],
+ "waypoints": [
+  {
+   "id": "dest",
+   "pos": [
+    47,
+    0,
+    -12000
+   ],
+   "radius": 700,
+   "label": "CONVOY DEPOT"
+  }
+ ],
+ "groups": [
+  {
+   "id": "tr1",
+   "type": "truck",
+   "side": "friendly",
+   "name": "DUST-1",
+   "callsign": "DUST-1",
+   "spawn": "start",
+   "pos": [
+    -273,
+    0,
+    -2900
+   ],
+   "heading": 0,
+   "speed": 26,
+   "route": [
+    [
+     -433,
+     0,
+     -4000
+    ],
+    [
+     -536,
+     0,
+     -5000
+    ],
+    [
+     -591,
+     0,
+     -6000
+    ],
+    [
+     -596,
+     0,
+     -7000
+    ],
+    [
+     -550,
+     0,
+     -8000
+    ],
+    [
+     -457,
+     0,
+     -9000
+    ],
+    [
+     -320,
+     0,
+     -10000
+    ],
+    [
+     -149,
+     0,
+     -11000
+    ],
+    [
+     47,
+     0,
+     -12000
+    ]
+   ],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "tr2",
+   "type": "truck",
+   "side": "friendly",
+   "name": "DUST-2",
+   "callsign": "DUST-2",
+   "spawn": "start",
+   "pos": [
+    -258,
+    0,
+    -2810
+   ],
+   "heading": 0,
+   "speed": 26,
+   "route": [
+    [
+     -433,
+     0,
+     -4000
+    ],
+    [
+     -536,
+     0,
+     -5000
+    ],
+    [
+     -591,
+     0,
+     -6000
+    ],
+    [
+     -596,
+     0,
+     -7000
+    ],
+    [
+     -550,
+     0,
+     -8000
+    ],
+    [
+     -457,
+     0,
+     -9000
+    ],
+    [
+     -320,
+     0,
+     -10000
+    ],
+    [
+     -149,
+     0,
+     -11000
+    ],
+    [
+     47,
+     0,
+     -12000
+    ]
+   ],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "tr3",
+   "type": "truck",
+   "side": "friendly",
+   "name": "DUST-3",
+   "callsign": "DUST-3",
+   "spawn": "start",
+   "pos": [
+    -243,
+    0,
+    -2720
+   ],
+   "heading": 0,
+   "speed": 26,
+   "route": [
+    [
+     -433,
+     0,
+     -4000
+    ],
+    [
+     -536,
+     0,
+     -5000
+    ],
+    [
+     -591,
+     0,
+     -6000
+    ],
+    [
+     -596,
+     0,
+     -7000
+    ],
+    [
+     -550,
+     0,
+     -8000
+    ],
+    [
+     -457,
+     0,
+     -9000
+    ],
+    [
+     -320,
+     0,
+     -10000
+    ],
+    [
+     -149,
+     0,
+     -11000
+    ],
+    [
+     47,
+     0,
+     -12000
+    ]
+   ],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "tr4",
+   "type": "truck",
+   "side": "friendly",
+   "name": "DUST-4",
+   "callsign": "DUST-4",
+   "spawn": "start",
+   "pos": [
+    -227,
+    0,
+    -2630
+   ],
+   "heading": 0,
+   "speed": 26,
+   "route": [
+    [
+     -433,
+     0,
+     -4000
+    ],
+    [
+     -536,
+     0,
+     -5000
+    ],
+    [
+     -591,
+     0,
+     -6000
+    ],
+    [
+     -596,
+     0,
+     -7000
+    ],
+    [
+     -550,
+     0,
+     -8000
+    ],
+    [
+     -457,
+     0,
+     -9000
+    ],
+    [
+     -320,
+     0,
+     -10000
+    ],
+    [
+     -149,
+     0,
+     -11000
+    ],
+    [
+     47,
+     0,
+     -12000
+    ]
+   ],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "tr5",
+   "type": "truck",
+   "side": "friendly",
+   "name": "DUST-5",
+   "callsign": "DUST-5",
+   "spawn": "start",
+   "pos": [
+    -212,
+    0,
+    -2540
+   ],
+   "heading": 0,
+   "speed": 26,
+   "route": [
+    [
+     -433,
+     0,
+     -4000
+    ],
+    [
+     -536,
+     0,
+     -5000
+    ],
+    [
+     -591,
+     0,
+     -6000
+    ],
+    [
+     -596,
+     0,
+     -7000
+    ],
+    [
+     -550,
+     0,
+     -8000
+    ],
+    [
+     -457,
+     0,
+     -9000
+    ],
+    [
+     -320,
+     0,
+     -10000
+    ],
+    [
+     -149,
+     0,
+     -11000
+    ],
+    [
+     47,
+     0,
+     -12000
+    ]
+   ],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "r1",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-1",
+   "callsign": "RAIDER-1",
+   "spawn": "event",
+   "pos": [
+    9000,
+    2500,
+    -13000
+   ],
+   "heading": 235,
+   "speed": 230,
+   "route": [],
+   "iffShown": "unknown",
+   "targetPriority": "asset"
+  },
+  {
+   "id": "r2",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-2",
+   "callsign": "RAIDER-2",
+   "spawn": "event",
+   "pos": [
+    9800,
+    2600,
+    -13800
+   ],
+   "heading": 235,
+   "speed": 230,
+   "route": [],
+   "iffShown": "unknown",
+   "targetPriority": "asset"
+  },
+  {
+   "id": "r3",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-3",
+   "callsign": "RAIDER-3",
+   "spawn": "event",
+   "pos": [
+    -9000,
+    2500,
+    -7000
+   ],
+   "heading": 100,
+   "speed": 230,
+   "route": [],
+   "iffShown": "unknown",
+   "targetPriority": "asset"
+  },
+  {
+   "id": "r4",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-4",
+   "callsign": "RAIDER-4",
+   "spawn": "event",
+   "pos": [
+    -9800,
+    2600,
+    -7800
+   ],
+   "heading": 100,
+   "speed": 230,
+   "route": [],
+   "iffShown": "unknown",
+   "targetPriority": "asset"
+  },
+  {
+   "id": "r5",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-5",
+   "callsign": "RAIDER-5",
+   "spawn": "event",
+   "pos": [
+    8000,
+    2800,
+    -16000
+   ],
+   "heading": 220,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "targetPriority": "asset"
+  },
+  {
+   "id": "f1",
+   "type": "fighter",
+   "side": "hostile",
+   "name": "FIGHTER-1",
+   "callsign": "FIGHTER-1",
+   "spawn": "event",
+   "pos": [
+    -8000,
+    3200,
+    -15000
+   ],
+   "heading": 135,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown"
+  }
+ ],
+ "objectives": {
+  "primary": [
+   {
+    "id": "convoy",
+    "type": "protect_group",
+    "label": "KEEP AT LEAST 3 TRUCKS ALIVE",
+    "params": {
+     "targets": [
+      "tr1",
+      "tr2",
+      "tr3",
+      "tr4",
+      "tr5"
+     ],
+     "min": 3,
+     "until": "arrive"
+    }
+   },
+   {
+    "id": "arrive",
+    "type": "entity_at",
+    "label": "GET THE CONVOY TO THE DEPOT",
+    "params": {
+     "targets": [
+      "tr1",
+      "tr2",
+      "tr3",
+      "tr4",
+      "tr5"
+     ],
+     "min": 3,
+     "waypoint": "dest"
+    }
+   },
+   {
+    "id": "clear",
+    "type": "destroy",
+    "label": "DESTROY ALL RAIDERS",
+    "params": {
+     "targets": [
+      "r1",
+      "r2",
+      "r3",
+      "r4",
+      "r5",
+      "f1"
+     ]
+    }
+   }
+  ],
+  "secondary": [
+   {
+    "id": "wingman",
+    "type": "survive_entity",
+    "label": "MAINTAIN WINGMAN SURVIVAL",
+    "params": {
+     "target": "wingman"
+    }
+   },
+   {
+    "id": "all5",
+    "type": "protect_group",
+    "label": "LOSE NO TRUCKS",
+    "params": {
+     "targets": [
+      "tr1",
+      "tr2",
+      "tr3",
+      "tr4",
+      "tr5"
+     ],
+     "min": 5,
+     "until": "end"
+    }
+   }
+  ],
+  "optional": [
+   {
+    "id": "nodamage",
+    "type": "max_damage",
+    "label": "TAKE NO DAMAGE",
+    "params": {
+     "max": 0
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "when": {
+    "type": "time",
+    "t": 2
+   },
+   "do": [
+    {
+     "say": "m05_1"
+    },
+    {
+     "say": "m05_2",
+     "delay": 0.5
+    },
+    {
+     "music": "BUILDUP"
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "when": {
+    "type": "time",
+    "t": 40
+   },
+   "do": [
+    {
+     "spawn": [
+      "r1",
+      "r2"
+     ]
+    },
+    {
+     "music": "COMBAT"
+    },
+    {
+     "say": "m05_3"
+    },
+    {
+     "callout": {
+      "nearest": "hostile"
+     },
+     "delay": 3
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "when": {
+    "type": "time",
+    "t": 110
+   },
+   "do": [
+    {
+     "spawn": [
+      "r3",
+      "r4"
+     ]
+    },
+    {
+     "say": "m05_4"
+    },
+    {
+     "callout": {
+      "nearest": "hostile"
+     },
+     "delay": 3
+    }
+   ]
+  },
+  {
+   "id": "e4",
+   "when": {
+    "type": "time",
+    "t": 190
+   },
+   "do": [
+    {
+     "spawn": [
+      "r5",
+      "f1"
+     ]
+    },
+    {
+     "say": "m05_5"
+    }
+   ]
+  },
+  {
+   "id": "e5",
+   "when": {
+    "type": "all_destroyed",
+    "ids": [
+     "r1",
+     "r2"
+    ]
+   },
+   "do": [
+    {
+     "say": "m05_6"
+    }
+   ]
+  },
+  {
+   "id": "e6",
+   "when": {
+    "type": "objective",
+    "id": "arrive"
+   },
+   "do": [
+    {
+     "say": "m05_7"
+    },
+    {
+     "say": "m05_8",
+     "delay": 1
+    }
+   ]
+  },
+  {
+   "id": "c_missile",
+   "when": {
+    "type": "incoming_missile"
+   },
+   "cooldown": 25,
+   "do": [
+    {
+     "say": "m01_missile_warning"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_hit",
+   "when": {
+    "type": "damaged",
+    "id": "wingman"
+   },
+   "cooldown": 30,
+   "do": [
+    {
+     "say": "m01_wing_hit"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_down",
+   "when": {
+    "type": "destroyed",
+    "id": "wingman"
+   },
+   "do": [
+    {
+     "say": "m01_wing_down"
+    }
+   ]
+  },
+  {
+   "id": "c_leave",
+   "when": {
+    "type": "outside",
+    "zone": "boundary"
+   },
+   "cooldown": 20,
+   "do": [
+    {
+     "say": "m01_leave"
+    }
+   ]
+  },
+  {
+   "id": "c_roe",
+   "when": {
+    "type": "roe_violation"
+   },
+   "cooldown": 14,
+   "do": [
+    {
+     "say": "m01_roe"
+    }
+   ]
+  }
+ ],
+ "cinematics": {
+  "target_crash": {
+   "bars": false,
+   "interruptible": true,
+   "shots": [
+    {
+     "dur": 3.4,
+     "mode": "orbit",
+     "follow": "$entity",
+     "fov": 50,
+     "radius": 160
+    }
+   ]
+  }
+ },
+ "flags": {},
+ "reward": {
+  "xp": 880,
+  "tokens": 3
+ },
+ "scoring": {
+  "parTime": 420
+ },
+ "lines": {
+  "m05_1": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Convoy Dust is moving Echo-Four's transponder core, salvaged by Leila's team. VESPER wants it back. Keep the trucks rolling.",
+    "fr": "Le convoi Dust transporte le noyau transpondeur d'Echo-Quatre récupéré par l'équipe de Leila. VESPER le veut. Gardez les camions en route.",
+    "ar": "قافلة داست تنقل نواة جهاز الإرسال من إيكو-فور التي استعادها فريق ليلى. فيسبر تريدها. أبقِ الشاحنات تتحرك."
+   }
+  },
+  "m05_2": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "If they get that core, the evidence is gone. It's the only proof the forged tags came from a real network.",
+    "fr": "S'ils prennent ce noyau, la preuve disparaît. C'est la seule preuve que les faux tags viennent d'un vrai réseau.",
+    "ar": "إن أخذوا النواة تضيع الأدلة. إنها الدليل الوحيد على أن العلامات المزوّرة من شبكة حقيقية."
+   }
+  },
+  "m05_3": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "Raiders from the east, strafing the trucks! Pull them off the convoy!",
+    "fr": "Raiders à l'est, ils mitraillent les camions ! Éloignez-les du convoi !",
+    "ar": "مغيرون من الشرق يقصفون الشاحنات! اسحبوهم بعيدًا عن القافلة!"
+   }
+  },
+  "m05_4": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "Second pair from the west, low in the dust.",
+    "fr": "Deuxième paire par l'ouest, bas dans la poussière.",
+    "ar": "زوج ثانٍ من الغرب، منخفض داخل الغبار."
+   }
+  },
+  "m05_5": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "Last wave — and one of them isn't a raider. He's a fighter. He's hunting us, Salim.",
+    "fr": "Dernière vague — et l'un d'eux n'est pas un raider. C'est un chasseur. Il nous chasse, Salim.",
+    "ar": "الموجة الأخيرة — وأحدهم ليس مغيرًا. إنه مقاتلة. يطاردنا يا سليم."
+   }
+  },
+  "m05_6": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "playful",
+   "text": {
+    "en": "Two raiders down. Trucks still moving — the dust is thick but they're moving.",
+    "fr": "Deux raiders abattus. Les camions avancent — la poussière est épaisse mais ils avancent.",
+    "ar": "سقط مغيران. الشاحنات ما زالت تتحرك — الغبار كثيف لكنها تتحرك."
+   }
+  },
+  "m05_7": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Convoy at the depot. The core is secure. Thank you, Falcon.",
+    "fr": "Convoi au dépôt. Le noyau est en sécurité. Merci, Falcon.",
+    "ar": "القافلة وصلت المستودع. النواة بأمان. شكرًا فالكون."
+   }
+  },
+  "m05_8": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "shaken",
+   "text": {
+    "en": "One more thing — a helicopter went down west of the ridge, Mule Two. Beacon active. That is tomorrow's problem.",
+    "fr": "Une dernière chose — un hélicoptère est tombé à l'ouest de la crête, Mule Deux. Balise active. C'est pour demain.",
+    "ar": "أمر أخير — مروحية سقطت غرب القمة، ميول اثنان. المنارة تعمل. هذه مشكلة الغد."
+   }
+  }
+ },
+ "briefing": {
+  "center": {
+   "lon": 3,
+   "lat": 34.7
+  },
+  "zoomKm": 90,
+  "playerPath": [
+   [
+    0,
+    0
+   ],
+   [
+    -0.3,
+    14.4
+   ]
+  ],
+  "enemyRoutes": [
+   {
+    "id": "RAIDER-1",
+    "label": "RAIDER-1",
+    "points": [
+     [
+      8.7,
+      15.4
+     ],
+     [
+      -0.3,
+      14.4
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-2",
+    "label": "RAIDER-2",
+    "points": [
+     [
+      9.5,
+      16.2
+     ],
+     [
+      -0.3,
+      14.4
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-3",
+    "label": "RAIDER-3",
+    "points": [
+     [
+      -9.3,
+      9.4
+     ],
+     [
+      -0.3,
+      14.4
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-4",
+    "label": "RAIDER-4",
+    "points": [
+     [
+      -10.1,
+      10.2
+     ],
+     [
+      -0.3,
+      14.4
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-5",
+    "label": "RAIDER-5",
+    "points": [
+     [
+      7.7,
+      18.4
+     ],
+     [
+      -0.3,
+      14.4
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "FIGHTER-1",
+    "label": "FIGHTER-1",
+    "points": [
+     [
+      -8.3,
+      17.4
+     ],
+     [
+      -0.3,
+      14.4
+     ]
+    ],
+    "unknown": true
+   }
+  ],
+  "threatZones": [
+   {
+    "pos": [
+     -0.3,
+     14.4
+    ],
+    "r": 6,
+    "label": "CONVOY DEPOT"
+   }
+  ],
+  "radar": {
+   "pos": [
+    0,
+    0
+   ],
+   "r": 70
+  },
+  "friendly": [
+   {
+    "id": "f1",
+    "path": [
+     [
+      0,
+      0
+     ],
+     [
+      -0.3,
+      14.4
+     ]
+    ]
+   },
+   {
+    "id": "f2",
+    "path": [
+     [
+      -1,
+      -1
+     ],
+     [
+      -1.3,
+      13.4
+     ]
+    ]
+   }
+  ],
+  "objectives": [
+   {
+    "label": "CONVOY DEPOT",
+    "pos": [
+     -0.3,
+     14.4
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,800 @@
+{
+ "id": "m02",
+ "number": 2,
+ "title": "GUARDIAN",
+ "titleFr": "GARDIEN",
+ "titleAr": "الحارس",
+ "type": "ESCORT",
+ "playable": true,
+ "requires": "m01",
+ "region": "MEDITERRANEAN",
+ "regionAr": "البحر المتوسط",
+ "map": {
+  "lon": 3.5,
+  "lat": 37.3
+ },
+ "threat": "MODERATE",
+ "threatLevel": 3,
+ "weatherLabel": "CLEAR / MODERATE WIND",
+ "clock": "09:40",
+ "env": {
+  "biome": "coast",
+  "time": "day",
+  "weather": "clear"
+ },
+ "narrative": "Kestrel Nine carries medical cargo and Leila Saadi across contested water to an island clinic. Leila is decoding the forged-IFF burst recovered in First Contact. VESPER wants the transport silenced before she finishes.",
+ "intel": [
+  {
+   "label": "CARGO",
+   "text": "Kestrel Nine: medical supplies, 40 staff, one systems engineer with the recovered data burst.",
+   "confidence": "HIGH"
+  },
+  {
+   "label": "TRACKS",
+   "text": "One unidentified contact shadows the corridor and carries a friendly tag. No friendly is filed here.",
+   "confidence": "LOW"
+  },
+  {
+   "label": "THREAT",
+   "text": "Two raider pairs expected from east and north-west. Visual ID before missile release.",
+   "confidence": "MEDIUM"
+  }
+ ],
+ "base": null,
+ "spawn": {
+  "onRunway": false,
+  "heading": 0,
+  "speed": 200,
+  "pos": [
+   0,
+   2800,
+   2500
+  ]
+ },
+ "wingman": {
+  "enabled": true,
+  "callsign": "Falcon TWO"
+ },
+ "noWingman": false,
+ "zones": [
+  {
+   "id": "boundary",
+   "type": "boundary",
+   "pos": [
+    0,
+    0,
+    -12000
+   ],
+   "radius": 36000,
+   "label": "OPERATIONS AREA"
+  }
+ ],
+ "waypoints": [
+  {
+   "id": "dest",
+   "pos": [
+    0,
+    2800,
+    -25500
+   ],
+   "radius": 3200,
+   "label": "KESTREL-9 DESTINATION"
+  }
+ ],
+ "groups": [
+  {
+   "id": "conv",
+   "type": "transport",
+   "side": "friendly",
+   "name": "KESTREL-9",
+   "callsign": "KESTREL-9",
+   "spawn": "start",
+   "pos": [
+    0,
+    2800,
+    -1200
+   ],
+   "heading": 0,
+   "speed": 110,
+   "route": [
+    [
+     0,
+     2800,
+     -14000
+    ],
+    [
+     0,
+     2800,
+     -27000
+    ]
+   ],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "shadow",
+   "type": "scout",
+   "side": "hostile",
+   "name": "SHADOW",
+   "callsign": "SHADOW",
+   "spawn": "start",
+   "pos": [
+    4200,
+    3300,
+    -4200
+   ],
+   "heading": 0,
+   "speed": 112,
+   "route": [
+    [
+     3200,
+     3100,
+     -16000
+    ],
+    [
+     800,
+     3000,
+     -27000
+    ]
+   ],
+   "iffShown": "friendly",
+   "targetPriority": "asset"
+  },
+  {
+   "id": "r1",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-1",
+   "callsign": "RAIDER-1",
+   "spawn": "event",
+   "pos": [
+    15000,
+    3300,
+    -9000
+   ],
+   "heading": 270,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "targetPriority": "asset"
+  },
+  {
+   "id": "r2",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-2",
+   "callsign": "RAIDER-2",
+   "spawn": "event",
+   "pos": [
+    15600,
+    3400,
+    -9800
+   ],
+   "heading": 270,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "targetPriority": "asset"
+  },
+  {
+   "id": "f1",
+   "type": "fighter",
+   "side": "hostile",
+   "name": "FIGHTER-1",
+   "callsign": "FIGHTER-1",
+   "spawn": "event",
+   "pos": [
+    -14000,
+    3600,
+    -16000
+   ],
+   "heading": 90,
+   "speed": 225,
+   "route": [],
+   "iffShown": "unknown",
+   "targetPriority": "asset"
+  },
+  {
+   "id": "f2",
+   "type": "fighter",
+   "side": "hostile",
+   "name": "FIGHTER-2",
+   "callsign": "FIGHTER-2",
+   "spawn": "event",
+   "pos": [
+    -14800,
+    3700,
+    -16800
+   ],
+   "heading": 90,
+   "speed": 225,
+   "route": [],
+   "iffShown": "unknown",
+   "targetPriority": "asset"
+  }
+ ],
+ "objectives": {
+  "primary": [
+   {
+    "id": "escort",
+    "type": "protect",
+    "label": "PROTECT KESTREL-9",
+    "params": {
+     "target": "conv",
+     "until": "arrive"
+    }
+   },
+   {
+    "id": "arrive",
+    "type": "entity_at",
+    "label": "SEE KESTREL-9 TO ITS DESTINATION",
+    "params": {
+     "target": "conv",
+     "waypoint": "dest"
+    }
+   },
+   {
+    "id": "clear",
+    "type": "destroy",
+    "label": "NEUTRALIZE ALL HOSTILE AIRCRAFT",
+    "params": {
+     "targets": [
+      "shadow",
+      "r1",
+      "r2",
+      "f1",
+      "f2"
+     ]
+    }
+   }
+  ],
+  "secondary": [
+   {
+    "id": "wingman",
+    "type": "survive_entity",
+    "label": "MAINTAIN WINGMAN SURVIVAL",
+    "params": {
+     "target": "wingman"
+    }
+   },
+   {
+    "id": "idshadow",
+    "type": "identify",
+    "label": "IDENTIFY THE SHADOW CONTACT",
+    "params": {
+     "targets": [
+      "shadow"
+     ]
+    }
+   }
+  ],
+  "optional": [
+   {
+    "id": "nodamage",
+    "type": "max_damage",
+    "label": "TAKE NO DAMAGE",
+    "params": {
+     "max": 0
+    }
+   },
+   {
+    "id": "acc",
+    "type": "accuracy",
+    "label": "HIGH ACCURACY (30%+)",
+    "params": {
+     "min": 0.3
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "when": {
+    "type": "time",
+    "t": 2
+   },
+   "do": [
+    {
+     "say": "m02_1"
+    },
+    {
+     "say": "m02_2",
+     "delay": 0.5
+    },
+    {
+     "music": "BUILDUP"
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "when": {
+    "type": "time",
+    "t": 38
+   },
+   "do": [
+    {
+     "say": "m02_3"
+    },
+    {
+     "callout": {
+      "id": "shadow",
+      "label": "target"
+     },
+     "delay": 3
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "when": {
+    "type": "identified",
+    "id": "shadow"
+   },
+   "do": [
+    {
+     "say": "m02_4"
+    }
+   ]
+  },
+  {
+   "id": "e4",
+   "when": {
+    "type": "time",
+    "t": 46
+   },
+   "do": [
+    {
+     "spawn": [
+      "r1",
+      "r2"
+     ]
+    },
+    {
+     "music": "COMBAT"
+    },
+    {
+     "say": "m02_5"
+    },
+    {
+     "callout": {
+      "nearest": "hostile"
+     },
+     "delay": 3
+    },
+    {
+     "say": "m02_6",
+     "delay": 4
+    }
+   ]
+  },
+  {
+   "id": "e5",
+   "when": {
+    "type": "time",
+    "t": 112
+   },
+   "do": [
+    {
+     "spawn": [
+      "f1",
+      "f2"
+     ]
+    },
+    {
+     "say": "m02_7"
+    },
+    {
+     "callout": {
+      "nearest": "hostile"
+     },
+     "delay": 3
+    }
+   ]
+  },
+  {
+   "id": "e6",
+   "when": {
+    "type": "all_destroyed",
+    "ids": [
+     "r1",
+     "r2"
+    ]
+   },
+   "do": [
+    {
+     "say": "m02_8"
+    }
+   ]
+  },
+  {
+   "id": "e7",
+   "when": {
+    "type": "objective",
+    "id": "arrive"
+   },
+   "do": [
+    {
+     "order": {
+      "id": "conv",
+      "order": "land"
+     }
+    },
+    {
+     "say": "m02_9",
+     "delay": 1
+    },
+    {
+     "say": "m02_10",
+     "delay": 1
+    },
+    {
+     "say": "m02_11",
+     "delay": 1
+    }
+   ]
+  },
+  {
+   "id": "e8",
+   "when": {
+    "type": "objective",
+    "id": "clear"
+   },
+   "do": [
+    {
+     "music": "RESOLUTION"
+    }
+   ]
+  },
+  {
+   "id": "c_missile",
+   "when": {
+    "type": "incoming_missile"
+   },
+   "cooldown": 25,
+   "do": [
+    {
+     "say": "m01_missile_warning"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_hit",
+   "when": {
+    "type": "damaged",
+    "id": "wingman"
+   },
+   "cooldown": 30,
+   "do": [
+    {
+     "say": "m01_wing_hit"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_down",
+   "when": {
+    "type": "destroyed",
+    "id": "wingman"
+   },
+   "do": [
+    {
+     "say": "m01_wing_down"
+    }
+   ]
+  },
+  {
+   "id": "c_leave",
+   "when": {
+    "type": "outside",
+    "zone": "boundary"
+   },
+   "cooldown": 20,
+   "do": [
+    {
+     "say": "m01_leave"
+    }
+   ]
+  },
+  {
+   "id": "c_roe",
+   "when": {
+    "type": "roe_violation"
+   },
+   "cooldown": 14,
+   "do": [
+    {
+     "say": "m01_roe"
+    }
+   ]
+  }
+ ],
+ "cinematics": {
+  "target_crash": {
+   "bars": false,
+   "interruptible": true,
+   "shots": [
+    {
+     "dur": 3.4,
+     "mode": "orbit",
+     "follow": "$entity",
+     "fov": 50,
+     "radius": 160
+    }
+   ]
+  }
+ },
+ "flags": {},
+ "reward": {
+  "xp": 700,
+  "tokens": 3
+ },
+ "scoring": {
+  "parTime": 330
+ },
+ "lines": {
+  "m02_1": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Falcon One, Kestrel Nine is airborne — medical cargo and a technical team. Keep her alive all the way to the island.",
+    "fr": "Falcon Un, Kestrel Neuf est en l'air — cargaison médicale et équipe technique. Gardez-la en vie jusqu'à l'île.",
+    "ar": "فالكون واحد، كيستريل تسعة في الجو — شحنة طبية وفريق تقني. أبقها حيّة حتى الجزيرة."
+   }
+  },
+  "m02_2": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Leila aboard Kestrel. I'm decoding the scout's data burst. The forged IFF has a fingerprint — I need ten minutes.",
+    "fr": "Leila à bord de Kestrel. Je décode la rafale du drone. Le faux IFF a une signature — il me faut dix minutes.",
+    "ar": "ليلى على متن كيستريل. أفكّ شيفرة بيانات الطائرة المسيّرة. لتزوير التعريف بصمة — أحتاج عشر دقائق."
+   }
+  },
+  "m02_3": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "A contact is shadowing Kestrel and carries a friendly tag. Nothing friendly is filed in this corridor. Treat the tag as unverified.",
+    "fr": "Un contact suit Kestrel avec un marquage ami. Aucun ami n'est déposé dans ce couloir. Tag non vérifié.",
+    "ar": "هدف يلاحق كيستريل ويحمل علامة صديق. لا صديق مسجّل في هذا الممر. اعتبر العلامة غير موثوقة."
+   }
+  },
+  "m02_4": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "Friendly tag, hostile airframe. The tags are being written, not read.",
+    "fr": "Marquage ami, cellule hostile. Les tags sont écrits, pas lus.",
+    "ar": "علامة صديق وطائرة معادية. العلامات تُكتب ولا تُقرأ."
+   }
+  },
+  "m02_5": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "Two fast movers from the east, closing on Kestrel! Intercept!",
+    "fr": "Deux appareils rapides à l'est, ils foncent sur Kestrel ! Interceptez !",
+    "ar": "طائرتان سريعتان من الشرق تقتربان من كيستريل! اعترضاهما!"
+   }
+  },
+  "m02_6": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "playful",
+   "text": {
+    "en": "Falcon Two engaging. Last one to splash buys the coffee, Salim.",
+    "fr": "Falcon Deux engage. Le dernier à abattre paie le café, Salim.",
+    "ar": "فالكون اثنان يشتبك. آخر من يُسقط يدفع ثمن القهوة يا سليم."
+   }
+  },
+  "m02_7": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "More contacts, north-west. They're hunting the transport — don't let them through.",
+    "fr": "D'autres contacts au nord-ouest. Ils chassent le transport — ne les laissez pas passer.",
+    "ar": "أهداف أخرى من الشمال الغربي. يطاردون الناقلة — لا تدعهم يمرّون."
+   }
+  },
+  "m02_8": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Splash two. Kestrel's still clean.",
+    "fr": "Deux de moins. Kestrel est intact.",
+    "ar": "سقطت اثنتان. كيستريل سالمة."
+   }
+  },
+  "m02_9": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Landed safe. The forgery was signed from a relay called Echo-Four, somewhere in the Atlas. That is our next stop.",
+    "fr": "Posés sans encombre. Le faux a été signé depuis un relais nommé Echo-Quatre, quelque part dans l'Atlas. Prochaine étape.",
+    "ar": "هبطنا بسلام. التزوير مُوقَّع من محطة تُدعى إيكو-فور في الأطلس. هذه وجهتنا القادمة."
+   }
+  },
+  "m02_10": {
+   "speaker": "MOURAD",
+   "voice": null,
+   "emotion": "stern",
+   "text": {
+    "en": "Falcon flight, Command. That finding stays inside this squadron. Nothing on open channels. Understood?",
+    "fr": "Escadrille Falcon, Commandement. Cette découverte reste dans cette escadrille. Rien sur les fréquences ouvertes. Compris ?",
+    "ar": "سرب فالكون، هنا القيادة. هذه المعلومة تبقى داخل السرب. لا شيء على القنوات المفتوحة. مفهوم؟"
+   }
+  },
+  "m02_11": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "Understood, sir. But why would Command fear who hears the truth?",
+    "fr": "Compris, mon commandant. Mais pourquoi le Commandement craindrait-il la vérité ?",
+    "ar": "مفهوم يا سيدي. لكن لماذا تخشى القيادة من يسمع الحقيقة؟"
+   }
+  }
+ },
+ "briefing": {
+  "center": {
+   "lon": 3.5,
+   "lat": 37.4
+  },
+  "zoomKm": 90,
+  "playerPath": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    28
+   ]
+  ],
+  "enemyRoutes": [
+   {
+    "id": "SHADOW",
+    "label": "SHADOW",
+    "points": [
+     [
+      4.2,
+      6.7
+     ],
+     [
+      3.2,
+      18.5
+     ],
+     [
+      0.8,
+      29.5
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-1",
+    "label": "RAIDER-1",
+    "points": [
+     [
+      15,
+      11.5
+     ],
+     [
+      0,
+      28
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-2",
+    "label": "RAIDER-2",
+    "points": [
+     [
+      15.6,
+      12.3
+     ],
+     [
+      0,
+      28
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "FIGHTER-1",
+    "label": "FIGHTER-1",
+    "points": [
+     [
+      -14,
+      18.5
+     ],
+     [
+      0,
+      28
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "FIGHTER-2",
+    "label": "FIGHTER-2",
+    "points": [
+     [
+      -14.8,
+      19.3
+     ],
+     [
+      0,
+      28
+     ]
+    ],
+    "unknown": true
+   }
+  ],
+  "threatZones": [
+   {
+    "pos": [
+     0,
+     28
+    ],
+    "r": 6,
+    "label": "KESTREL-9 DESTINATION"
+   }
+  ],
+  "radar": {
+   "pos": [
+    0,
+    0
+   ],
+   "r": 70
+  },
+  "friendly": [
+   {
+    "id": "f1",
+    "path": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      28
+     ]
+    ]
+   },
+   {
+    "id": "f2",
+    "path": [
+     [
+      -1,
+      -1
+     ],
+     [
+      -1,
+      27
+     ]
+    ]
+   }
+  ],
+  "objectives": [
+   {
+    "label": "KESTREL-9 DESTINATION",
+    "pos": [
+     0,
+     28
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,1211 @@
+{
+ "id": "m15",
+ "number": 15,
+ "title": "SHADOW LINE",
+ "titleFr": "LIGNE D'OMBRE",
+ "titleAr": "خط الظل",
+ "type": "FINAL OPERATION",
+ "playable": true,
+ "requires": "m14",
+ "region": "MULTIPLE REGIONS",
+ "regionAr": "مناطق متعددة",
+ "map": {
+  "lon": 4,
+  "lat": 29
+ },
+ "threat": "EXTREME",
+ "threatLevel": 5,
+ "weatherLabel": "NIGHT / DAWN",
+ "clock": "03:00",
+ "env": {
+  "biome": "sahara",
+  "time": "night",
+  "weather": "clear"
+ },
+ "narrative": "The final operation. First, destroy the Shadow Line command node deep in the Sahara. Then, at dawn over the Mediterranean, stop the trigger flight before it crosses the border line with a false attack. Not everything that is tagged hostile is your enemy — and not everything that is tagged friendly is your friend.",
+ "intel": [
+  {
+   "label": "NODE",
+   "text": "Shadow Line command node, hardened bunker with mast, relay, radar, fuel depot and three SAM batteries.",
+   "confidence": "HIGH"
+  },
+  {
+   "label": "TRIGGER",
+   "text": "One striker flight with escorts launches at dawn toward the maritime border line to stage a false attack. Tags on that package are forged.",
+   "confidence": "MEDIUM"
+  },
+  {
+   "label": "ALLY",
+   "text": "A friendly fighter with a blue tail may fly inside the package. Do not fire on it.",
+   "confidence": "LOW"
+  }
+ ],
+ "base": null,
+ "spawn": {
+  "onRunway": false,
+  "heading": 0,
+  "speed": 240,
+  "pos": [
+   0,
+   3600,
+   0
+  ]
+ },
+ "wingman": {
+  "enabled": true,
+  "callsign": "Falcon TWO"
+ },
+ "noWingman": false,
+ "zones": [
+  {
+   "id": "boundary",
+   "type": "boundary",
+   "pos": [
+    0,
+    0,
+    -12000
+   ],
+   "radius": 36000,
+   "label": "OPERATIONS AREA"
+  }
+ ],
+ "waypoints": [],
+ "groups": [
+  {
+   "id": "node",
+   "type": "node",
+   "side": "hostile",
+   "name": "SHADOW LINE NODE",
+   "callsign": "SHADOW LINE NODE",
+   "spawn": "start",
+   "pos": [
+    0,
+    0,
+    -30000
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "relay1",
+   "type": "relay",
+   "side": "hostile",
+   "name": "RELAY MAST",
+   "callsign": "RELAY MAST",
+   "spawn": "start",
+   "pos": [
+    -2500,
+    0,
+    -29000
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "rs",
+   "type": "radar_site",
+   "side": "hostile",
+   "name": "RADAR SITE",
+   "callsign": "RADAR SITE",
+   "spawn": "start",
+   "pos": [
+    2500,
+    0,
+    -30500
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "dep",
+   "type": "depot",
+   "side": "hostile",
+   "name": "FUEL DEPOT",
+   "callsign": "FUEL DEPOT",
+   "spawn": "start",
+   "pos": [
+    -1500,
+    0,
+    -32000
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "s1",
+   "type": "sam",
+   "side": "hostile",
+   "name": "SAM-1",
+   "callsign": "SAM-1",
+   "spawn": "start",
+   "pos": [
+    3500,
+    0,
+    -27500
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "reload": 16
+  },
+  {
+   "id": "s2",
+   "type": "sam",
+   "side": "hostile",
+   "name": "SAM-2",
+   "callsign": "SAM-2",
+   "spawn": "start",
+   "pos": [
+    -4000,
+    0,
+    -31500
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "reload": 16
+  },
+  {
+   "id": "s3",
+   "type": "sam",
+   "side": "hostile",
+   "name": "SAM-3",
+   "callsign": "SAM-3",
+   "spawn": "start",
+   "pos": [
+    1000,
+    0,
+    -33500
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "reload": 16
+  },
+  {
+   "id": "r1",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-1",
+   "callsign": "RAIDER-1",
+   "spawn": "event",
+   "pos": [
+    12000,
+    3600,
+    -34000
+   ],
+   "heading": 250,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "r2",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-2",
+   "callsign": "RAIDER-2",
+   "spawn": "event",
+   "pos": [
+    12800,
+    3500,
+    -35000
+   ],
+   "heading": 250,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "trigger",
+   "type": "striker",
+   "side": "hostile",
+   "name": "TRIGGER",
+   "callsign": "TRIGGER",
+   "spawn": "event",
+   "pos": [
+    8000,
+    3400,
+    -13000
+   ],
+   "heading": 0,
+   "speed": 180,
+   "route": [
+    [
+     600,
+     3000,
+     -41000
+    ]
+   ],
+   "iffShown": "friendly",
+   "throttle": 0.55
+  },
+  {
+   "id": "warden",
+   "type": "elite",
+   "side": "hostile",
+   "name": "WARDEN",
+   "callsign": "WARDEN",
+   "spawn": "event",
+   "pos": [
+    8800,
+    3500,
+    -11500
+   ],
+   "heading": 0,
+   "speed": 190,
+   "route": [
+    [
+     600,
+     3000,
+     -41000
+    ]
+   ],
+   "iffShown": "friendly",
+   "cruise": 190,
+   "stand": true
+  },
+  {
+   "id": "e1",
+   "type": "raider",
+   "side": "hostile",
+   "name": "ESCORT-1",
+   "callsign": "ESCORT-1",
+   "spawn": "event",
+   "pos": [
+    7300,
+    3300,
+    -12500
+   ],
+   "heading": 0,
+   "speed": 190,
+   "route": [
+    [
+     600,
+     3000,
+     -41000
+    ]
+   ],
+   "iffShown": "friendly",
+   "cruise": 190
+  },
+  {
+   "id": "e2",
+   "type": "raider",
+   "side": "hostile",
+   "name": "ESCORT-2",
+   "callsign": "ESCORT-2",
+   "spawn": "event",
+   "pos": [
+    9300,
+    3300,
+    -13300
+   ],
+   "heading": 0,
+   "speed": 190,
+   "route": [
+    [
+     600,
+     3000,
+     -41000
+    ]
+   ],
+   "iffShown": "friendly",
+   "cruise": 190
+  },
+  {
+   "id": "command",
+   "type": "escort",
+   "side": "friendly",
+   "name": "BLUE TAIL",
+   "callsign": "COMMAND",
+   "spawn": "event",
+   "pos": [
+    8700,
+    3450,
+    -13200
+   ],
+   "heading": 0,
+   "speed": 180,
+   "route": [
+    [
+     600,
+     3000,
+     -41000
+    ]
+   ],
+   "iffShown": "hostile"
+  }
+ ],
+ "objectives": {
+  "primary": [
+   {
+    "id": "nodek",
+    "type": "destroy",
+    "label": "DESTROY THE SHADOW LINE COMMAND NODE",
+    "params": {
+     "targets": [
+      "node"
+     ]
+    }
+   },
+   {
+    "id": "stop",
+    "type": "destroy",
+    "label": "STOP THE TRIGGER FLIGHT",
+    "params": {
+     "targets": [
+      "trigger"
+     ]
+    },
+    "hidden": true
+   },
+   {
+    "id": "arrival",
+    "type": "prevent_arrival",
+    "label": "DO NOT LET IT CROSS THE LINE",
+    "params": {
+     "target": "trigger",
+     "waypoint": "line",
+     "message": "THE FALSE FLAG WAS LAUNCHED"
+    },
+    "hidden": true
+   },
+   {
+    "id": "noff",
+    "type": "avoid_friendly_fire",
+    "label": "DO NOT FIRE ON THE BLUE TAIL",
+    "params": {},
+    "hidden": true
+   }
+  ],
+  "secondary": [
+   {
+    "id": "wingman",
+    "type": "survive_entity",
+    "label": "MAINTAIN WINGMAN SURVIVAL",
+    "params": {
+     "target": "wingman"
+    }
+   },
+   {
+    "id": "relayk",
+    "type": "destroy",
+    "label": "DESTROY THE RELAY MAST",
+    "params": {
+     "targets": [
+      "relay1"
+     ]
+    }
+   }
+  ],
+  "optional": [
+   {
+    "id": "nodamage",
+    "type": "max_damage",
+    "label": "TAKE NO DAMAGE",
+    "params": {
+     "max": 0
+    }
+   },
+   {
+    "id": "sams",
+    "type": "destroy",
+    "label": "SUPPRESS ALL THREE SAM BATTERIES",
+    "params": {
+     "targets": [
+      "s1",
+      "s2",
+      "s3"
+     ]
+    }
+   },
+   {
+    "id": "wd",
+    "type": "destroy",
+    "label": "SHOOT DOWN THE WARDEN",
+    "params": {
+     "targets": [
+      "warden"
+     ]
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "when": {
+    "type": "time",
+    "t": 2
+   },
+   "do": [
+    {
+     "say": "shadowlineend_1"
+    },
+    {
+     "say": "shadowlineend_2",
+     "delay": 0.5
+    },
+    {
+     "say": "shadowlineend_3",
+     "delay": 1
+    },
+    {
+     "say": "shadowlineend_4",
+     "delay": 1
+    },
+    {
+     "music": "BUILDUP"
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "when": {
+    "type": "range",
+    "a": "player",
+    "b": "node",
+    "lt": 16000
+   },
+   "do": [
+    {
+     "spawn": [
+      "r1",
+      "r2"
+     ]
+    },
+    {
+     "music": "COMBAT"
+    },
+    {
+     "say": "shadowlineend_5"
+    },
+    {
+     "callout": {
+      "nearest": "hostile"
+     },
+     "delay": 4
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "when": {
+    "type": "destroyed",
+    "id": "node"
+   },
+   "do": [
+    {
+     "cinematic": "target_crash",
+     "args": {
+      "entity": "node"
+     }
+    },
+    {
+     "say": "shadowlineend_6",
+     "delay": 2
+    },
+    {
+     "say": "shadowlineend_7",
+     "delay": 2.5
+    },
+    {
+     "travel": {
+      "env": {
+       "biome": "coast",
+       "time": "dawn",
+       "weather": "clear"
+      },
+      "pos": [
+       0,
+       3200,
+       0
+      ],
+      "heading": 0,
+      "speed": 240,
+      "waypoints": [
+       {
+        "id": "line",
+        "pos": [
+         0,
+         3000,
+         -40000
+        ],
+        "radius": 5200,
+        "label": "THE LINE"
+       }
+      ],
+      "title": "DAWN — THE MEDITERRANEAN",
+      "sub": "THE LINE IS FORTY KILOMETRES NORTH"
+     },
+     "delay": 14
+    },
+    {
+     "show": "stop",
+     "delay": 16
+    },
+    {
+     "show": "arrival",
+     "delay": 16
+    },
+    {
+     "show": "noff",
+     "delay": 16
+    },
+    {
+     "spawn": [
+      "trigger",
+      "warden",
+      "e1",
+      "e2",
+      "command"
+     ],
+     "delay": 17
+    },
+    {
+     "music": "DANGER",
+     "delay": 17
+    },
+    {
+     "say": "shadowlineend_8",
+     "delay": 18
+    },
+    {
+     "say": "shadowlineend_9",
+     "delay": 22
+    },
+    {
+     "retag": {
+      "id": "command",
+      "iff": "friendly"
+     },
+     "delay": 22
+    },
+    {
+     "say": "shadowlineend_10",
+     "delay": 23.5
+    }
+   ]
+  },
+  {
+   "id": "e4",
+   "when": {
+    "type": "hp_below",
+    "id": "trigger",
+    "frac": 0.6
+   },
+   "do": [
+    {
+     "say": "shadowlineend_11"
+    }
+   ]
+  },
+  {
+   "id": "e5",
+   "when": {
+    "type": "destroyed",
+    "id": "e1"
+   },
+   "do": [
+    {
+     "say": "shadowlineend_12"
+    }
+   ]
+  },
+  {
+   "id": "e6",
+   "when": {
+    "type": "destroyed",
+    "id": "trigger"
+   },
+   "do": [
+    {
+     "music": "RESOLUTION"
+    },
+    {
+     "cinematic": "target_crash",
+     "args": {
+      "entity": "trigger"
+     }
+    },
+    {
+     "say": "shadowlineend_13",
+     "delay": 2
+    },
+    {
+     "say": "shadowlineend_14",
+     "delay": 2
+    },
+    {
+     "say": "shadowlineend_15",
+     "delay": 2
+    },
+    {
+     "say": "shadowlineend_16",
+     "delay": 2
+    },
+    {
+     "endMission": {
+      "result": "complete"
+     },
+     "delay": 22
+    }
+   ]
+  },
+  {
+   "id": "c_missile",
+   "when": {
+    "type": "incoming_missile"
+   },
+   "cooldown": 25,
+   "do": [
+    {
+     "say": "m01_missile_warning"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_hit",
+   "when": {
+    "type": "damaged",
+    "id": "wingman"
+   },
+   "cooldown": 30,
+   "do": [
+    {
+     "say": "m01_wing_hit"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_down",
+   "when": {
+    "type": "destroyed",
+    "id": "wingman"
+   },
+   "do": [
+    {
+     "say": "m01_wing_down"
+    }
+   ]
+  },
+  {
+   "id": "c_leave",
+   "when": {
+    "type": "outside",
+    "zone": "boundary"
+   },
+   "cooldown": 20,
+   "do": [
+    {
+     "say": "m01_leave"
+    }
+   ]
+  },
+  {
+   "id": "c_roe",
+   "when": {
+    "type": "roe_violation"
+   },
+   "cooldown": 14,
+   "do": [
+    {
+     "say": "m01_roe"
+    }
+   ]
+  }
+ ],
+ "cinematics": {
+  "target_crash": {
+   "bars": false,
+   "interruptible": true,
+   "shots": [
+    {
+     "dur": 3.6,
+     "mode": "orbit",
+     "follow": "$entity",
+     "fov": 50,
+     "radius": 260
+    }
+   ]
+  }
+ },
+ "flags": {},
+ "reward": {
+  "xp": 2000,
+  "tokens": 6
+ },
+ "scoring": {
+  "parTime": 720
+ },
+ "lines": {
+  "shadowlineend_1": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Falcon flight, this is it. The Shadow Line command node, deep in the Sahara. Destroy it and the false flag loses its voice.",
+    "fr": "Escadrille Falcon, nous y voilà. Le noeud de commandement Shadow Line, au fond du Sahara. Détruisez-le et le faux drapeau perd sa voix.",
+    "ar": "سرب فالكون، هذه هي. عقدة قيادة خط الظل في عمق الصحراء. دمّروها فيفقد العلم الكاذب صوته."
+   }
+  },
+  "shadowlineend_2": {
+   "speaker": "MOURAD",
+   "voice": null,
+   "emotion": "shaken",
+   "text": {
+    "en": "Salim... you were right. The BA-07 key is mine. Two years ago they forced my signature with threats against my family. I have been a coward since.",
+    "fr": "Salim... tu avais raison. La clé BA-07 est la mienne. Il y a deux ans ils m'ont forcé à signer en menaçant ma famille. Je suis un lâche depuis.",
+    "ar": "سليم... كنت على حق. مفتاح بي أيه-07 لي. قبل عامين أجبروني على التوقيع بتهديد عائلتي. أنا جبان منذ ذلك الحين."
+   }
+  },
+  "shadowlineend_3": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Then fly with us now, sir. Not behind us.",
+    "fr": "Alors volez avec nous maintenant, mon commandant. Pas derrière nous.",
+    "ar": "إذًا حلّق معنا الآن يا سيدي. لا خلفنا."
+   }
+  },
+  "shadowlineend_4": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "playful",
+   "text": {
+    "en": "Falcon Two on your wing, Salim. Like always.",
+    "fr": "Falcon Deux sur ton aile, Salim. Comme toujours.",
+    "ar": "فالكون اثنان على جناحك يا سليم. كالعادة."
+   }
+  },
+  "shadowlineend_5": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "SAM radars are lit and raiders are scrambling. Flares, terrain, then the mast.",
+    "fr": "Radars SAM allumés et raiders au décollage. Leurres, relief, puis le mât.",
+    "ar": "رادارات الصواريخ تعمل والمغيرون يقلعون. مشاعل وتضاريس ثم الصاري."
+   }
+  },
+  "shadowlineend_6": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "Node is down! But the strike package is already airborne. Dawn, coast — they are heading for the line.",
+    "fr": "Le noeud est détruit ! Mais le paquet de frappe est déjà en vol. Aube, côte — ils vont vers la ligne.",
+    "ar": "سقطت العقدة! لكن رزمة الضربة أقلعت بالفعل. الفجر، الساحل — يتجهون نحو الخط."
+   }
+  },
+  "shadowlineend_7": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "The trigger flight carries the false-flag payload: an attack on the neighbour's patrol ships, signed with our own IFF. If it crosses the line, there is no way back.",
+    "fr": "Le vol déclencheur porte la charge du faux drapeau : une attaque sur les patrouilleurs voisins, signée avec notre propre IFF. S'il franchit la ligne, il n'y a pas de retour.",
+    "ar": "رحلة الشرارة تحمل حمولة العلم الكاذب: هجوم على سفن دورية الجار موقّع بتعريفنا نحن. إن عبرت الخط فلا رجوع."
+   }
+  },
+  "shadowlineend_8": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "Package, twenty kilometres north. All tags read friendly. Do not trust them.",
+    "fr": "Le paquet, vingt kilomètres au nord. Tous les tags affichent ami. Ne leur faites pas confiance.",
+    "ar": "الرزمة على بعد عشرين كيلومترًا شمالًا. كل العلامات تظهر صديقة. لا تثق بها."
+   }
+  },
+  "shadowlineend_9": {
+   "speaker": "MOURAD",
+   "voice": null,
+   "emotion": "stern",
+   "text": {
+    "en": "Falcon One, Ben Aissa. I am flying inside their formation — the blue tail. Do not fire on me. I will take the escorts.",
+    "fr": "Falcon Un, Ben Aissa. Je vole dans leur formation — la queue bleue. Ne tirez pas sur moi. Je prends les escorteurs.",
+    "ar": "فالكون واحد، بن عيسى. أطير داخل تشكيلهم — الذيل الأزرق. لا تطلق عليّ. سآخذ المرافقين."
+   }
+  },
+  "shadowlineend_10": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Understood. The striker is mine.",
+    "fr": "Compris. Le bombardier est à moi.",
+    "ar": "مفهوم. القاذفة لي."
+   }
+  },
+  "shadowlineend_11": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "The striker is burning — one more pass, Salim!",
+    "fr": "Le bombardier brûle — encore une passe, Salim !",
+    "ar": "القاذفة تحترق — مرور آخر يا سليم!"
+   }
+  },
+  "shadowlineend_12": {
+   "speaker": "MOURAD",
+   "voice": null,
+   "emotion": "stern",
+   "text": {
+    "en": "One escort down. Salim — the striker, now!",
+    "fr": "Un escorteur abattu. Salim — le bombardier, maintenant !",
+    "ar": "سقط مرافق. سليم — القاذفة، الآن!"
+   }
+  },
+  "shadowlineend_13": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Trigger destroyed. The line holds. Not one shot crossed the border.",
+    "fr": "Déclencheur détruit. La ligne tient. Pas un coup de feu n'a franchi la frontière.",
+    "ar": "سقطت الشرارة. الخط صامد. ولا طلقة عبرت الحدود."
+   }
+  },
+  "shadowlineend_14": {
+   "speaker": "MOURAD",
+   "voice": null,
+   "emotion": "shaken",
+   "text": {
+    "en": "I will turn myself in at BA-07 — the keys, the signatures, all of it. Thank you, Salim.",
+    "fr": "Je me rendrai à BA-07 — les clés, les signatures, tout. Merci, Salim.",
+    "ar": "سأسلّم نفسي في بي أيه-07 — المفاتيح والتواقيع وكل شيء. شكرًا يا سليم."
+   }
+  },
+  "shadowlineend_15": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Come home, sir.",
+    "fr": "Rentrez, mon commandant.",
+    "ar": "عد إلى البيت يا سيدي."
+   }
+  },
+  "shadowlineend_16": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "playful",
+   "text": {
+    "en": "So... does this mean I buy the coffee now?",
+    "fr": "Alors... ça veut dire que je paie le café maintenant ?",
+    "ar": "إذًا... هل يعني هذا أنني أدفع ثمن القهوة الآن؟"
+   }
+  }
+ },
+ "epilogue": {
+  "slides": [
+   {
+    "speaker": "NADIA",
+    "text": {
+     "en": "The Central Picture was rebuilt from scratch. Every tag now needs two independent confirmations before anyone fires.",
+     "fr": "L'image centrale a été reconstruite. Chaque tag exige désormais deux confirmations indépendantes avant tout tir.",
+     "ar": "أُعيد بناء الصورة المركزية من الصفر. كل علامة تحتاج الآن تأكيدين مستقلين قبل أي إطلاق."
+    }
+   },
+   {
+    "speaker": "LEILA",
+    "text": {
+     "en": "VESPER's relay chain is dismantled — Echo, Black Sand, the node. Their forged identification keys are dead.",
+     "fr": "La chaîne de relais de VESPER est démantelée — Echo, Sable Noir, le noeud. Leurs clés d'identification falsifiées sont mortes.",
+     "ar": "سلسلة محطات فيسبر فُككت — إيكو والرمال السوداء والعقدة. مفاتيح تعريفهم المزوّرة ماتت."
+    }
+   },
+   {
+    "speaker": "MOURAD",
+    "text": {
+     "en": "I confessed to the review board. The key was mine, the choice was mine, the shame is mine.",
+     "fr": "J'ai tout avoué devant la commission. La clé était la mienne, le choix aussi, la honte aussi.",
+     "ar": "اعترفت أمام اللجنة. المفتاح لي والخيار لي والعار لي."
+    }
+   },
+   {
+    "speaker": "RIAD",
+    "text": {
+     "en": "They gave me a medal. I told them Salim deserved it. They gave him two.",
+     "fr": "Ils m'ont donné une médaille. J'ai dit que Salim la méritait. Ils lui en ont donné deux.",
+     "ar": "أعطوني وسامًا. قلت إن سليم يستحقه. أعطوه اثنين."
+    }
+   },
+   {
+    "speaker": "GREY",
+    "text": {
+     "en": "A pilot was never found in the southern rocks. Some say the wind took his name.",
+     "fr": "Un pilote n'a jamais été retrouvé dans les rochers du sud. On dit que le vent a emporté son nom.",
+     "ar": "لم يُعثر على طيار في صخور الجنوب. يقول البعض إن الريح أخذت اسمه."
+    }
+   },
+   {
+    "speaker": "SALIM",
+    "text": {
+     "en": "When the radar lies, the pilot must decide. I decided. And I would again.",
+     "fr": "Quand le radar ment, le pilote doit décider. J'ai décidé. Et je déciderais encore.",
+     "ar": "عندما يكذب الرادار، على الطيار أن يقرر. قررت. وسأفعلها مجددًا."
+    }
+   }
+  ],
+  "credits": [
+   [
+    "DIRECTION & DESIGN",
+    "SHADOW LINE TEAM"
+   ],
+   [
+    "FLIGHT MODEL & AI",
+    "SIMCADE ENGINE"
+   ],
+   [
+    "WORLD & BIOMES",
+    "PROCEDURAL STUDIO"
+   ],
+   [
+    "STORY",
+    "WHEN THE RADAR LIES, THE PILOT MUST DECIDE"
+   ],
+   [
+    "CAST",
+    "SALIM · RIAD · NADIA · MOURAD · LEILA · GREY"
+   ],
+   [
+    "SPECIAL THANKS",
+    "EVERY PILOT WHO READS THE SKY WITH THEIR OWN EYES"
+   ]
+  ]
+ },
+ "briefing": {
+  "center": {
+   "lon": 4,
+   "lat": 29.2
+  },
+  "zoomKm": 90,
+  "playerPath": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    30
+   ]
+  ],
+  "enemyRoutes": [
+   {
+    "id": "RAIDER-1",
+    "label": "RAIDER-1",
+    "points": [
+     [
+      12,
+      34
+     ],
+     [
+      0,
+      30
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-2",
+    "label": "RAIDER-2",
+    "points": [
+     [
+      12.8,
+      35
+     ],
+     [
+      0,
+      30
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "TRIGGER",
+    "label": "TRIGGER",
+    "points": [
+     [
+      8,
+      13
+     ],
+     [
+      0.6,
+      41
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "WARDEN",
+    "label": "WARDEN",
+    "points": [
+     [
+      8.8,
+      11.5
+     ],
+     [
+      0.6,
+      41
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "ESCORT-1",
+    "label": "ESCORT-1",
+    "points": [
+     [
+      7.3,
+      12.5
+     ],
+     [
+      0.6,
+      41
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "ESCORT-2",
+    "label": "ESCORT-2",
+    "points": [
+     [
+      9.3,
+      13.3
+     ],
+     [
+      0.6,
+      41
+     ]
+    ],
+    "unknown": true
+   }
+  ],
+  "threatZones": [
+   {
+    "pos": [
+     3.5,
+     27.5
+    ],
+    "r": 9,
+    "label": "SAM"
+   },
+   {
+    "pos": [
+     -4,
+     31.5
+    ],
+    "r": 9,
+    "label": "SAM"
+   },
+   {
+    "pos": [
+     1,
+     33.5
+    ],
+    "r": 9,
+    "label": "SAM"
+   },
+   {
+    "pos": [
+     0,
+     30
+    ],
+    "r": 7,
+    "label": "SHADOW LINE NODE"
+   },
+   {
+    "pos": [
+     -2.5,
+     29
+    ],
+    "r": 7,
+    "label": "RELAY MAST"
+   }
+  ],
+  "radar": {
+   "pos": [
+    0,
+    0
+   ],
+   "r": 70
+  },
+  "friendly": [
+   {
+    "id": "f1",
+    "path": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      30
+     ]
+    ]
+   },
+   {
+    "id": "f2",
+    "path": [
+     [
+      -1,
+      -1
+     ],
+     [
+      -1,
+      29
+     ]
+    ]
+   }
+  ],
+  "objectives": [
+   {
+    "label": "SHADOW LINE NODE",
+    "pos": [
+     0,
+     30
+    ]
+   },
+   {
+    "label": "RELAY MAST",
+    "pos": [
+     -2.5,
+     29
+    ]
+   },
+   {
+    "label": "RADAR SITE",
+    "pos": [
+     2.5,
+     30.5
+    ]
+   }
+  ]
+ }
+}

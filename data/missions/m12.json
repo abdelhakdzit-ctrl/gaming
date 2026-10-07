@@ -1,0 +1,668 @@
+{
+ "id": "m12",
+ "number": 12,
+ "title": "BLIND SKY",
+ "titleFr": "CIEL AVEUGLE",
+ "titleAr": "سماء عمياء",
+ "type": "RADAR DISRUPTION",
+ "playable": true,
+ "requires": "m11",
+ "region": "COAST",
+ "regionAr": "الساحل",
+ "map": {
+  "lon": -0.6,
+  "lat": 35.9
+ },
+ "threat": "HIGH",
+ "threatLevel": 4,
+ "weatherLabel": "CLEAR / LIGHT WIND",
+ "clock": "05:40",
+ "env": {
+  "biome": "coast",
+  "time": "dawn",
+  "weather": "clear"
+ },
+ "narrative": "The coastal radar grid is dead. Raiders and fighters are coming in over the sea at dawn to hit the radar site and the power plant beside the city. Fly by eye: Overwatch calls bandits by bearing, and only a visual or heat-seeker lock works.",
+ "intel": [
+  {
+   "label": "BLACKOUT",
+   "text": "Total radar loss on the coast. No scope contacts. Overwatch calls bandits by bearing and distance.",
+   "confidence": "HIGH"
+  },
+  {
+   "label": "LOCK",
+   "text": "Heat-seeker lock only: close within 6 km, nose on target.",
+   "confidence": "HIGH"
+  },
+  {
+   "label": "CITY",
+   "text": "The power plant sits beside the city. Do not fire inside the civilian zone.",
+   "confidence": "HIGH"
+  }
+ ],
+ "base": null,
+ "spawn": {
+  "onRunway": false,
+  "heading": 0,
+  "speed": 230,
+  "pos": [
+   0,
+   2800,
+   6000
+  ]
+ },
+ "wingman": {
+  "enabled": true,
+  "callsign": "Falcon TWO"
+ },
+ "noWingman": false,
+ "zones": [
+  {
+   "id": "civilian",
+   "type": "civilian",
+   "pos": [
+    -7500,
+    0,
+    -300
+   ],
+   "radius": 3200,
+   "label": "CIVILIAN ZONE"
+  },
+  {
+   "id": "boundary",
+   "type": "boundary",
+   "pos": [
+    0,
+    0,
+    -12000
+   ],
+   "radius": 36000,
+   "label": "OPERATIONS AREA"
+  }
+ ],
+ "waypoints": [],
+ "groups": [
+  {
+   "id": "radarc",
+   "type": "radar_site",
+   "side": "friendly",
+   "name": "COASTAL RADAR",
+   "callsign": "COASTAL RADAR",
+   "spawn": "start",
+   "pos": [
+    2500,
+    0,
+    2500
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "plantc",
+   "type": "plant",
+   "side": "friendly",
+   "name": "POWER PLANT",
+   "callsign": "POWER PLANT",
+   "spawn": "start",
+   "pos": [
+    -6500,
+    0,
+    900
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "r1",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-1",
+   "callsign": "RAIDER-1",
+   "spawn": "start",
+   "pos": [
+    6000,
+    3000,
+    -24000
+   ],
+   "heading": 190,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "targetPriority": "asset",
+   "identified": true
+  },
+  {
+   "id": "r2",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-2",
+   "callsign": "RAIDER-2",
+   "spawn": "start",
+   "pos": [
+    6800,
+    3100,
+    -24800
+   ],
+   "heading": 190,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "targetPriority": "asset",
+   "identified": true
+  },
+  {
+   "id": "r3",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-3",
+   "callsign": "RAIDER-3",
+   "spawn": "start",
+   "pos": [
+    5200,
+    2900,
+    -25600
+   ],
+   "heading": 190,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "targetPriority": "asset",
+   "identified": true
+  },
+  {
+   "id": "f1",
+   "type": "fighter",
+   "side": "hostile",
+   "name": "FIGHTER-1",
+   "callsign": "FIGHTER-1",
+   "spawn": "event",
+   "pos": [
+    -7000,
+    3200,
+    -26000
+   ],
+   "heading": 170,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "targetPriority": "asset"
+  },
+  {
+   "id": "f2",
+   "type": "fighter",
+   "side": "hostile",
+   "name": "FIGHTER-2",
+   "callsign": "FIGHTER-2",
+   "spawn": "event",
+   "pos": [
+    -7800,
+    3300,
+    -27000
+   ],
+   "heading": 170,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "targetPriority": "asset"
+  }
+ ],
+ "objectives": {
+  "primary": [
+   {
+    "id": "defend",
+    "type": "protect_group",
+    "label": "DEFEND THE RADAR SITE AND POWER PLANT",
+    "params": {
+     "targets": [
+      "radarc",
+      "plantc"
+     ],
+     "min": 2,
+     "until": "clear"
+    }
+   },
+   {
+    "id": "clear",
+    "type": "destroy",
+    "label": "DESTROY ALL FIVE BANDITS",
+    "params": {
+     "targets": [
+      "r1",
+      "r2",
+      "r3",
+      "f1",
+      "f2"
+     ]
+    }
+   }
+  ],
+  "secondary": [
+   {
+    "id": "wingman",
+    "type": "survive_entity",
+    "label": "MAINTAIN WINGMAN SURVIVAL",
+    "params": {
+     "target": "wingman"
+    }
+   },
+   {
+    "id": "civilian",
+    "type": "avoid_zone_fire",
+    "label": "AVOID CIVILIAN-ZONE ENGAGEMENT",
+    "params": {
+     "zone": "civilian"
+    }
+   }
+  ],
+  "optional": [
+   {
+    "id": "nodamage",
+    "type": "max_damage",
+    "label": "TAKE NO DAMAGE",
+    "params": {
+     "max": 0
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "when": {
+    "type": "time",
+    "t": 2
+   },
+   "do": [
+    {
+     "say": "blindskyeyes_1"
+    },
+    {
+     "say": "blindskyeyes_2",
+     "delay": 0.5
+    },
+    {
+     "say": "blindskyeyes_3",
+     "delay": 1
+    },
+    {
+     "music": "BUILDUP"
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "when": {
+    "type": "time",
+    "t": 14
+   },
+   "cooldown": 18,
+   "do": [
+    {
+     "callout": {
+      "nearest": "hostile"
+     }
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "when": {
+    "type": "time",
+    "t": 24
+   },
+   "do": [
+    {
+     "music": "COMBAT"
+    }
+   ]
+  },
+  {
+   "id": "e4",
+   "when": {
+    "type": "time",
+    "t": 95
+   },
+   "do": [
+    {
+     "spawn": [
+      "f1",
+      "f2"
+     ]
+    },
+    {
+     "say": "blindskyeyes_4"
+    }
+   ]
+  },
+  {
+   "id": "e5",
+   "when": {
+    "type": "objective",
+    "id": "clear"
+   },
+   "do": [
+    {
+     "radar": {
+      "mode": "on",
+      "severity": 0,
+      "duration": 0.1
+     }
+    },
+    {
+     "music": "RESOLUTION"
+    },
+    {
+     "say": "blindskyeyes_5",
+     "delay": 2
+    },
+    {
+     "say": "blindskyeyes_6",
+     "delay": 2
+    },
+    {
+     "endMission": {
+      "result": "complete"
+     },
+     "delay": 11
+    }
+   ]
+  },
+  {
+   "id": "c_missile",
+   "when": {
+    "type": "incoming_missile"
+   },
+   "cooldown": 25,
+   "do": [
+    {
+     "say": "m01_missile_warning"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_hit",
+   "when": {
+    "type": "damaged",
+    "id": "wingman"
+   },
+   "cooldown": 30,
+   "do": [
+    {
+     "say": "m01_wing_hit"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_down",
+   "when": {
+    "type": "destroyed",
+    "id": "wingman"
+   },
+   "do": [
+    {
+     "say": "m01_wing_down"
+    }
+   ]
+  },
+  {
+   "id": "c_leave",
+   "when": {
+    "type": "outside",
+    "zone": "boundary"
+   },
+   "cooldown": 20,
+   "do": [
+    {
+     "say": "m01_leave"
+    }
+   ]
+  },
+  {
+   "id": "c_roe",
+   "when": {
+    "type": "roe_violation"
+   },
+   "cooldown": 14,
+   "do": [
+    {
+     "say": "m01_roe"
+    }
+   ]
+  }
+ ],
+ "cinematics": {
+  "target_crash": {
+   "bars": false,
+   "interruptible": true,
+   "shots": [
+    {
+     "dur": 3.4,
+     "mode": "orbit",
+     "follow": "$entity",
+     "fov": 50,
+     "radius": 160
+    }
+   ]
+  }
+ },
+ "flags": {
+  "radar": "none"
+ },
+ "reward": {
+  "xp": 1300,
+  "tokens": 4
+ },
+ "scoring": {
+  "parTime": 330
+ },
+ "lines": {
+  "blindskyeyes_1": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "The whole coastal radar grid is dead. I'll call bandits by bearing. Visual identification only.",
+    "fr": "Toute la grille radar côtière est morte. J'annonce les bandits au cap. Identification visuelle uniquement.",
+    "ar": "شبكة الرادار الساحلية كلها ميتة. سأنادي الأعداء بالاتجاه. التعريف بصريًا فقط."
+   }
+  },
+  "blindskyeyes_2": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "Same blackout signature as Echo-Four. Someone wants us blind at dawn.",
+    "fr": "Même signature de brouillage d'Echo-Quatre. Quelqu'un veut nous aveugler à l'aube.",
+    "ar": "نفس بصمة التعتيم في إيكو-فور. أحدهم يريدنا عميانًا عند الفجر."
+   }
+  },
+  "blindskyeyes_3": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "No scope, no lock — close within six kilometres, nose on target, and the heat seeker will find them.",
+    "fr": "Pas d'écran, pas de verrou — approchez à six kilomètres, nez sur la cible, et l'infrarouge les trouvera.",
+    "ar": "لا شاشة ولا قفل — اقترب لست كيلومترات، الأنف على الهدف، وسيجدهم الباحث الحراري."
+   }
+  },
+  "blindskyeyes_4": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "More bandits from the north-west! They are hunting the power plant.",
+    "fr": "D'autres bandits par le nord-ouest ! Ils chassent la centrale.",
+    "ar": "أعداء آخرون من الشمال الغربي! يطاردون محطة الكهرباء."
+   }
+  },
+  "blindskyeyes_5": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "The radar is coming back — all of it. Good work, Falcon.",
+    "fr": "Le radar revient — complètement. Beau travail, Falcon.",
+    "ar": "الرادار يعود — بالكامل. عمل ممتاز يا فالكون."
+   }
+  },
+  "blindskyeyes_6": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "They blinded us to move at dawn. This was only the opening move.",
+    "fr": "Ils nous ont aveuglés pour agir à l'aube. Ce n'était que le premier coup.",
+    "ar": "أعموننا ليتحركوا عند الفجر. كانت مجرد خطوة افتتاحية."
+   }
+  }
+ },
+ "briefing": {
+  "center": {
+   "lon": -0.6,
+   "lat": 36.1
+  },
+  "zoomKm": 90,
+  "playerPath": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    40
+   ]
+  ],
+  "enemyRoutes": [
+   {
+    "id": "RAIDER-1",
+    "label": "RAIDER-1",
+    "points": [
+     [
+      6,
+      30
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-2",
+    "label": "RAIDER-2",
+    "points": [
+     [
+      6.8,
+      30.8
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-3",
+    "label": "RAIDER-3",
+    "points": [
+     [
+      5.2,
+      31.6
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "FIGHTER-1",
+    "label": "FIGHTER-1",
+    "points": [
+     [
+      -7,
+      32
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "FIGHTER-2",
+    "label": "FIGHTER-2",
+    "points": [
+     [
+      -7.8,
+      33
+     ],
+     [
+      0,
+      40
+     ]
+    ],
+    "unknown": true
+   }
+  ],
+  "threatZones": [],
+  "radar": {
+   "pos": [
+    0,
+    0
+   ],
+   "r": 70
+  },
+  "friendly": [
+   {
+    "id": "f1",
+    "path": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      40
+     ]
+    ]
+   },
+   {
+    "id": "f2",
+    "path": [
+     [
+      -1,
+      -1
+     ],
+     [
+      -1,
+      39
+     ]
+    ]
+   }
+  ],
+  "objectives": [
+   {
+    "label": "CIVILIAN ZONE",
+    "pos": [
+     -7.5,
+     6.3
+    ],
+    "civil": true
+   }
+  ]
+ }
+}

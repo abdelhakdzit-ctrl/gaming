@@ -1,0 +1,15 @@
+{
+  "name": "SHADOW LINE — SKY OF ALGERIA",
+  "short_name": "SHADOW LINE",
+  "description": "Browser air-combat campaign. When the radar lies, the pilot must decide.",
+  "start_url": "/",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#05090d",
+  "theme_color": "#05090d",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

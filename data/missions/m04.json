@@ -1,0 +1,732 @@
+{
+ "id": "m04",
+ "number": 4,
+ "title": "EAGLE EYE",
+ "titleFr": "L'OEIL DE L'AIGLE",
+ "titleAr": "عين النسر",
+ "type": "RECONNAISSANCE",
+ "playable": true,
+ "requires": "m03",
+ "region": "ATLAS MOUNTAINS",
+ "regionAr": "جبال الأطلس",
+ "map": {
+  "lon": 3.5,
+  "lat": 35.2
+ },
+ "threat": "MODERATE",
+ "threatLevel": 3,
+ "weatherLabel": "FOG / TURBULENCE",
+ "clock": "06:15",
+ "env": {
+  "biome": "atlas",
+  "time": "dawn",
+  "weather": "fog",
+  "turbulence": 0.3
+ },
+ "narrative": "Leila traced the forged IFF to a chain of relay sites called Echo, hidden in the Atlas valleys. Fly the chain, image each site with the recon pod, and get out before the valley wakes up.",
+ "intel": [
+  {
+   "label": "ECHO CHAIN",
+   "text": "Three relay sites in a north-south chain, valley floors, camouflaged. Radar cover marginal.",
+   "confidence": "MEDIUM"
+  },
+  {
+   "label": "DEFENCES",
+   "text": "A SAM battery covers the second site. A second battery may wake up near the third.",
+   "confidence": "MEDIUM"
+  },
+  {
+   "label": "POD",
+   "text": "Hold the site in your forward cone, below 3500 m above ground, until the pod finishes.",
+   "confidence": "HIGH"
+  }
+ ],
+ "base": null,
+ "spawn": {
+  "onRunway": false,
+  "heading": 0,
+  "speed": 230,
+  "pos": [
+   0,
+   3300,
+   0
+  ]
+ },
+ "wingman": {
+  "enabled": true,
+  "callsign": "Falcon TWO"
+ },
+ "noWingman": false,
+ "zones": [
+  {
+   "id": "boundary",
+   "type": "boundary",
+   "pos": [
+    0,
+    0,
+    -12000
+   ],
+   "radius": 36000,
+   "label": "OPERATIONS AREA"
+  }
+ ],
+ "waypoints": [
+  {
+   "id": "exfil",
+   "pos": [
+    0,
+    3300,
+    -3500
+   ],
+   "radius": 3600,
+   "label": "EXFIL POINT"
+  }
+ ],
+ "groups": [
+  {
+   "id": "site1",
+   "type": "relay",
+   "side": "hostile",
+   "name": "ECHO-1",
+   "callsign": "ECHO-1",
+   "spawn": "start",
+   "pos": [
+    3000,
+    0,
+    -11000
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "site2",
+   "type": "relay",
+   "side": "hostile",
+   "name": "ECHO-2",
+   "callsign": "ECHO-2",
+   "spawn": "start",
+   "pos": [
+    -4000,
+    0,
+    -22000
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "site3",
+   "type": "node",
+   "side": "hostile",
+   "name": "ECHO-3",
+   "callsign": "ECHO-3",
+   "spawn": "start",
+   "pos": [
+    2500,
+    0,
+    -33000
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "sam1",
+   "type": "sam",
+   "side": "hostile",
+   "name": "SAM-1",
+   "callsign": "SAM-1",
+   "spawn": "start",
+   "pos": [
+    -3000,
+    0,
+    -21000
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "sam2",
+   "type": "sam",
+   "side": "hostile",
+   "name": "SAM-2",
+   "callsign": "SAM-2",
+   "spawn": "start",
+   "pos": [
+    3600,
+    0,
+    -31600
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "active": false
+  },
+  {
+   "id": "r1",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-1",
+   "callsign": "RAIDER-1",
+   "spawn": "event",
+   "pos": [
+    9000,
+    3700,
+    -33000
+   ],
+   "heading": 270,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  },
+  {
+   "id": "r2",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-2",
+   "callsign": "RAIDER-2",
+   "spawn": "event",
+   "pos": [
+    9800,
+    3500,
+    -34000
+   ],
+   "heading": 270,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true
+  }
+ ],
+ "objectives": {
+  "primary": [
+   {
+    "id": "rec1",
+    "type": "recon_site",
+    "label": "IMAGE ECHO-1",
+    "params": {
+     "target": "site1",
+     "range": 4200,
+     "cone": 55,
+     "seconds": 6,
+     "maxAgl": 3600
+    }
+   },
+   {
+    "id": "rec2",
+    "type": "recon_site",
+    "label": "IMAGE ECHO-2 (SAM COVER)",
+    "params": {
+     "target": "site2",
+     "range": 4200,
+     "cone": 55,
+     "seconds": 6,
+     "maxAgl": 3600
+    }
+   },
+   {
+    "id": "rec3",
+    "type": "recon_site",
+    "label": "IMAGE ECHO-3",
+    "params": {
+     "target": "site3",
+     "range": 4200,
+     "cone": 55,
+     "seconds": 6,
+     "maxAgl": 3600
+    }
+   },
+   {
+    "id": "exfil",
+    "type": "reach_area",
+    "label": "EXFILTRATE TO THE EXFIL POINT",
+    "params": {
+     "waypoints": [
+      "exfil"
+     ]
+    }
+   }
+  ],
+  "secondary": [
+   {
+    "id": "wingman",
+    "type": "survive_entity",
+    "label": "MAINTAIN WINGMAN SURVIVAL",
+    "params": {
+     "target": "wingman"
+    }
+   },
+   {
+    "id": "nodamage",
+    "type": "max_damage",
+    "label": "RETURN WITHOUT DAMAGE",
+    "params": {
+     "max": 0
+    }
+   }
+  ],
+  "optional": [
+   {
+    "id": "raid",
+    "type": "destroy",
+    "label": "SHOOT DOWN THE INTERCEPTORS",
+    "params": {
+     "targets": [
+      "r1",
+      "r2"
+     ]
+    }
+   },
+   {
+    "id": "sams",
+    "type": "destroy",
+    "label": "DESTROY BOTH SAM BATTERIES",
+    "params": {
+     "targets": [
+      "sam1",
+      "sam2"
+     ]
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "when": {
+    "type": "time",
+    "t": 3
+   },
+   "do": [
+    {
+     "say": "m04_1"
+    },
+    {
+     "say": "m04_2",
+     "delay": 1
+    },
+    {
+     "music": "BUILDUP"
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "when": {
+    "type": "objective",
+    "id": "rec1"
+   },
+   "do": [
+    {
+     "say": "m04_3"
+    },
+    {
+     "music": "IDLE"
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "when": {
+    "type": "objective",
+    "id": "rec2"
+   },
+   "do": [
+    {
+     "say": "m04_4"
+    },
+    {
+     "order": {
+      "id": "sam2",
+      "order": "activate"
+     }
+    }
+   ]
+  },
+  {
+   "id": "e4",
+   "when": {
+    "type": "objective",
+    "id": "rec3"
+   },
+   "do": [
+    {
+     "spawn": [
+      "r1",
+      "r2"
+     ]
+    },
+    {
+     "music": "COMBAT"
+    },
+    {
+     "say": "m04_5"
+    },
+    {
+     "callout": {
+      "nearest": "hostile"
+     },
+     "delay": 3
+    },
+    {
+     "evidence": {
+      "title": "RECON PACKAGE — ECHO CHAIN",
+      "lines": [
+       "3 RELAY SITES REWRITING IFF TAGS IN REAL TIME",
+       "UPLINK TO A COMMAND-CLASS NETWORK (VESPER)",
+       "AUTHORISATION KEY FORMAT: BA-07 / M.B.A.",
+       "KEY HOLDER: NOT YET RESOLVED"
+      ]
+     },
+     "delay": 4
+    }
+   ]
+  },
+  {
+   "id": "e5",
+   "when": {
+    "type": "objective",
+    "id": "exfil"
+   },
+   "do": [
+    {
+     "music": "RESOLUTION"
+    },
+    {
+     "say": "m04_6"
+    },
+    {
+     "say": "m04_7",
+     "delay": 1.5
+    }
+   ]
+  },
+  {
+   "id": "c_missile",
+   "when": {
+    "type": "incoming_missile"
+   },
+   "cooldown": 25,
+   "do": [
+    {
+     "say": "m01_missile_warning"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_hit",
+   "when": {
+    "type": "damaged",
+    "id": "wingman"
+   },
+   "cooldown": 30,
+   "do": [
+    {
+     "say": "m01_wing_hit"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_down",
+   "when": {
+    "type": "destroyed",
+    "id": "wingman"
+   },
+   "do": [
+    {
+     "say": "m01_wing_down"
+    }
+   ]
+  },
+  {
+   "id": "c_leave",
+   "when": {
+    "type": "outside",
+    "zone": "boundary"
+   },
+   "cooldown": 20,
+   "do": [
+    {
+     "say": "m01_leave"
+    }
+   ]
+  },
+  {
+   "id": "c_roe",
+   "when": {
+    "type": "roe_violation"
+   },
+   "cooldown": 14,
+   "do": [
+    {
+     "say": "m01_roe"
+    }
+   ]
+  }
+ ],
+ "cinematics": {
+  "target_crash": {
+   "bars": false,
+   "interruptible": true,
+   "shots": [
+    {
+     "dur": 3.4,
+     "mode": "orbit",
+     "follow": "$entity",
+     "fov": 50,
+     "radius": 160
+    }
+   ]
+  }
+ },
+ "flags": {},
+ "reward": {
+  "xp": 820,
+  "tokens": 3
+ },
+ "scoring": {
+  "parTime": 360,
+  "timeLimit": 900
+ },
+ "lines": {
+  "m04_1": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Falcon One, Echo chain, three sites down the valley. The pod images whatever you hold in your forward cone. Fly steady.",
+    "fr": "Falcon Un, chaîne Echo, trois sites dans la vallée. La nacelle photographie ce qui reste dans votre cône avant. Volez stable.",
+    "ar": "فالكون واحد، سلسلة إيكو، ثلاثة مواقع في الوادي. الحاضنة تصوّر ما يبقى أمامك. حلّق بثبات."
+   }
+  },
+  "m04_2": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "Watch the turbulence. And stay below the ridge line if the SAM wakes up. Fog hides the valley walls.",
+    "fr": "Attention aux turbulences. Et restez sous la crête si le SAM se réveille. Le brouillard cache les parois.",
+    "ar": "انتبه للاضطراب. وابقَ تحت خط القمة إذا استيقظ الصاروخ الأرضي. الضباب يخفي جدران الوادي."
+   }
+  },
+  "m04_3": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Echo-One imaged. It's rewriting tags in real time. On to site two — a SAM battery covers it.",
+    "fr": "Echo-Un imagé. Il réécrit les tags en temps réel. Site deux — une batterie SAM le couvre.",
+    "ar": "تم تصوير إيكو-واحد. يعيد كتابة العلامات لحظيًا. الموقع الثاني — بطارية صواريخ تحميه."
+   }
+  },
+  "m04_4": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Second site in the can. Another battery is waking up ahead — flares ready.",
+    "fr": "Deuxième site dans la boîte. Une autre batterie se réveille — leurres prêts.",
+    "ar": "الموقع الثاني مصوَّر. بطارية أخرى تستيقظ أمامنا — المشاعل جاهزة."
+   }
+  },
+  "m04_5": {
+   "speaker": "RIAD",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "Bandits! They were sitting on the exit. Salim, they knew we were coming.",
+    "fr": "Bandits ! Ils attendaient à la sortie. Salim, ils savaient qu'on venait.",
+    "ar": "أعداء! كانوا ينتظرون عند المخرج. سليم، كانوا يعرفون أننا قادمون."
+   }
+  },
+  "m04_6": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "Package received. The relay uplink is signed with a BA-07 authorisation key — a Command-class key. Someone with real clearance built this.",
+    "fr": "Paquet reçu. La liaison est signée d'une clé BA-07 — une clé de classe Commandement. Quelqu'un d'habilité l'a construit.",
+    "ar": "وصلت الحزمة. وصلة المحطة موقَّعة بمفتاح BA-07 — مفتاح من فئة القيادة. صاحب صلاحية حقيقية بناها."
+   }
+  },
+  "m04_7": {
+   "speaker": "MOURAD",
+   "voice": null,
+   "emotion": "stern",
+   "text": {
+    "en": "Falcon flight, Command. Bring that package to me personally. No copies, no uploads.",
+    "fr": "Escadrille Falcon, Commandement. Apportez-moi ce paquet en personne. Aucune copie, aucun envoi.",
+    "ar": "سرب فالكون، هنا القيادة. أحضروا الحزمة إليّ شخصيًا. لا نسخ ولا إرسال."
+   }
+  }
+ },
+ "briefing": {
+  "center": {
+   "lon": 3.5,
+   "lat": 35.4
+  },
+  "zoomKm": 90,
+  "playerPath": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    3.5
+   ]
+  ],
+  "enemyRoutes": [
+   {
+    "id": "RAIDER-1",
+    "label": "RAIDER-1",
+    "points": [
+     [
+      9,
+      33
+     ],
+     [
+      0,
+      3.5
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-2",
+    "label": "RAIDER-2",
+    "points": [
+     [
+      9.8,
+      34
+     ],
+     [
+      0,
+      3.5
+     ]
+    ],
+    "unknown": true
+   }
+  ],
+  "threatZones": [
+   {
+    "pos": [
+     -3,
+     21
+    ],
+    "r": 9,
+    "label": "SAM"
+   },
+   {
+    "pos": [
+     3.6,
+     31.6
+    ],
+    "r": 9,
+    "label": "SAM"
+   },
+   {
+    "pos": [
+     3,
+     11
+    ],
+    "r": 7,
+    "label": "ECHO-1"
+   },
+   {
+    "pos": [
+     -4,
+     22
+    ],
+    "r": 7,
+    "label": "ECHO-2"
+   },
+   {
+    "pos": [
+     0,
+     3.5
+    ],
+    "r": 6,
+    "label": "EXFIL POINT"
+   }
+  ],
+  "radar": {
+   "pos": [
+    0,
+    0
+   ],
+   "r": 70
+  },
+  "friendly": [
+   {
+    "id": "f1",
+    "path": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      3.5
+     ]
+    ]
+   },
+   {
+    "id": "f2",
+    "path": [
+     [
+      -1,
+      -1
+     ],
+     [
+      -1,
+      2.5
+     ]
+    ]
+   }
+  ],
+  "objectives": [
+   {
+    "label": "EXFIL POINT",
+    "pos": [
+     0,
+     3.5
+    ]
+   },
+   {
+    "label": "ECHO-1",
+    "pos": [
+     3,
+     11
+    ]
+   },
+   {
+    "label": "ECHO-2",
+    "pos": [
+     -4,
+     22
+    ]
+   },
+   {
+    "label": "ECHO-3",
+    "pos": [
+     2.5,
+     33
+    ]
+   }
+  ]
+ }
+}

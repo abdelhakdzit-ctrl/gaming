@@ -1,0 +1,766 @@
+{
+ "id": "m06",
+ "number": 6,
+ "title": "BROKEN WING",
+ "titleFr": "AILE BRISÉE",
+ "titleAr": "جناح مكسور",
+ "type": "RESCUE",
+ "playable": true,
+ "requires": "m05",
+ "region": "MOUNTAINS",
+ "regionAr": "الجبال",
+ "map": {
+  "lon": 6.2,
+  "lat": 35.3
+ },
+ "threat": "HIGH",
+ "threatLevel": 3,
+ "weatherLabel": "CLOUDY / GUSTS",
+ "clock": "14:20",
+ "env": {
+  "biome": "atlas",
+  "time": "day",
+  "weather": "cloudy",
+  "turbulence": 0.3
+ },
+ "narrative": "Mule Two went down in an Atlas valley with two engineers alive. Their beacon is active, but two SAM batteries sit on the approach. Clear the pass, cover Heron-One's pickup, and bring the rescue helicopter home.",
+ "intel": [
+  {
+   "label": "SURVIVORS",
+   "text": "Two engineers from the Echo recovery team, beacon active in the valley.",
+   "confidence": "HIGH"
+  },
+  {
+   "label": "SAM",
+   "text": "One battery on the pass, another waking in the valley. They fire at the helicopter as well.",
+   "confidence": "MEDIUM"
+  },
+  {
+   "label": "RESCUE",
+   "text": "Heron-One launches only after the pass is clear. It hovers about 30 seconds for the pickup.",
+   "confidence": "HIGH"
+  }
+ ],
+ "base": null,
+ "spawn": {
+  "onRunway": false,
+  "heading": 0,
+  "speed": 230,
+  "pos": [
+   0,
+   3400,
+   2500
+  ]
+ },
+ "wingman": {
+  "enabled": true,
+  "callsign": "Falcon TWO"
+ },
+ "noWingman": false,
+ "zones": [
+  {
+   "id": "boundary",
+   "type": "boundary",
+   "pos": [
+    0,
+    0,
+    -12000
+   ],
+   "radius": 36000,
+   "label": "OPERATIONS AREA"
+  }
+ ],
+ "waypoints": [
+  {
+   "id": "beacon",
+   "pos": [
+    -2500,
+    1800,
+    -24000
+   ],
+   "radius": 5200,
+   "label": "DOWNED CREW"
+  },
+  {
+   "id": "home",
+   "pos": [
+    0,
+    2800,
+    3500
+   ],
+   "radius": 3500,
+   "label": "RESCUE EXFIL"
+  },
+  {
+   "id": "approach",
+   "pos": [
+    -2000,
+    1800,
+    -16500
+   ],
+   "radius": 6500,
+   "label": "APPROACH"
+  }
+ ],
+ "groups": [
+  {
+   "id": "heron",
+   "type": "helicopter",
+   "side": "friendly",
+   "name": "HERON-1",
+   "callsign": "HERON-1",
+   "spawn": "start",
+   "pos": [
+    0,
+    2400,
+    -1500
+   ],
+   "heading": 0,
+   "speed": 110,
+   "route": [
+    [
+     -2500,
+     0,
+     -24000
+    ],
+    [
+     0,
+     0,
+     3500
+    ]
+   ],
+   "iffShown": "unknown",
+   "hover": {
+    "0": 32
+   },
+   "hold": true,
+   "identified": true
+  },
+  {
+   "id": "sam1",
+   "type": "sam",
+   "side": "hostile",
+   "name": "SAM-PASS",
+   "callsign": "SAM-PASS",
+   "spawn": "start",
+   "pos": [
+    -1500,
+    0,
+    -15000
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "reload": 15
+  },
+  {
+   "id": "sam2",
+   "type": "sam",
+   "side": "hostile",
+   "name": "SAM-VALLEY",
+   "callsign": "SAM-VALLEY",
+   "spawn": "start",
+   "pos": [
+    -5200,
+    0,
+    -23200
+   ],
+   "heading": 0,
+   "speed": 0,
+   "route": [],
+   "iffShown": "unknown",
+   "identified": true,
+   "active": false,
+   "reload": 15
+  },
+  {
+   "id": "r1",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-1",
+   "callsign": "RAIDER-1",
+   "spawn": "event",
+   "pos": [
+    9000,
+    3500,
+    -26000
+   ],
+   "heading": 250,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "targetPriority": "player"
+  },
+  {
+   "id": "r2",
+   "type": "raider",
+   "side": "hostile",
+   "name": "RAIDER-2",
+   "callsign": "RAIDER-2",
+   "spawn": "event",
+   "pos": [
+    9800,
+    3300,
+    -27000
+   ],
+   "heading": 250,
+   "speed": 235,
+   "route": [],
+   "iffShown": "unknown",
+   "targetPriority": "player"
+  }
+ ],
+ "objectives": {
+  "primary": [
+   {
+    "id": "pass",
+    "type": "destroy",
+    "label": "SUPPRESS THE PASS SAM BATTERY",
+    "params": {
+     "targets": [
+      "sam1"
+     ]
+    }
+   },
+   {
+    "id": "valley",
+    "type": "destroy",
+    "label": "SUPPRESS THE VALLEY SAM BATTERY",
+    "params": {
+     "targets": [
+      "sam2"
+     ]
+    }
+   },
+   {
+    "id": "pickup",
+    "type": "hold_area",
+    "label": "COVER THE PICKUP AT THE BEACON",
+    "params": {
+     "waypoint": "beacon",
+     "seconds": 25,
+     "requireAlive": "heron"
+    }
+   },
+   {
+    "id": "guard",
+    "type": "protect",
+    "label": "PROTECT HERON-1",
+    "params": {
+     "target": "heron",
+     "until": "exfil"
+    }
+   },
+   {
+    "id": "exfil",
+    "type": "entity_at",
+    "label": "ESCORT HERON-1 HOME",
+    "params": {
+     "target": "heron",
+     "waypoint": "home"
+    }
+   }
+  ],
+  "secondary": [
+   {
+    "id": "wingman",
+    "type": "survive_entity",
+    "label": "MAINTAIN WINGMAN SURVIVAL",
+    "params": {
+     "target": "wingman"
+    }
+   }
+  ],
+  "optional": [
+   {
+    "id": "nodamage",
+    "type": "max_damage",
+    "label": "TAKE NO DAMAGE",
+    "params": {
+     "max": 0
+    }
+   },
+   {
+    "id": "raid",
+    "type": "destroy",
+    "label": "SHOOT DOWN THE RAIDERS",
+    "params": {
+     "targets": [
+      "r1",
+      "r2"
+     ]
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "when": {
+    "type": "time",
+    "t": 2
+   },
+   "do": [
+    {
+     "say": "fatsockfuel_1"
+    },
+    {
+     "say": "fatsockfuel_2",
+     "delay": 0.5
+    },
+    {
+     "music": "BUILDUP"
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "when": {
+    "type": "objective",
+    "id": "pass"
+   },
+   "do": [
+    {
+     "order": {
+      "id": "heron",
+      "order": "go"
+     }
+    },
+    {
+     "order": {
+      "id": "sam2",
+      "order": "activate"
+     }
+    },
+    {
+     "say": "fatsockfuel_3"
+    },
+    {
+     "say": "fatsockfuel_4",
+     "delay": 1
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "when": {
+    "type": "entity_in_area",
+    "id": "heron",
+    "waypoint": "approach"
+   },
+   "do": [
+    {
+     "spawn": [
+      "r1",
+      "r2"
+     ]
+    },
+    {
+     "music": "COMBAT"
+    },
+    {
+     "say": "fatsockfuel_5"
+    },
+    {
+     "callout": {
+      "nearest": "hostile"
+     },
+     "delay": 3
+    }
+   ]
+  },
+  {
+   "id": "e4",
+   "when": {
+    "type": "objective",
+    "id": "pickup"
+   },
+   "do": [
+    {
+     "say": "fatsockfuel_6"
+    },
+    {
+     "music": "BUILDUP"
+    }
+   ]
+  },
+  {
+   "id": "e5",
+   "when": {
+    "type": "objective",
+    "id": "exfil"
+   },
+   "do": [
+    {
+     "order": {
+      "id": "heron",
+      "order": "land"
+     }
+    },
+    {
+     "music": "RESOLUTION"
+    },
+    {
+     "say": "fatsockfuel_7",
+     "delay": 1
+    },
+    {
+     "evidence": {
+      "title": "SURVIVOR TESTIMONY — KARIM",
+      "lines": [
+       "STRIKE TEAM WORE VESPER PATCHES",
+       "BUT THEIR TRANSPONDERS WERE COMMAND-ISSUE",
+       "ONE OF THEM ADDRESSED AN OFFICER AS \"SIR\"",
+       "LOCATION OF THE ORDERS: BA-07 OPERATIONS ROOM"
+      ]
+     },
+     "delay": 2
+    },
+    {
+     "say": "fatsockfuel_8",
+     "delay": 7
+    }
+   ]
+  },
+  {
+   "id": "c_missile",
+   "when": {
+    "type": "incoming_missile"
+   },
+   "cooldown": 25,
+   "do": [
+    {
+     "say": "m01_missile_warning"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_hit",
+   "when": {
+    "type": "damaged",
+    "id": "wingman"
+   },
+   "cooldown": 30,
+   "do": [
+    {
+     "say": "m01_wing_hit"
+    }
+   ]
+  },
+  {
+   "id": "c_wing_down",
+   "when": {
+    "type": "destroyed",
+    "id": "wingman"
+   },
+   "do": [
+    {
+     "say": "m01_wing_down"
+    }
+   ]
+  },
+  {
+   "id": "c_leave",
+   "when": {
+    "type": "outside",
+    "zone": "boundary"
+   },
+   "cooldown": 20,
+   "do": [
+    {
+     "say": "m01_leave"
+    }
+   ]
+  },
+  {
+   "id": "c_roe",
+   "when": {
+    "type": "roe_violation"
+   },
+   "cooldown": 14,
+   "do": [
+    {
+     "say": "m01_roe"
+    }
+   ]
+  }
+ ],
+ "cinematics": {
+  "target_crash": {
+   "bars": false,
+   "interruptible": true,
+   "shots": [
+    {
+     "dur": 3.4,
+     "mode": "orbit",
+     "follow": "$entity",
+     "fov": 50,
+     "radius": 160
+    }
+   ]
+  }
+ },
+ "flags": {},
+ "reward": {
+  "xp": 940,
+  "tokens": 3
+ },
+ "scoring": {
+  "parTime": 540
+ },
+ "lines": {
+  "fatsockfuel_1": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "Mule Two went down in the valley. Two engineers alive, beacon active. Heron-One is on standby, but she needs a clean corridor.",
+    "fr": "Mule Deux est tombé dans la vallée. Deux ingénieurs vivants, balise active. Heron-Un est prêt mais il lui faut un couloir dégagé.",
+    "ar": "ميول اثنان سقطت في الوادي. مهندسان حيّان والمنارة تعمل. هيرون واحد جاهزة لكنها تحتاج ممرًا نظيفًا."
+   }
+  },
+  "fatsockfuel_2": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Copy. SAM on the pass first. Heron launches when it is dead.",
+    "fr": "Reçu. Le SAM du col d'abord. Heron décolle quand il est détruit.",
+    "ar": "مفهوم. صاروخ الممر أولًا. هيرون تقلع عندما يسقط."
+   }
+  },
+  "fatsockfuel_3": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Pass is clear. Heron-One is launching. Second battery is waking up in the valley — take it out before she arrives.",
+    "fr": "Le col est dégagé. Heron-Un décolle. Une seconde batterie se réveille dans la vallée — détruisez-la avant son arrivée.",
+    "ar": "الممر نظيف. هيرون واحد تقلع. بطارية ثانية تستيقظ في الوادي — دمّرها قبل وصولها."
+   }
+  },
+  "fatsockfuel_4": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "tense",
+   "text": {
+    "en": "Karim, Sana — hold on. We're coming.",
+    "fr": "Karim, Sana — tenez bon. On arrive.",
+    "ar": "كريم، سناء — اصمدا. نحن قادمون."
+   }
+  },
+  "fatsockfuel_5": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "urgent",
+   "text": {
+    "en": "Heron is on station, hovering for the pickup. Bandits inbound to the valley — keep the sky clear!",
+    "fr": "Heron est en station, stationnaire pour la récupération. Bandits en approche — dégagez le ciel !",
+    "ar": "هيرون في موقعها تحوم للالتقاط. أعداء قادمون إلى الوادي — أبقوا السماء نظيفة!"
+   }
+  },
+  "fatsockfuel_6": {
+   "speaker": "NADIA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "Heron has them. Two on board, heading home. Stay on her wing, Falcon.",
+    "fr": "Heron les a. Deux à bord, retour à la base. Restez sur son aile, Falcon.",
+    "ar": "هيرون التقطتهما. اثنان على متنها، عائدة. ابقَ إلى جانبها يا فالكون."
+   }
+  },
+  "fatsockfuel_7": {
+   "speaker": "LEILA",
+   "voice": null,
+   "emotion": "calm",
+   "text": {
+    "en": "They're alive. Karim says the strike team wore VESPER patches — but flew with Command-issue transponders.",
+    "fr": "Ils sont vivants. Karim dit que l'équipe portait des écussons VESPER — mais volait avec des transpondeurs du Commandement.",
+    "ar": "إنهما حيّان. يقول كريم إن فريق الضربة كان يضع شارات فيسبر — لكن بأجهزة تعريف من القيادة."
+   }
+  },
+  "fatsockfuel_8": {
+   "speaker": "SALIM",
+   "voice": null,
+   "emotion": "analytical",
+   "text": {
+    "en": "Command-issue. Riad, you heard that?",
+    "fr": "Équipement du Commandement. Riad, tu a entendu ?",
+    "ar": "أجهزة القيادة. رياض، هل سمعت ذلك؟"
+   }
+  }
+ },
+ "briefing": {
+  "center": {
+   "lon": 6.2,
+   "lat": 35.4
+  },
+  "zoomKm": 90,
+  "playerPath": [
+   [
+    0,
+    0
+   ],
+   [
+    -2.5,
+    26.5
+   ],
+   [
+    0,
+    -1
+   ],
+   [
+    -2,
+    19
+   ]
+  ],
+  "enemyRoutes": [
+   {
+    "id": "RAIDER-1",
+    "label": "RAIDER-1",
+    "points": [
+     [
+      9,
+      28.5
+     ],
+     [
+      -2.5,
+      26.5
+     ]
+    ],
+    "unknown": true
+   },
+   {
+    "id": "RAIDER-2",
+    "label": "RAIDER-2",
+    "points": [
+     [
+      9.8,
+      29.5
+     ],
+     [
+      -2.5,
+      26.5
+     ]
+    ],
+    "unknown": true
+   }
+  ],
+  "threatZones": [
+   {
+    "pos": [
+     -1.5,
+     17.5
+    ],
+    "r": 9,
+    "label": "SAM"
+   },
+   {
+    "pos": [
+     -5.2,
+     25.7
+    ],
+    "r": 9,
+    "label": "SAM"
+   },
+   {
+    "pos": [
+     -2.5,
+     26.5
+    ],
+    "r": 7.279999999999999,
+    "label": "DOWNED CREW"
+   }
+  ],
+  "radar": {
+   "pos": [
+    0,
+    0
+   ],
+   "r": 70
+  },
+  "friendly": [
+   {
+    "id": "f1",
+    "path": [
+     [
+      0,
+      0
+     ],
+     [
+      -2.5,
+      26.5
+     ],
+     [
+      0,
+      -1
+     ],
+     [
+      -2,
+      19
+     ]
+    ]
+   },
+   {
+    "id": "f2",
+    "path": [
+     [
+      -1,
+      -1
+     ],
+     [
+      -3.5,
+      25.5
+     ],
+     [
+      -1,
+      -2
+     ],
+     [
+      -3,
+      18
+     ]
+    ]
+   }
+  ],
+  "objectives": [
+   {
+    "label": "DOWNED CREW",
+    "pos": [
+     -2.5,
+     26.5
+    ]
+   },
+   {
+    "label": "RESCUE EXFIL",
+    "pos": [
+     0,
+     -1
+    ]
+   },
+   {
+    "label": "APPROACH",
+    "pos": [
+     -2,
+     19
+    ]
+   },
+   {
+    "label": "SAM-PASS",
+    "pos": [
+     -1.5,
+     17.5
+    ]
+   },
+   {
+    "label": "SAM-VALLEY",
+    "pos": [
+     -5.2,
+     25.7
+    ]
+   }
+  ]
+ }
+}

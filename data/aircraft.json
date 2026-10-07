@@ -1,0 +1,275 @@
+{
+  "aircraft": [
+    {
+      "id": "falcon-x1",
+      "name": "FALCON-X1",
+      "role": "Agile multirole fighter",
+      "cost": 0,
+      "unlockRank": null,
+      "desc": "High acceleration, medium stability. The squadron's standard multirole airframe.",
+      "model": null,
+      "stats": {
+        "maxSpeed": 430,
+        "stallSpeed": 62,
+        "cornerSpeed": 205,
+        "thrust": 21,
+        "pitchRate": 0.8,
+        "rollRate": 2.0,
+        "yawRate": 0.4,
+        "liftAgility": 1.0,
+        "aoaMax": 0.52,
+        "hp": 100
+      },
+      "weapons": {
+        "cannonRounds": 500,
+        "missiles": 4,
+        "flares": 30
+      }
+    },
+    {
+      "id": "falcon-x1r",
+      "name": "FALCON-X1R 'WATCHER'",
+      "role": "Recon / stability variant",
+      "cost": 2,
+      "unlockRank": null,
+      "desc": "Gentler handling and higher top speed, fewer missiles. Favoured for long patrols.",
+      "model": null,
+      "stats": {
+        "maxSpeed": 470,
+        "stallSpeed": 58,
+        "cornerSpeed": 215,
+        "thrust": 19,
+        "pitchRate": 0.72,
+        "rollRate": 1.8,
+        "yawRate": 0.36,
+        "liftAgility": 0.92,
+        "aoaMax": 0.5,
+        "hp": 100
+      },
+      "weapons": {
+        "cannonRounds": 450,
+        "missiles": 3,
+        "flares": 40
+      }
+    },
+    {
+      "id": "falcon-x1s",
+      "name": "FALCON-X1S 'ANVIL'",
+      "role": "Hardened strike variant",
+      "cost": 3,
+      "unlockRank": "FLIGHT LEAD",
+      "desc": "Armoured airframe with extra missiles. Less nimble at low speed.",
+      "model": null,
+      "stats": {
+        "maxSpeed": 410,
+        "stallSpeed": 68,
+        "cornerSpeed": 220,
+        "thrust": 22,
+        "pitchRate": 0.76,
+        "rollRate": 1.9,
+        "yawRate": 0.38,
+        "liftAgility": 0.95,
+        "aoaMax": 0.5,
+        "hp": 140
+      },
+      "weapons": {
+        "cannonRounds": 600,
+        "missiles": 6,
+        "flares": 24
+      }
+    }
+  ],
+  "paints": [
+    {
+      "id": "sand",
+      "name": "Sahara Sand",
+      "cost": 0,
+      "unlockRank": null,
+      "colors": {
+        "body": "#8f8a7a",
+        "accent": "#2f6b3a",
+        "trim": "#d9d4c3"
+      }
+    },
+    {
+      "id": "night",
+      "name": "Night Watch",
+      "cost": 0,
+      "unlockRank": "WINGMAN",
+      "colors": {
+        "body": "#3a4048",
+        "accent": "#b8322a",
+        "trim": "#8a94a0"
+      }
+    },
+    {
+      "id": "atlas",
+      "name": "Atlas Green",
+      "cost": 1,
+      "unlockRank": null,
+      "colors": {
+        "body": "#5f6e57",
+        "accent": "#e8e2cf",
+        "trim": "#2c3a2a"
+      }
+    },
+    {
+      "id": "ochre",
+      "name": "Mirage Ochre",
+      "cost": 2,
+      "unlockRank": null,
+      "colors": {
+        "body": "#b58a4c",
+        "accent": "#3b2a18",
+        "trim": "#f0dcb0"
+      }
+    },
+    {
+      "id": "ghost",
+      "name": "Ghost Grey",
+      "cost": 2,
+      "unlockRank": "FLIGHT LEAD",
+      "colors": {
+        "body": "#9aa3ad",
+        "accent": "#222831",
+        "trim": "#cfd6dd"
+      }
+    },
+    {
+      "id": "shadow",
+      "name": "Shadow Line",
+      "cost": 0,
+      "unlockRank": null,
+      "unlockFlag": "campaignFinished",
+      "colors": {
+        "body": "#23272d",
+        "accent": "#c9a24a",
+        "trim": "#4a525c"
+      }
+    }
+  ],
+  "hudThemes": [
+    {
+      "id": "emerald",
+      "name": "Emerald",
+      "cost": 0,
+      "unlockRank": null,
+      "color": "#5dffa8"
+    },
+    {
+      "id": "amber",
+      "name": "Amber",
+      "cost": 1,
+      "unlockRank": null,
+      "color": "#ffc04d"
+    },
+    {
+      "id": "ice",
+      "name": "Ice",
+      "cost": 1,
+      "unlockRank": "WINGMAN",
+      "color": "#7fdcff"
+    },
+    {
+      "id": "mono",
+      "name": "Monochrome",
+      "cost": 2,
+      "unlockRank": null,
+      "color": "#f2f5f7"
+    },
+    {
+      "id": "crimson",
+      "name": "Crimson",
+      "cost": 0,
+      "unlockRank": null,
+      "unlockFlag": "campaignFinished",
+      "color": "#ff6a5c"
+    }
+  ],
+  "cockpits": [
+    {
+      "id": "standard",
+      "name": "Standard",
+      "cost": 0,
+      "unlockRank": null,
+      "frame": "#10151b",
+      "glow": "#5dffa8"
+    },
+    {
+      "id": "carbon",
+      "name": "Carbon Trim",
+      "cost": 2,
+      "unlockRank": "SHADOW",
+      "frame": "#050709",
+      "glow": "#7fdcff"
+    }
+  ],
+  "cameras": [
+    {
+      "id": "chase",
+      "name": "Chase",
+      "unlockRank": null
+    },
+    {
+      "id": "cockpit",
+      "name": "Cockpit",
+      "unlockRank": null
+    },
+    {
+      "id": "close",
+      "name": "Close Chase",
+      "unlockRank": null
+    },
+    {
+      "id": "missile",
+      "name": "Missile",
+      "unlockRank": null
+    },
+    {
+      "id": "wing",
+      "name": "Wing",
+      "unlockRank": "WINGMAN"
+    },
+    {
+      "id": "tactical",
+      "name": "Tactical",
+      "unlockRank": "WINGMAN"
+    },
+    {
+      "id": "cinematic",
+      "name": "Cinematic",
+      "unlockRank": "FLIGHT LEAD"
+    },
+    {
+      "id": "free",
+      "name": "Free",
+      "unlockRank": "FLIGHT LEAD"
+    }
+  ],
+  "loadouts": [
+    {
+      "id": "interceptor",
+      "name": "INTERCEPTOR",
+      "desc": "Maximum missiles for long-range engagements.",
+      "missilesDelta": 0,
+      "flaresDelta": 0,
+      "ammoMult": 0.8
+    },
+    {
+      "id": "balanced",
+      "name": "BALANCED",
+      "desc": "Standard multirole mix.",
+      "missilesDelta": -1,
+      "flaresDelta": 10,
+      "ammoMult": 1.0
+    },
+    {
+      "id": "dogfighter",
+      "name": "DOGFIGHTER",
+      "desc": "Extra gun ammunition and flares, fewer missiles.",
+      "missilesDelta": -2,
+      "flaresDelta": 20,
+      "ammoMult": 1.4
+    }
+  ]
+}
