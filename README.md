@@ -17,7 +17,7 @@ npm run sim        # headless regression: drives all 15 missions end to end (dev
 (Windows PowerShell 5: run `npm install` and `npm run dev` as two separate commands — `&&` is not supported.)
 
 ### Playing on a phone or tablet
-Run `npm run dev` on your PC, then open `http://<your-PC-IP>:5173` in the phone's browser (same Wi-Fi; allow Node through the firewall if asked). Hold the device in landscape. Touch controls turn on automatically on touch devices (Settings → Controls to force on/off or switch to a left-handed layout). The ⛶ button goes fullscreen (Android Chrome; on iPhone use *Add to Home Screen*).
+Run `npm run dev` on your PC, then open `http://<your-PC-IP>:5173` in the phone's browser (same Wi-Fi; allow Node through the firewall if asked). Hold the device in landscape. Touch controls turn on automatically on touch devices (Settings → Controls to force on/off or switch to a left-handed layout). Menus scroll and re-flow for phones (landscape and portrait). The ⛶ button (corner of every menu, in the pause menu and Settings → Graphics) toggles fullscreen; on touch devices the first tap on the title screen enters fullscreen automatically (Settings → Graphics → *Auto fullscreen*). iPhone Safari has no fullscreen API for web pages: use *Share → Add to Home Screen* — the game ships a manifest (fullscreen, landscape) and icons, so Android can also *Install app*.
 
 Dev shortcut: `http://localhost:5173/?quick=1` skips the menus and starts Mission 01.
 

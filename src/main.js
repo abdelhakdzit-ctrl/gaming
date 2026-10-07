@@ -4,6 +4,7 @@ import { createRenderer } from './renderer.js';
 import { AudioEngine } from './audio/audio.js';
 import { Input } from './input/input.js';
 import { TouchControls } from './input/touch.js';
+import * as Fullscreen from './ui/fullscreen.js';
 import { Hud } from './ui/hud.js';
 import { Comms } from './ui/comms.js';
 import { MISSIONS } from './missions/registry.js';
@@ -25,6 +26,7 @@ class App {
     this.audio = new AudioEngine(() => Settings.s); this.input = new Input(this.canvas, live);
     const hudRoot = document.getElementById('hud-root'); this.hudRoot = hudRoot;
     this.input.touch = new TouchControls(document.getElementById('touch-ui'), { onFullscreen: () => this.toggleFullscreen() });
+    Fullscreen.init((t) => this.toast(t));
     this.hud = new Hud(hudRoot); this.comms = new Comms(hudRoot, this.audio); this.hangar = new Hangar();
     this.screens = new Screens(this, document.getElementById('screens'));
     this.game = null; this.replay = null; this.lastReplay = null; this.lastLaunch = null; this.unlockedCameras = unlockedCameraSet();
@@ -47,11 +49,9 @@ class App {
   }
   cameraName(id) { return (aircraftData.cameras.find((c) => c.id === id)?.name || id).toUpperCase() + ' CAMERA'; }
   applySettings() { const s = Settings.s; this.gl.setQuality(s.quality); this.gl.setDynamic(s.dynamicRes); this.audio.applyVolumes(); this.hud.resize(); }
-  toggleFullscreen() {
-    const d = document, el = d.documentElement;
-    if (d.fullscreenElement) { d.exitFullscreen?.(); return; }
-    el.requestFullscreen?.({ navigationUI: 'hide' }).then(() => screen.orientation?.lock?.('landscape').catch(() => {})).catch(() => {});
-  }
+  async toggleFullscreen() { if (!(await Fullscreen.toggle())) this.toast(Fullscreen.isIOS() ? 'iPHONE: SHARE → ADD TO HOME SCREEN FOR FULLSCREEN' : 'FULLSCREEN IS NOT AVAILABLE IN THIS BROWSER'); }
+  /** Called from the title screen's first tap/key (a user gesture, as browsers require): touch devices go fullscreen unless disabled. */
+  autoFullscreen() { if (Settings.touchMode() && Settings.s.autoFullscreen && Fullscreen.supported() && !Fullscreen.active()) Fullscreen.enter(); }
 
   // ------------------------------------------------------------------ launching
   normalize(def) {

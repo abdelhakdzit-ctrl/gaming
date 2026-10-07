@@ -263,3 +263,81 @@ body.touch-on .subs { bottom: clamp(60px, 22vh, 190px); width: min(50vw, 560px);
 body.touch-left .hud-objectives { right: auto; left: max(60px, 15vmin); border-right: 0; border-left: 3px solid var(--hud); }
 body.touch-left .portrait { left: auto; right: max(60px, 15vmin); }
 body.touch-left .hud canvas#hud-radar { left: auto; right: clamp(10px, 1.5vw, 28px); }
+
+/* ================================================================== scrolling + responsive layout (phones / small windows)
+   Every menu screen scrolls when its content does not fit; layouts compact on short (landscape phone) and narrow (portrait) viewports. */
+.screen { overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; scrollbar-width: thin; scrollbar-color: rgba(93, 255, 168, 0.4) transparent;
+  padding-left: max(clamp(14px, 3vw, 44px), env(safe-area-inset-left)); padding-right: max(clamp(14px, 3vw, 44px), env(safe-area-inset-right)); padding-bottom: max(clamp(14px, 3vw, 44px), env(safe-area-inset-bottom)); }
+.screen::-webkit-scrollbar { width: 6px; } .screen::-webkit-scrollbar-thumb { background: rgba(93, 255, 168, 0.35); border-radius: 3px; }
+.screen.brief { overflow: hidden; padding: 0; }
+input[type=range], .seg, .map-wrap svg { touch-action: pan-y; } .map-wrap svg { touch-action: none; }
+/* centred screens: margin:auto keeps the content reachable when it is taller than the viewport */
+.title-screen { justify-content: flex-start; } .title-screen > :first-child { margin-top: auto; } .title-screen > :last-child { margin-bottom: auto; }
+.menu-screen { align-items: flex-start; } .menu-col { margin-block: auto; max-height: none; justify-content: flex-start; }
+.debrief, .pause, .ending { align-items: flex-start; justify-content: flex-start; }
+.debrief-card, .pause .panel, .end-card { margin: auto; } .debrief-card { max-height: none; overflow: visible; }
+.pause { backdrop-filter: none; -webkit-backdrop-filter: none; }
+.foot-pilot { display: none; }
+/* BACK stays pinned while the screen scrolls; the fullscreen button sits in the corner next to it */
+.back-bar { position: fixed; top: max(clamp(14px, 3vw, 40px), env(safe-area-inset-top)); right: calc(max(clamp(14px, 3vw, 44px), env(safe-area-inset-right)) + 54px); }
+.fs-btn { position: fixed; z-index: 4; top: max(clamp(14px, 3vw, 40px), env(safe-area-inset-top)); right: max(clamp(14px, 3vw, 44px), env(safe-area-inset-right)); width: 44px; height: 44px; padding: 0; display: grid; place-items: center; pointer-events: auto; cursor: pointer;
+  background: rgba(8, 20, 26, 0.75); color: var(--text); border: 1px solid var(--line); font-size: 22px; line-height: 1; clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px)); touch-action: manipulation; }
+.fs-btn:hover { border-color: var(--accent); color: #fff; }
+body.playing .fs-btn { display: none !important; }
+#touch-ui { inset: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+.replay-bar { flex-wrap: wrap; }
+
+/* two-column layouts stay two columns on landscape phones; they only stack on narrow (portrait) screens */
+@media (min-width: 701px) {
+  .split { grid-template-columns: minmax(0, 1fr) min(400px, 42vw); overflow: visible; } .intel-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); overflow: visible; }
+  .debrief-card { grid-template-columns: 1.1fr 0.9fr; overflow: visible; } .form { grid-template-columns: 160px 1fr; }
+}
+
+/* ------------------------------------------------------------------ short viewports (landscape phones, small windows) */
+@media (max-height: 560px) {
+  .screen { padding-top: 10px; padding-bottom: 10px; }
+  .screen:has(> .back-bar) { padding-top: 58px; }
+  .back-bar, .fs-btn { top: 8px; } .fs-btn { width: 40px; height: 40px; font-size: 20px; }
+  .kicker { font-size: 11px; letter-spacing: 0.2em; }
+  .panel { padding: 10px 14px; } .panel h2, .panel h3 { margin-bottom: 6px; }
+  .btn { font-size: 14px; padding: 7px 14px; letter-spacing: 0.12em; } .btn.small { font-size: 12px; padding: 5px 10px; } .btn:hover:not(:disabled) { transform: none; }
+  h1.title { font-size: clamp(22px, 9vh, 40px); } h1.title small { margin-top: 3px; letter-spacing: 0.4em; } .tagline { margin-top: 6px; font-size: 13px; } .press { margin-top: 18px; }
+  /* main menu: brand on top, buttons in two columns, pilot line in the footer */
+  .menu-screen { flex-direction: column; }
+  .menu-col { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+  .menu-col .brand { grid-column: 1 / -1; margin-bottom: 2px; } .menu-col .brand h1 { font-size: clamp(22px, 8.5vh, 34px); }
+  .menu-col .btn { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 14px; padding: 7px 12px; }
+  .menu-col .btn .ar { display: inline; margin: 0; font-size: 12px; }
+  .menu-foot { position: static; margin-top: 8px; font-size: 11px; letter-spacing: 0.1em; } .foot-pilot { display: inline; } .pilot-card { display: none; }
+  /* generic panels / forms */
+  .big-center { max-height: none !important; margin: 0 auto !important; justify-content: flex-start !important; gap: 8px; } .scroll { overflow: visible !important; max-height: none !important; }
+  .cards { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; } .card { padding: 8px 10px; } .card p { font-size: 12px; } .card h4 { font-size: 13px; }
+  .form { gap: 8px 14px; } .form label { font-size: 12px; } .seg button { padding: 5px 9px; font-size: 12px; } .tabs { margin-bottom: 10px; } .loadout-grid { gap: 10px; }
+  .split { padding-top: 0; gap: 10px; } .mission-card h2 { font-size: 20px; } .obj-list { font-size: 14px; margin: 4px 0; } .threat { margin: 4px 0; }
+  .intel-grid { gap: 12px; margin: 0 auto; } .intel-item { padding: 5px 10px; margin: 5px 0; } .briefer .portrait-art { width: 70px; height: 70px; } .stamp { font-size: 15px; }
+  .debrief-card { gap: 12px; } .debrief .result-head { font-size: 24px !important; } .stat-row { font-size: 13px; padding: 3px 0; } .grade-stamp { font-size: clamp(54px, 22vh, 96px); } .debrief-card .btn { font-size: 13px; padding: 6px 10px; } .obj-res li { font-size: 13px; }
+  .pause .panel { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: min(560px, 94vw); } .pause .panel .kicker, .pause .panel h2 { grid-column: 1 / -1; margin: 0; }
+  .end-card { gap: 16px; } .end-card .portrait-art { max-width: 200px; } .end-text p { font-size: clamp(15px, 4vh, 22px); }
+  /* briefing */
+  .brief-info { width: min(300px, 38vw); top: 36px; } .brief-info .line { padding: 3px 0; font-size: 12px; } .brief-title { top: 8px; font-size: 11px; letter-spacing: 0.3em; }
+  .brief-log { bottom: 8px; min-width: 0; max-width: 60vw; font-size: 11px; padding: 4px 10px; } .brief-skip { bottom: 8px; } .brief .stamp { top: 54px; right: 14px; font-size: 14px; padding: 2px 8px; }
+  .map-legend { font-size: 10px; } .map-tools button { width: 30px; height: 30px; font-size: 16px; }
+}
+
+/* ------------------------------------------------------------------ narrow viewports (portrait phones) */
+@media (max-width: 700px) {
+  .screen { padding-top: 62px; } .screen.brief { padding: 0; }
+  .back-bar, .fs-btn { top: 10px; } .back-bar { right: calc(max(14px, env(safe-area-inset-right)) + 52px); }
+  .menu-screen { flex-direction: column; } .menu-col { width: 100%; } .menu-foot { position: static; margin-top: 12px; } .foot-pilot { display: inline; } .pilot-card { display: none; }
+  .split { grid-template-columns: 1fr; padding-top: 0; overflow: visible; } .map-wrap { height: 62vw; min-height: 240px; } .side-col { overflow: visible; }
+  .intel-grid, .debrief-card, .loadout-grid, .form { grid-template-columns: 1fr; } .debrief-card, .intel-grid { overflow: visible; }
+  .big-center { max-height: none !important; margin: 0 auto !important; justify-content: flex-start !important; } .scroll { overflow: visible !important; max-height: none !important; }
+  .brief-info { width: 62vw; top: 40px; } .brief-info .line { padding: 3px 0; font-size: 11px; } .brief-log { min-width: 0; max-width: 90vw; font-size: 11px; bottom: 56px; } .brief-title { font-size: 10px; letter-spacing: 0.2em; width: 80vw; }
+  .pause .panel { width: 94vw; } .grade-stamp { font-size: 90px; }
+}
+
+/* primary action stays reachable while a long screen scrolls */
+@media (max-height: 560px), (max-width: 700px) {
+  .row:has(> .btn.primary[data-act="launch"]), .row:has(> .btn.primary[data-act="to_briefing"]), .row:has(> .btn.primary[data-act="ff_go"]), .row:has(> .btn.primary[data-act="intel"]) {
+    position: sticky; bottom: 0; z-index: 2; padding: 8px 0 2px; background: linear-gradient(to top, rgba(6, 14, 20, 0.99) 70%, transparent); }
+}

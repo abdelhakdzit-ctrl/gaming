@@ -44,17 +44,17 @@ export class Screens {
   // ------------------------------------------------------------------ title + main menu
   s_title() {
     this.root.innerHTML = `<div class="screen title-screen dim" data-act="start"><div class="kicker">A FICTIONAL AIR-COMBAT CAMPAIGN</div><h1 class="title">Shadow Line<small>SKY OF ALGERIA</small></h1><div class="tagline">“When the radar lies, the pilot must decide.”</div><div class="press">PRESS ANY KEY OR CLICK TO BEGIN</div></div>`;
-    const go = () => { window.removeEventListener('keydown', go); this.app.audio.ensure(); this.app.audio.setAmbience('hangar'); this.go('menu'); };
+    const go = () => { window.removeEventListener('keydown', go); this.app.autoFullscreen(); this.app.audio.ensure(); this.app.audio.setAmbience('hangar'); this.go('menu'); };
     window.addEventListener('keydown', go, { once: true }); this.cleanup = () => window.removeEventListener('keydown', go);
   }
-  a_start() { this.app.audio.ensure(); this.app.audio.setAmbience('hangar'); this.go('menu'); }
+  a_start() { this.app.autoFullscreen(); this.app.audio.ensure(); this.app.audio.setAmbience('hangar'); this.go('menu'); }
   s_menu() {
     const d = Save.data, ri = rankInfo(d.xp), has = Save.has() && d.campaign.started;
     const items = [['continue', 'CONTINUE', 'متابعة', !has], ['new', 'NEW CAMPAIGN', 'حملة جديدة'], ['missions', 'MISSIONS', 'المهام'], ['aircraft', 'AIRCRAFT', 'الطائرات'], ['freeflight', 'FREE FLIGHT', 'طيران حر'], ['challenges', 'CHALLENGES', 'التحديات'], ['replay', 'REPLAY', 'إعادة'], ['settings', 'SETTINGS', 'الإعدادات'], ['extras', 'EXTRAS', 'إضافات']];
     this.root.innerHTML = `<div class="screen menu-screen dim"><div class="menu-col"><div class="brand"><div class="kicker">PROTOTYPE · VERTICAL SLICE</div><h1 class="title">Shadow Line<small>SKY OF ALGERIA</small></h1></div>
       ${items.map(([a, l, ar, dis]) => `<button class="btn ${a === 'continue' && !dis ? 'primary' : a === 'new' && !has ? 'primary' : ''}" data-act="menu_${a}" ${dis ? 'disabled' : ''}>${l}<span class="ar">${ar}</span></button>`).join('')}</div>
       <div class="pilot-card panel"><div class="kicker">PILOT</div><div style="font-size:22px;letter-spacing:.12em">SALIM BEN YOUNES</div><div class="mut mono">${ri.rank} · ${d.xp} XP · ${d.tokens} TOKENS</div><div class="xpbar"><i style="width:${Math.round(ri.progress * 100)}%"></i></div></div>
-      <div class="menu-foot">${has ? 'SAVE: ' + new Date(d.updated).toLocaleString() : 'NO SAVE FILE'} · ${Settings.s.difficulty}</div></div>`;
+      <div class="menu-foot"><span class="foot-pilot">${ri.rank} · ${d.xp} XP · ${d.tokens} TOKENS<br></span>${has ? 'SAVE: ' + new Date(d.updated).toLocaleString() : 'NO SAVE FILE'} · ${Settings.s.difficulty}</div></div>`;
   }
   a_menu_continue() { const next = MISSIONS.find((m) => missionStatus(m) === 'available' && m.playable) || MISSIONS.find((m) => missionStatus(m) === 'available') || MISSIONS[0]; this.go('missions', { selected: next.id }); }
   a_menu_new() {
@@ -227,7 +227,7 @@ export class Screens {
       controls: [['Sensitivity', slider('sensitivity', s.sensitivity, 0.4, 2.2, 0.05)], ['Invert Y', tog('tog_invertY', s.invertY)], ['Dead zone', slider('deadzone', s.deadzone, 0, 0.4, 0.01)], ['Mouse flight (M)', tog('tog_mouseFlight', s.mouseControl)], ['Touch controls', seg('set_touchControls', [['auto', 'AUTO'], ['on', 'ON'], ['off', 'OFF']], s.touchControls)], ['Left-handed touch layout', tog('tog_touchLeft', s.touchLeft)]],
       audio: [['Master volume', slider('master', s.master)], ['Radio volume', slider('radio', s.radio)], ['Effects volume', slider('effects', s.effects)], ['Music volume', slider('music', s.music)], ['Radio voice (TTS)', tog('tog_tts', s.tts)]],
       accessibility: [['Subtitles', tog('tog_subtitles', s.subtitles)], ['Subtitle size', seg('set_subtitleSize', [['small', 'S'], ['medium', 'M'], ['large', 'L'], ['xlarge', 'XL']], s.subtitleSize)], ['Subtitle language', seg('set_subtitleLang', [['en', 'ENGLISH'], ['fr', 'FRANÇAIS'], ['ar', 'العربية']], s.subtitleLang)], ['Bilingual (AR)', tog('tog_bilingual', s.bilingual)], ['Colour-blind preset', seg('set_colorblind', [['none', 'OFF'], ['protanopia', 'PROTAN'], ['deuteranopia', 'DEUTAN'], ['tritanopia', 'TRITAN']], s.colorblind)], ['Reduced motion', tog('tog_reducedMotion', s.reducedMotion)], ['Camera shake', tog('tog_cameraShake', s.cameraShake)]],
-      graphics: [['Quality', seg('set_quality', [['low', 'LOW'], ['medium', 'MEDIUM'], ['high', 'HIGH']], s.quality)], ['Dynamic resolution', tog('tog_dynamicRes', s.dynamicRes)], ['Show FPS', tog('tog_showFps', s.showFps)]]
+      graphics: [['Fullscreen', `<button class="btn small" data-act="fs_toggle">TOGGLE FULLSCREEN</button>`], ['Auto fullscreen (touch devices)', tog('tog_autoFullscreen', s.autoFullscreen)], ['Quality', seg('set_quality', [['low', 'LOW'], ['medium', 'MEDIUM'], ['high', 'HIGH']], s.quality)], ['Dynamic resolution', tog('tog_dynamicRes', s.dynamicRes)], ['Show FPS', tog('tog_showFps', s.showFps)]]
     }[tab];
     this.root.innerHTML = `<div class="screen ${from === 'pause' ? 'pause' : 'dim'}"><div class="back-bar"><button class="btn small" data-act="settings_back">◂ BACK</button></div><div class="big-center" style="margin:0;justify-content:center;max-width:900px"><div class="kicker">SETTINGS · الإعدادات</div>
       <div class="tabs">${seg('set_tab', [['gameplay', 'GAMEPLAY'], ['controls', 'CONTROLS'], ['audio', 'AUDIO'], ['accessibility', 'ACCESSIBILITY'], ['graphics', 'GRAPHICS']], tab)}</div>
@@ -237,6 +237,7 @@ export class Screens {
   a_set_tab(v) { this.go('settings', { tab: v, from: this.from }); }
   _set(key, v) { Settings.set(key, v); this.app.applySettings(key); this.go('settings', { tab: this.tab, from: this.from }); }
   a_set_difficulty(v) { this._set('difficulty', v); } a_set_flightMode(v) { this._set('flightMode', v); } a_set_subtitleSize(v) { this._set('subtitleSize', v); } a_set_subtitleLang(v) { this._set('subtitleLang', v); }
+  a_fs_toggle() { this.app.toggleFullscreen(); } a_tog_autoFullscreen() { this._set('autoFullscreen', !Settings.s.autoFullscreen); }
   a_set_touchControls(v) { this._set('touchControls', v); } a_tog_touchLeft() { this._set('touchLeft', !Settings.s.touchLeft); }
   a_set_colorblind(v) { this._set('colorblind', v); } a_set_quality(v) { this._set('quality', v); }
   a_tog_autoLevel() { this._set('autoLevel', !Settings.s.autoLevel); } a_tog_targetAssist() { this._set('targetAssist', !Settings.s.targetAssist); } a_tog_invertY() { this._set('invertY', !Settings.s.invertY); }
@@ -263,7 +264,7 @@ export class Screens {
   // ------------------------------------------------------------------ pause
   s_pause() {
     this.root.innerHTML = `<div class="screen pause"><div class="panel ui-block"><div class="kicker">PAUSED</div><h2>${esc(this.app.game?.mission.title || '')}</h2>
-      <button class="btn primary" data-act="resume">RESUME</button><button class="btn" data-act="restart">RESTART MISSION</button><button class="btn" data-act="pause_settings">SETTINGS</button><button class="btn" data-act="pause_controls">CONTROLS</button><button class="btn danger" data-act="abort">ABORT TO MENU</button></div></div>`;
+      <button class="btn primary" data-act="resume">RESUME</button><button class="btn" data-act="restart">RESTART MISSION</button><button class="btn" data-act="pause_settings">SETTINGS</button><button class="btn" data-act="pause_controls">CONTROLS</button><button class="btn" data-act="fs_toggle">FULLSCREEN</button><button class="btn danger" data-act="abort">ABORT TO MENU</button></div></div>`;
   }
   a_resume() { this.app.togglePause(); } a_restart() { this.app.restartMission(); } a_abort() { this.app.abortToMenu(); }
   a_pause_settings() { this.go('settings', { tab: 'gameplay', from: 'pause' }); }

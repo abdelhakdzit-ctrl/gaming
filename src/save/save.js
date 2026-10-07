@@ -4,7 +4,7 @@ const REPLAY_KEY = 'shadowline.replay.v1';
 
 export const DEFAULT_SETTINGS = {
   difficulty: 'PILOT', flightMode: 'NORMAL', assistLevel: 0.5, autoLevel: true, targetAssist: true,
-  sensitivity: 1, invertY: false, deadzone: 0.08, mouseControl: true, touchControls: 'auto', touchLeft: false,
+  sensitivity: 1, invertY: false, deadzone: 0.08, mouseControl: true, touchControls: 'auto', touchLeft: false, autoFullscreen: true,
   subtitles: true, subtitleSize: 'medium', subtitleLang: 'en', bilingual: false, colorblind: 'none', reducedMotion: false, cameraShake: true,
   master: 0.8, radio: 0.9, effects: 0.8, music: 0.5, tts: false,
   quality: 'high', dynamicRes: true, showFps: false
