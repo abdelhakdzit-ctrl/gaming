@@ -5,13 +5,16 @@ import { IS_TOUCH, STATE, rec } from './state.js';
 import { camera, charRoot, scene } from './scene.js';
 import { audio, playSample, sfxBus } from './audio.js';
 import { bones, rotateWorld, worldPos } from './skeleton.js';
-import { impactFX, muzzleFlashAt, radialTexture, tracerFX } from './fx.js';
+import { grenadeExplosionFX, impactFX, muzzleFlashAt, radialTexture, tracerFX } from './fx.js';
 import { ikFromJson, ikToJson } from './ik.js';
 import { charPos, charVelW, footRoll, gaitParams, gaitPose, mm, retargetFrame } from './locomotion.js';
 import { KA, M4, RIFLE_MUZZLE, RL, W, chainOf, dropped, playClick, poseHandFrom, setGunMatrix } from './weapons.js';
 import { AIM_SPLIT, playerCrouch, tmpM, tmpQ } from './character.js';
 import { TGROUP, endRound, game, hitMarker, hittables, playDing, popup, ray, tps } from './game.js';
 import { ANIM_T0 } from './main.js';
+import { Ragdoll } from './physics/ragdoll.js';
+import { difficultyFor, pickArchetype } from './ai/difficulty.js';
+import { addTrauma } from './gameplay/juice.js';
 
 // ======================================================================
 //  COMBAT  arena with cover + AI squad. Enemies are clones of the mannequin posed from snapshots of the
@@ -23,7 +26,8 @@ import { ANIM_T0 } from './main.js';
 // ======================================================================
 export const AI = { on: false, enemies: [], snaps: null, names: [], template: null, gunGeo: null, gunInHand: null, yaw0: 0, pitch0: 0, crouchH: 115,
   walkCycle: 165, runCycle: 276, strCycle: 100, hp: 100, lastHit: -9, wave: 1, toKill: 5, killed: 0, spawned: 0, kills: 0, heads: 0, spawnT: 0, breakT: 0,
-  lastSeen: 0, heardAt: -9, knownPos: V(), knownVel: V(), shooting: 0, chest: V(), head: V(), caps: [], diff: null, drops: [], src: [], flash: 0, hitFrom: null, hitT: -9 };
+  lastSeen: 0, heardAt: -9, knownPos: V(), knownVel: V(), shooting: 0, chest: V(), head: V(), caps: [], diff: null, drops: [], src: [], flash: 0, hitFrom: null, hitT: -9,
+  nades: [], spawnLog: [], seen: new Set(), campT: 0, nadeCd: 10, ragdoll: true };
 export const ARENA = { group: new THREE.Group(), covers: [], pts: [],
   spawns: [V(-1300, 0, 3700), V(0, 0, 3950), V(1300, 0, 3700), V(-1750, 0, 2500), V(1750, 0, 2500)] };
 ARENA.group.visible = false; scene.add(ARENA.group);
@@ -235,18 +239,33 @@ function setEnemyBadge(e, kind, dur = 1.6) {
 }
 const enemyMat = new THREE.MeshStandardMaterial({ color: 0x8b3a2f, roughness: 0.6, metalness: 0.05 });
 const enemyGunMat = new THREE.MeshStandardMaterial({ color: 0x2b2d31, roughness: 0.5, metalness: 0.6 });
+const ENEMY_MATS = { rifleman: enemyMat, rusher: new THREE.MeshStandardMaterial({ color: 0xb8741a, roughness: 0.6, metalness: 0.05 }),
+  marksman: new THREE.MeshStandardMaterial({ color: 0x35566f, roughness: 0.6, metalness: 0.05 }) };
+// Archetypes: gun = viewmodel scale, speed/hp multipliers, range = max effective fire distance, pref = preferred cover distance to the player
+const ARCH = {
+  rifleman: { gun: 1, speed: 1, hp: 1, range: 1e9, pref: 0, peekLim: [2, 3], react: 1 },
+  rusher: { gun: 0.78, speed: 1.3, hp: 0.85, range: 800, pref: 460, peekLim: [1, 1], react: 0.7 },
+  marksman: { gun: 1.14, speed: 0.9, hp: 0.7, range: 1e9, pref: 2450, peekLim: [1, 2], react: 1 } };
+const MAX_RAGDOLLS = IS_TOUCH ? 3 : 5, BLAST_R = 380, _gs = new THREE.Matrix4();
+const LASER_GEO = new THREE.CylinderGeometry(1.5, 1.5, 1, 6, 1, true).translate(0, 0.5, 0);
 const POOL = IS_TOUCH ? 6 : 7;
-let blobIM = null;
+let blobIM = null, glintTex = null;
 export function buildEnemyPool() {
   for (let i = 0; i < POOL; i++) {
-    const skin = SkeletonUtils.clone(AI.template), B = {};
-    skin.traverse(n => { if (n.isBone) B[n.name] = n; if (n.isMesh) { n.material = enemyMat; n.castShadow = false; } });
+    const skin = SkeletonUtils.clone(AI.template), B = {}, meshes = [];
+    skin.traverse(n => { if (n.isBone) B[n.name] = n; if (n.isMesh) { n.material = enemyMat; n.castShadow = false; meshes.push(n); } });
     const root = new THREE.Group(); root.add(skin); ARENA.group.add(root);
     const gun = new THREE.Mesh(AI.gunGeo, enemyGunMat); gun.matrixAutoUpdate = false; ARENA.group.add(gun);
     const badge = new THREE.Sprite(new THREE.SpriteMaterial({ map: AI_BADGES.hesitate, transparent: true, depthTest: false, depthWrite: false }));
     badge.scale.set(44, 18, 1); badge.renderOrder = 15; badge.visible = false; ARENA.group.add(badge);
+    const laser = new THREE.Mesh(LASER_GEO, new THREE.MeshBasicMaterial({ color: 0xff3a20, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+    laser.visible = false; laser.frustumCulled = false; laser.renderOrder = 14; ARENA.group.add(laser);
+    const glint = new THREE.Sprite(new THREE.SpriteMaterial({ map: glintTex ||= radialTexture([[0, 'rgba(255,255,255,1)'], [0.25, 'rgba(255,255,255,0.5)'], [1, 'rgba(255,255,255,0)']], 64),
+      color: 0xff6040, transparent: true, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending }));
+    glint.visible = false; glint.renderOrder = 16; ARENA.group.add(glint);
     root.visible = gun.visible = false;
-    AI.enemies.push({ root, B, bones: AI.names.map(n => B[n]), gun, badge, badgeKind: null, badgeT: 0,
+    AI.enemies.push({ root, B, meshes, rag: new Ragdoll(B, () => ARENA.covers), type: 'rifleman', cfg: ARCH.rifleman, laser, glint, lase: 0, lockPt: V(), stagger: 0, callAt: -9, spd: 1,
+      searchQueue: [], searchPause: 0, blockedT: 0, strafeT: 0, strafeDir: 1, maxHp: 100, throwT: 0, bones: AI.names.map(n => B[n]), gun, badge, badgeKind: null, badgeT: 0,
       pos: V(), lastKnown: V(), searchPos: V(), yaw: 0, moveYaw: 0, muzzle: V(), flinch: new Spring(3.5, 0.4), seed: i * 1.7,
       lookYaw: 0, lookPitch: 0, headTilt: 0, wantLookYaw: 0, wantLookPitch: 0, wantTilt: 0,
       alert: 1, searchCount: 0, patrolWait: 0, dur: 1.4, nextIntent: 'plan', role: i % 3 === 0 ? 'flanker' : i % 3 === 1 ? 'assault' : 'support',
@@ -258,12 +277,7 @@ export function buildEnemyPool() {
     new THREE.MeshBasicMaterial({ map: radialTexture([[0, 'rgba(0,0,0,0.5)'], [1, 'rgba(0,0,0,0)']], 64), transparent: true, depthWrite: false }), POOL);
   blobIM.count = 0; blobIM.frustumCulled = false; blobIM.renderOrder = 1; ARENA.group.add(blobIM);
 }
-function aiDifficulty() {
-  const w = AI.wave;
-  return { sigma: Math.max(0.015, 0.034 - 0.0028 * (w - 1)) * (IS_TOUCH ? 1.25 : 1), react: Math.max(0.3, 0.75 - 0.06 * (w - 1)) * (IS_TOUCH ? 1.2 : 1),
-    maxAlive: Math.min(2 + w, IS_TOUCH ? 4 : 5), shooters: w < 3 ? 2 : 3, toKill: 3 + 2 * w,
-    stagger: Math.max(0.25, 0.95 - 0.07 * (w - 1)), missShots: w < 3 ? 3 : w < 6 ? 2 : 1 };
-}
+function aiDifficulty() { return difficultyFor(AI.wave, IS_TOUCH); }
 function banner(text) {
   const b = document.getElementById('banner'); b.textContent = text; b.classList.add('on');
   clearTimeout(banner.t); banner.t = setTimeout(() => b.classList.remove('on'), 1600);
@@ -274,7 +288,8 @@ export function startAI() {
   AI.drops.length = 0;
   for (const p of ARENA.pts) p.owner = null;
   Object.assign(AI, { on: true, hp: 100, lastHit: -9, wave: 1, killed: 0, spawned: 0, kills: 0, heads: 0, spawnT: 1.0, breakT: 0,
-    lastSeen: STATE.simTime - 3.5, heardAt: -9, flash: 0, hitT: -9, tokenAt: 0, roleT: 0, bb: null });
+    lastSeen: STATE.simTime - 3.5, heardAt: -9, flash: 0, hitT: -9, tokenAt: 0, roleT: 0, bb: null, campT: 0, nadeCd: 10, seen: new Set(), spawnLog: [] });
+  clearNades();
   AI.knownPos.copy(charPos); AI.knownVel.set(0, 0, 0);
   AI.diff = aiDifficulty(); AI.toKill = AI.diff.toKill;
   ARENA.group.visible = true;
@@ -284,12 +299,12 @@ export function stopAI() {
   AI.on = false; ARENA.group.visible = false;
   for (const e of AI.enemies) despawn(e);
   for (const d of AI.drops) scene.remove(d.m);
-  AI.drops.length = 0;
+  AI.drops.length = 0; clearNades();
 }
 function despawn(e) {
   if (e.cp) e.cp.owner = null;
   Object.assign(e, { active: false, alive: false, state: 'off', cp: null, badgeT: 0 });
-  e.root.visible = e.gun.visible = false;
+  e.root.visible = e.gun.visible = false; e.root.position.y = 0; e.rag.on = false; e.laser.visible = e.glint.visible = false; e.lase = 0;
   if (e.badge) e.badge.visible = false;
 }
 function playerReloading() { return RL.on || (KA.on && KA.kind === 'reload'); }
@@ -301,13 +316,13 @@ function tokenOk(e) {
 }
 // Squad roles on a shared blackboard: one flanker per ~3 enemies, one suppressor, the rest anchor. Sticky to avoid flip-flopping.
 function assignRoles() {
-  const live = AI.enemies.filter(e => e.alive && e.active && e.alert >= 0.85);
+  const live = AI.enemies.filter(e => e.alive && e.active && e.alert >= 0.85 && e.type === 'rifleman');
   const P = AI.knownPos;
   AI.bb = { n: live.length, seen: AI.lastSeen, heard: AI.heardAt, reloading: playerReloading(), hurt: AI.hp < 50 };
   if (!live.length) return;
-  const sc = (e, st) => (e.role === st ? 1.4 : 0) + (e.hp >= 60 ? 0.8 : -1) + (e.ammo > 8 ? 0.4 : 0) + Math.min(e.pos.distanceTo(P), 2400) / 2400 + (e.seed % 1) * 0.3;
+  const sc = (e, st) => (e.role === st ? 1.4 : 0) + (e.hp >= 0.6 * e.maxHp ? 0.8 : -1) + (e.ammo > 8 ? 0.4 : 0) + Math.min(e.pos.distanceTo(P), 2400) / 2400 + (e.seed % 1) * 0.3;
   const used = new Set();
-  const nFl = live.length >= 5 ? 2 : live.length >= 2 ? 1 : 0;
+  const nFl = AI.diff.flank < 0.12 ? 0 : live.length >= 5 ? 2 : live.length >= 2 ? 1 : 0;
   for (let i = 0; i < nFl; i++) {
     let b = null, bs = -Infinity;
     for (const e of live) if (!used.has(e)) { const v = sc(e, 'flanker'); if (v > bs) { bs = v; b = e; } }
