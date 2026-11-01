@@ -35,6 +35,7 @@ Promise.all([fbx.loadAsync('model/Mannequin.FBX'), fbx.loadAsync('anim/MF_Pistol
     if (n.isBone) bones[n.name] = n;
     if (n.isMesh) {
       n.castShadow = true; n.receiveShadow = true;
+      n.frustumCulled = false;   // skinned bounds go stale when bones travel (ladder climb) and the mesh would pop out of view
       n.material = new THREE.MeshStandardMaterial({ color: 0xc9ccd2, roughness: 0.45, metalness: 0.05 });
     }
   });

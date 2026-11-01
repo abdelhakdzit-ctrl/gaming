@@ -73,6 +73,8 @@
   #tSwap { right: calc(124px + env(safe-area-inset-right)); bottom: 124px; width: 58px; height: 58px; }
   #tRun { left: calc(26px + env(safe-area-inset-left)); bottom: 180px; width: 54px; height: 54px; }
   #tCrouch { left: calc(90px + env(safe-area-inset-left)); bottom: 180px; width: 54px; height: 54px; }
+  #tLeanL { left: calc(154px + env(safe-area-inset-left)); bottom: 180px; width: 54px; height: 54px; }
+  #tLeanR { left: calc(218px + env(safe-area-inset-left)); bottom: 180px; width: 54px; height: 54px; }
   #tPause { right: calc(14px + env(safe-area-inset-right)); top: 12px; width: 44px; height: 44px; font-size: 16px; }
   #tFull { right: calc(66px + env(safe-area-inset-right)); top: 12px; width: 44px; height: 44px; font-size: 16px; }
   #ammo { position: absolute; right: 24px; bottom: 16px; font: 700 26px system-ui; color: #fff; text-shadow: 0 1px 3px #000; }
