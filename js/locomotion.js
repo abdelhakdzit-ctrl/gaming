@@ -772,7 +772,10 @@ export function stepLocomotion(dt) {
 
   // Smooth exponential + rate-bounded velocity filter: zero corner jerk when starting, stopping, or curving across 360°
   const desSpd = Math.hypot(des[0], des[1]);
-  const resp = desSpd > mm.speed ? 8.5 : (desSpd < 5 ? 10.5 : 9.5);
+  // Start-up anticipation: the first ~0.15 s of a push-off ramps in with a smootherstep so the body commits before the feet go.
+  mm.moveT = desSpd > 5 ? Math.min(1, (mm.moveT || 0) + dt / 0.18) : 0;
+  const ramp = mm.speed < 60 ? lerp(0.5, 1, mm.moveT * mm.moveT * (3 - 2 * mm.moveT)) : 1;
+  const resp = (desSpd > mm.speed ? 8.5 * ramp : (desSpd < 5 ? 10.5 : 9.5));
   const kv = 1 - Math.exp(-resp * dt);
   const maxStep = (desSpd > mm.speed ? 820 : 1080) * dt;
   const ex = (des[0] - mm.vel[0]) * kv, ez = (des[1] - mm.vel[1]) * kv, el = Math.hypot(ex, ez);
