@@ -6,11 +6,11 @@ import { updateFX } from './fx.js';
 import { ikDbg, ikEdit, ikState, setIKMode, toggleIKEdit } from './ik.js';
 import { RLT, rlClearKeys, rlDeleteKey, rlJump, rlSetKey, rlSetU, startRlTimeline, stopRlTimeline } from './reload-timeline.js';
 import { charPos, keys, mm, toWorld, toggleLadder, turnOff } from './locomotion.js';
-import { RL, W, fire, fromGun, gunState, nextWeapon, pressFire, pullTrigger, releaseFire, startKarAction, startReload, switchWeapon } from './weapons.js';
+import { KA, RL, W, fire, fromGun, gunState, nextWeapon, pressFire, pullTrigger, releaseFire, startKarAction, startReload, switchWeapon } from './weapons.js';
 import { aim, isAiming, lastPlaced, placeCharacter, playerAim, playerCrouch, setAimMode, toggleAimMode, toggleCrouch, updateCharacter } from './character.js';
 import { motionPreview, previewMotionSelection, renderMotionFrame, stopMotionPreview } from './motion-studio.js';
 import { updateAI } from './ai.js';
-import { cycleAimStage, enterGame, game, pauseGame, setAimStage, startRound, targets, tps, updateGame, updateGameCamera, updateTargets } from './game.js';
+import { cycleAimStage, enterGame, game, pauseGame, queueWeapon, setAimStage, startRound, swapShoulder, targets, tps, updateGame, updateGameCamera, updateTargets } from './game.js';
 import { capsuleMeshes } from './main.js';
 
 // ======================================================================
@@ -188,11 +188,9 @@ addEventListener('keydown', e => {
     }
   }
   if (e.code.startsWith('Arrow')) e.preventDefault();
-  if (e.code === 'Digit1') switchWeapon('pistol');
-  if (e.code === 'Digit2') switchWeapon('rifle');
-  if (e.code === 'Digit3') switchWeapon('shotgun');
-  if (e.code === 'Digit4') switchWeapon('kar');
-  if (e.code === 'Digit5') switchWeapon('rpg7');
+  const pick = { Digit1: 'pistol', Digit2: 'rifle', Digit3: 'shotgun', Digit4: 'kar', Digit5: 'rpg7' }[e.code];
+  if (pick) { if (game.active && (RL.on || KA.on)) queueWeapon(pick); else switchWeapon(pick); }   // mid-reload: switch as soon as it finishes
+  if (e.code === 'KeyQ' && game.active && !e.repeat) swapShoulder();
   if (e.code === 'KeyC') toggleCrouch();
   if (e.code === 'KeyV' && !game.active) toggleAimMode();
   if (e.code === 'KeyF') { setAimStage(0); toggleLadder(); }
