@@ -59,6 +59,7 @@ CONTROLS
 - Space / Fire: shoot
 - R: reload
 - 1 / 2 / 3: switch weapon
+- Q: swap camera shoulder (in game)
 - Esc: pause game
 
 TROUBLESHOOTING
