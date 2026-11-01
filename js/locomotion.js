@@ -606,6 +606,7 @@ export function captureIdle(aimPose) {
 //  starts a transition that is absorbed by inertialization (critically-damped offset decay),
 //  so cuts are invisible. Playback is time-warped to the real speed to avoid foot sliding.
 // ======================================================================
+const TURN_START = 60 * DEG, TURN_END = 6 * DEG, STEP_T = 0.3, STEP_LIFT = 9;
 const WALK_SPEED = 140, RUN_SPEED = 400, MM_SWITCH_MARGIN = 0.22, INERT_W = 11.5;
 const FW = [0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.4, 0.4, 3, 3, 1.5, 1.5, 1.5, 1.5, 1, 1];
 export const mm = { clips: [], db: null, clip: 0, phase: 0, rate: 1, vel: [0, 0], gaitVel: [0, 0], lastDir: [0, 1], speed: 0,
@@ -748,7 +749,22 @@ export function stepLocomotion(dt) {
   const moveFade = 1 - Math.max(sstep(15, 85, mm.speed), m > 0.01 ? 0.92 : 0);
   const targetAimYawOff = (AI.yaw0 || 0) * W.blend * playerAim.w * moveFade;
   mm.aimYawOff = lerp(mm.aimYawOff || 0, targetAimYawOff, 1 - Math.exp(-9 * dt));
-  const dTurn = game.active ? angWrap(tps.yaw - mm.aimYawOff - STATE.charYaw) * (1 - Math.exp(-12 * dt)) : inp.turn * dt;
+  let dTurn;
+  if (game.active) {
+    const err = angWrap(tps.yaw - mm.aimYawOff - STATE.charYaw), ts = mm.ts ||= { on: false, t: 0, sw: -1, u: 0, from: 0, yaw: [0, 0] };
+    const standing = m < 0.01 && mm.speed < 12 && !LADDER.active;
+    if (standing && !ts.on && Math.abs(err) > TURN_START) ts.on = true;
+    if (!standing || Math.abs(err) < TURN_END) ts.on = false;
+    if (ts.on) {
+      // Eased stepped turn: ramp in, speed proportional to remaining angle, capped.
+      ts.t = Math.min(1, ts.t + dt / 0.18);
+      const ramp = ts.t * ts.t * (3 - 2 * ts.t), rate = clamp(Math.abs(err) * 6, 0.9, 4.2) * ramp;
+      dTurn = Math.sign(err) * Math.min(Math.abs(err), rate * dt);
+    } else {
+      ts.t = 0;
+      dTurn = err * (1 - Math.exp(-(standing ? 7 : 12) * dt));
+    }
+  } else dTurn = inp.turn * dt;
   STATE.charYaw += dTurn;
 
   let des = [0, 0];
@@ -772,7 +788,10 @@ export function stepLocomotion(dt) {
 
   // Smooth exponential + rate-bounded velocity filter: zero corner jerk when starting, stopping, or curving across 360°
   const desSpd = Math.hypot(des[0], des[1]);
-  const resp = desSpd > mm.speed ? 8.5 : (desSpd < 5 ? 10.5 : 9.5);
+  // Start-up anticipation: the first ~0.15 s of a push-off ramps in with a smootherstep so the body commits before the feet go.
+  mm.moveT = desSpd > 5 ? Math.min(1, (mm.moveT || 0) + dt / 0.18) : 0;
+  const ramp = mm.speed < 60 ? lerp(0.5, 1, mm.moveT * mm.moveT * (3 - 2 * mm.moveT)) : 1;
+  const resp = (desSpd > mm.speed ? 8.5 * ramp : (desSpd < 5 ? 10.5 : 9.5));
   const kv = 1 - Math.exp(-resp * dt);
   const maxStep = (desSpd > mm.speed ? 820 : 1080) * dt;
   const ex = (des[0] - mm.vel[0]) * kv, ez = (des[1] - mm.vel[1]) * kv, el = Math.hypot(ex, ez);
@@ -831,13 +850,34 @@ export function stepLocomotion(dt) {
   }
   const base = evalContinuousGait(mm.gaitVel[0], mm.gaitVel[1], mm.phase);
   for (let i = 0; i < NP; i++) mm.out[i] = base[i] + mm.inertX[i];
+  const ts = mm.ts ||= { on: false, t: 0, sw: -1, u: 0, from: 0, yaw: [0, 0] };
+  // Turn-in-place shuffle: when a planted foot has been dragged far enough by the body turn, step it back under the body.
+  if (ts.on && ts.sw < 0) {
+    const k = Math.hypot(turnOff[0][0], turnOff[0][1]) >= Math.hypot(turnOff[1][0], turnOff[1][1]) ? 0 : 1;
+    if (Math.hypot(turnOff[k][0], turnOff[k][1]) > 9 || Math.abs(ts.yaw[k]) > 28 * DEG) {
+      ts.sw = k; ts.u = 0; ts.from = [turnOff[k][0], turnOff[k][1], ts.yaw[k]];
+    }
+  }
+  if (ts.sw >= 0) {
+    ts.u += dt / STEP_T;
+    if (ts.u >= 1) { turnOff[ts.sw][0] = turnOff[ts.sw][1] = 0; ts.yaw[ts.sw] = 0; ts.sw = -1; }
+  }
   [5, 10].forEach((o, k) => {
-    const to = turnOff[k], planted = mm.out[o + 1] < STATE.ANKLE_H + 1.2 && Math.hypot(to[0], to[1]) < 22;
-    if (planted && Math.abs(dTurn) > 1e-6) {
-      const px = mm.out[o] + to[0], pz = mm.out[o + 2] + to[1], ct = Math.cos(dTurn), st = Math.sin(dTurn);
-      to[0] += (px * ct - pz * st) - px; to[1] += (px * st + pz * ct) - pz;
-    } else if (!planted) { const d = Math.exp(-12 * dt); to[0] *= d; to[1] *= d; }
-    mm.out[o] += to[0]; mm.out[o + 2] += to[1];
+    const to = turnOff[k], swing = ts.sw === k;
+    if (swing) {
+      const e = ts.u * ts.u * (3 - 2 * ts.u), r = 1 - e;
+      to[0] = ts.from[0] * r; to[1] = ts.from[1] * r; ts.yaw[k] = ts.from[2] * r;
+      mm.out[o + 1] += STEP_LIFT * Math.sin(Math.PI * ts.u) ** 1.5;
+    } else {
+      const planted = mm.out[o + 1] < STATE.ANKLE_H + 1.2 && Math.hypot(to[0], to[1]) < 22;
+      if (planted && Math.abs(dTurn) > 1e-6) {
+        const px = mm.out[o] + to[0], pz = mm.out[o + 2] + to[1], ct = Math.cos(dTurn), st = Math.sin(dTurn);
+        to[0] += (px * ct - pz * st) - px; to[1] += (px * st + pz * ct) - pz;
+        ts.yaw[k] = clamp(ts.yaw[k] - dTurn, -1.2, 1.2);
+      } else if (!planted) { const d = Math.exp(-12 * dt); to[0] *= d; to[1] *= d; ts.yaw[k] *= d; }
+      else if (!ts.on) ts.yaw[k] *= Math.exp(-6 * dt);
+    }
+    mm.out[o] += to[0]; mm.out[o + 2] += to[1]; mm.out[o + 4] += ts.yaw[k] / DEG;
   });
   for (const o of [5, 10]) {
     const liftInert = Math.hypot(mm.inertX[o], mm.inertX[o + 2]);
