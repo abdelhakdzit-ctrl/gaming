@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { DEG, V, angWrap, clamp, ease, lerp, sstep } from './math.js';
-import { STATE, rec } from './state.js';
+import { LEAN, STATE, rec } from './state.js';
 import { scene } from './scene.js';
 import { STANCE, bones, restWorldPos, restWorldQ, rt, setWorldQuat, twoBoneIK, worldPos, worldQuat } from './skeleton.js';
 import { GAIT_HIP, HEEL_BACK, ikBase, ikState, solveLegs, userIK } from './ik.js';
@@ -778,7 +778,7 @@ export function stepLocomotion(dt) {
     const runSp = lerp(215, RUN_SPEED, sstep(-0.15, 0.72, iz));
     let sp = lerp(walkSp, runSp, runW);
     sp = lerp(sp, Math.min(sp, lerp(118, 175, runW)), sstep(-0.2, -0.55, iz));   // smooth backpedal speed cap
-    sp *= inp.mag ?? 1;
+    sp *= (inp.mag ?? 1) * (1 - 0.4 * Math.abs(LEAN.w));
     // Rotate camera-relative input into character-local space so W/A/S/D always moves straight along tps.yaw
     const lookOff = game.active ? angWrap(tps.yaw - STATE.charYaw) : 0;
     const cl = Math.cos(lookOff), sl = Math.sin(lookOff);
