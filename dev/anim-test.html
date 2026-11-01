@@ -1,0 +1,28 @@
+<!doctype html><meta charset=utf-8><body style="margin:0;background:#222">
+<script type="importmap">{"imports":{"three":"../vendor/three/build/three.module.js","three/addons/":"../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { Assets } from '../src/character/Assets.js';
+import { AnimController } from '../src/character/AnimController.js';
+import * as SU from 'three/addons/utils/SkeletonUtils.js';
+const r=new THREE.WebGLRenderer({antialias:true});r.setSize(innerWidth,innerHeight);document.body.append(r.domElement);
+const s=new THREE.Scene();s.background=new THREE.Color(0x445566);s.add(new THREE.HemisphereLight(0xffffff,0x444444,2),new THREE.GridHelper(10,20));
+const d=new THREE.DirectionalLight(0xffffff,2);d.position.set(3,5,4);s.add(d);
+const cam=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,.1,100);
+const q=new URLSearchParams(location.search);
+const A=new Assets();window.A=A;
+const t0=performance.now();
+await A.init();
+console.log('loaded',(performance.now()-t0)|0,'ms');
+const g=new THREE.Group();const m=SU.clone(A.template);m.scale.setScalar(0.01);g.add(m);s.add(g);
+m.traverse(o=>{if(o.isMesh)o.material=new THREE.MeshStandardMaterial({color:0x8899aa})});
+const anim=new AnimController(g,A);window.anim=anim;
+const set=q.get('set')||'stand', gait=q.get('gait')||'run';
+anim.setLocomotion({set,gait,moving:q.get('idle')===null,speed:+(q.get('speed')||4),dx:+(q.get('dx')||0),dz:+(q.get('dz')||1)});
+if(q.get('once')){setTimeout(()=>anim.playOnce(q.get('once')),300)}
+const ang=+(q.get('ang')||0.6);
+cam.position.set(Math.sin(ang)*4.2,1.3,Math.cos(ang)*4.2);cam.lookAt(0,0.9,0);
+let last=performance.now(),T=+(q.get('t')||1.2);
+// step deterministic for screenshots
+let n=0;function frame(){const dt=1/30;anim.update(dt);g.position.y=anim.liftY||0;r.render(s,cam);n++;if(n<T*30)requestAnimationFrame(frame);else{window.DONE=1}}frame();
+</script>
