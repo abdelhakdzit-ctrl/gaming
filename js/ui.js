@@ -1,5 +1,5 @@
 import { V, clamp, lerp } from './math.js';
-import { IS_TOUCH, STATE, params } from './state.js';
+import { IS_TOUCH, LEAN, STATE, params } from './state.js';
 import { camera, controls, renderer } from './scene.js';
 import { bones, worldPos } from './skeleton.js';
 import { updateFX } from './fx.js';
@@ -45,6 +45,8 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && gam
   btn('tSwap', () => nextWeapon());
   btn('tRun', () => { touch.run = !touch.run; document.getElementById('tRun').classList.toggle('on', touch.run); });
   btn('tCrouch', () => { toggleCrouch(); document.getElementById('tCrouch').classList.toggle('on', playerCrouch.on); });
+  btn('tLeanL', () => { LEAN.touch = -1; }, () => { if (LEAN.touch < 0) LEAN.touch = 0; });
+  btn('tLeanR', () => { LEAN.touch = 1; }, () => { if (LEAN.touch > 0) LEAN.touch = 0; });
   btn('tLadder', () => { setAimStage(0); toggleLadder(); });
   btn('tPause', () => pauseGame());
   document.getElementById('tFull').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); document.fullscreenElement ? leaveFullscreen() : goFullscreen(); });
@@ -190,7 +192,7 @@ addEventListener('keydown', e => {
   if (e.code.startsWith('Arrow')) e.preventDefault();
   const pick = { Digit1: 'pistol', Digit2: 'rifle', Digit3: 'shotgun', Digit4: 'kar', Digit5: 'rpg7' }[e.code];
   if (pick) { if (game.active && (RL.on || KA.on)) queueWeapon(pick); else switchWeapon(pick); }   // mid-reload: switch as soon as it finishes
-  if (e.code === 'KeyQ' && game.active && !e.repeat) swapShoulder();
+  if (e.code === 'KeyX' && game.active && !e.repeat) swapShoulder();
   if (e.code === 'KeyC') toggleCrouch();
   if (e.code === 'KeyV' && !game.active) toggleAimMode();
   if (e.code === 'KeyF') { setAimStage(0); toggleLadder(); }
