@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { DEG, Spring, V, clamp, lerp, rayBox } from './math.js';
+import { DEG, Spring, V, clamp, lerp, rayBox, sstep } from './math.js';
 import { IS_TOUCH, STATE, rec } from './state.js';
-import { camera, controls, renderer, scene } from './scene.js';
-import { audio } from './audio.js';
+import { camera, controls, renderer, scene, setAtmosphere } from './scene.js';
+import { audio, playHit, setMuffle, sfxBus, startAmbient, stepHeartbeat, stopAmbient } from './audio.js';
 import { burst, impactFX, tracerFX } from './fx.js';
 import { ikEdit, toggleIKEdit } from './ik.js';
 import { RLT, stopRlTimeline } from './reload-timeline.js';
@@ -11,6 +11,8 @@ import { KA, RL, W, box, fromGun, gunState, pressFire, releaseFire } from './wea
 import { aim, isAiming, lastPlaced, playerAim, playerCrouch, tmpM, tmpQ } from './character.js';
 import { motionPreview, stopMotionPreview } from './motion-studio.js';
 import { AI, ARENA, castWorld, onEnemyHit, startAI, stopAI, suppressNear } from './ai.js';
+import { Damp, feel, shake, stepBloom, stepShake } from './gameplay/juice.js';
+import { addDamageIndicator, clearIndicators, onKill, onPlayerDamaged, resetDirector, summaryHTML, updateDirector, updateIndicators } from './gameplay/director.js';
 import { goFullscreen, leaveFullscreen, setView, touch } from './ui.js';
 
 // ======================================================================
@@ -142,13 +144,21 @@ function onTargetHit(hit, d) {
   hitMarker(head);
   popup((head ? 'HEAD +' : '+') + pts, hit.point);
 }
-export function hitMarker(head) {
-  const m = document.getElementById('hm'); m.className = 'on' + (head ? ' head' : '');
-  clearTimeout(hitMarker.t); hitMarker.t = setTimeout(() => (m.className = head ? 'head' : ''), 90);
+export function hitMarker(head, kill = false) {
+  const m = document.getElementById('hm'); m.className = ''; void m.offsetWidth;   // restart the pop animation on every hit
+  m.className = 'on' + (head ? ' head' : '') + (kill ? ' kill' : '');
+  if (game.mode === 'ai' && !head && !kill) playHit('hit');
+  clearTimeout(hitMarker.t); hitMarker.t = setTimeout(() => (m.className = head ? 'head' : ''), kill ? 220 : 110);
 }
 export function popup(text, p) {
+  const isKill = game.mode === 'ai' && /^(HEADSHOT|KILL|BLAST KILL)/.test(text);
+  if (isKill) {
+    const head = text[0] === 'H', mult = onKill(p, head, game);
+    hitMarker(head, true);
+    if (mult > 1) text += `  x${mult}`;
+  }
   const s = p.clone().project(camera); if (s.z > 1) return;
-  const el = document.createElement('div'); el.className = 'pop'; el.textContent = text;
+  const el = document.createElement('div'); el.className = 'pop' + (isKill ? (text[0] === 'H' ? ' head' : ' kill') : ''); el.textContent = text;
   el.style.left = ((s.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - s.y) / 2 * innerHeight) + 'px';
   document.body.appendChild(el);
   requestAnimationFrame(() => { el.style.transform = 'translateY(-40px)'; el.style.opacity = '0'; });
@@ -161,7 +171,7 @@ export function playDing(delay, f) {
   for (const [mul, gain, dec] of [[1, 0.25, 0.9], [2.76, 0.12, 0.5], [5.4, 0.05, 0.25]]) {
     const o = ac.createOscillator(), g = ac.createGain();
     o.frequency.value = f * mul; g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0005, t + dec);
-    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dec + 0.05);
+    o.connect(g).connect(sfxBus); o.start(t); o.stop(t + dec + 0.05);
   }
 }
 
