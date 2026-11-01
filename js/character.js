@@ -1,0 +1,345 @@
+import * as THREE from 'three';
+import { DEG, Spring, V, angWrap, clamp, lerp, sstep } from './math.js';
+import { STATE, rec } from './state.js';
+import { camera, charRoot, controls, grid, ground, sun } from './scene.js';
+import { bones, driveHand, handRel, restWorldQ, rotateWorld, rt, storeHandRel, worldPos, worldQuat } from './skeleton.js';
+import { ejectShell } from './fx.js';
+import { _tq, applyUserHands, ikBase, ikDbg, ikEdit, ikState, ikSyncContext, syncIKHandles, userIK } from './ik.js';
+import { RLT, ikTimelineApply, updateRlTimeline } from './reload-timeline.js';
+import { LADDER, charPos, mm, retargetFrame, stepLocomotion, updateLadder } from './locomotion.js';
+import { CLIP_GUIDE, KA, M4, RL, SG_PUMP, TRIGGER_PULL, W, chainOf, fingerFix, fromGun, gunState, karHandR, lerpM, poseHandFrom, reloadGunPose, reloadLeftHand, setGunMatrix, slideOffset, stepKar, stepReload, stepShotgunPump, stepSwap, updateKarParts, weaponTrigger } from './weapons.js';
+import { game, tps } from './game.js';
+import { ANIM_T0 } from './main.js';
+
+// Player Crouch State
+export const playerCrouch = { on: false, w: 0 };
+export function toggleCrouch(force) {
+  playerCrouch.on = force !== undefined ? force : !playerCrouch.on;
+  const status = document.getElementById('status');
+  if (status) status.textContent = playerCrouch.on ? 'Crouch stance active (C)' : 'Standing stance active (C)';
+}
+
+// Player Aim / Normal Stance State
+// Default is ALWAYS Normal Idle / Carry (standing, walking, running with Shift).
+// Aiming (ADS) activates ONLY while holding Right-Click (RMB) — or when explicitly toggled via Aiming button in Viewer/IK edit.
+export const playerAim = { on: false, rmb: false, w: 0, fireHoldT: 0 };
+export function isAiming() {
+  if (typeof game !== 'undefined' && game?.active) return !!(tps?.zoom || STATE.testInput);
+  return !!(playerAim.on || playerAim.rmb);
+}
+export function setAimMode(on) {
+  playerAim.on = !!on;
+  if (!on) { playerAim.rmb = false; playerAim.fireHoldT = 0; }
+  document.getElementById('aimMode')?.classList.toggle('active', isAiming());
+  document.getElementById('normalMode')?.classList.toggle('active', !isAiming());
+  const status = document.getElementById('status');
+  if (status && !LADDER.active) {
+    status.textContent = playerAim.on ? 'Aiming ADS locked on (Key V) — Release or click Normal Idle to return to RMB-only aim' : 'Normal Idle stance — Hold Right-Click (RMB) to Aim';
+  }
+}
+export function toggleAimMode() { setAimMode(!playerAim.on); }
+
+// ======================================================================
+//  BODY LAYER  spring-driven secondary motion: the torso bends toward the working hand, knees flex,
+//  weight shifts, the head looks at the job; slow sway so the idle never freezes.
+// ======================================================================
+export const BF = { yaw: new Spring(1.6, 0.5), pitch: new Spring(1.8, 0.45), roll: new Spring(1.5, 0.5), drop: new Spring(1.8, 0.55),
+  side: new Spring(1.4, 0.6), hy: new Spring(2.6, 0.62), hp: new Spring(2.6, 0.62), look: V(), lookW: 0 };
+function stepBodyFX(dt) {
+  const kr = KA.on && KA.kind === 'reload', busy = RL.on ? RL.env : KA.on ? KA.env * (kr ? 1 : 0.4) : 0;
+  const right = KA.on, hand = right ? bones.hand_r : bones.hand_l, sh = right ? bones.upperarm_r : bones.upperarm_l;
+  // How far below the shoulder the working hand is (from the last frame): reaching low bends the body.
+  const low = busy > 0 ? clamp((worldPos(sh).y - worldPos(hand).y - 22) / 40, 0, 1) * busy : 0;
+  const side = right ? 1 : -1;
+  BF.pitch.target = 7 * busy + 12 * low;
+  BF.roll.target = side * 8 * low;
+  BF.yaw.target = (right ? -5 : 7) * busy;
+  BF.drop.target = 2.5 * busy + 5 * low;
+  BF.side.target = -side * 3 * low;
+  BF.yaw.target += 0.7 * Math.sin(STATE.simTime * 0.37); BF.roll.target += 0.5 * Math.sin(STATE.simTime * 0.23 + 1); BF.pitch.target += 0.4 * Math.sin(STATE.simTime * 0.31 + 2);
+  BF.lookW = RL.on ? 0.85 * RL.env : kr ? 0.8 * KA.env : 0;
+  if (BF.lookW > 0) BF.look.copy(fromGun(RL.on ? (W.cur.magWell || V()) : CLIP_GUIDE));
+  for (const k of ['yaw', 'pitch', 'roll', 'drop', 'side']) BF[k].step(dt);
+}
+function applyBodyFX() {
+  const Y = V(0, 1, 0);
+  [['spine_01', 0.25], ['spine_02', 0.35], ['spine_03', 0.4]].forEach(([n, k]) => {
+    rotateWorld(bones[n], Y, BF.yaw.x * k * DEG); rotateWorld(bones[n], X, BF.pitch.x * k * DEG); rotateWorld(bones[n], Z, BF.roll.x * k * DEG);
+  });
+}
+function applyHeadLook(dt) {
+  let ty = 0, tp = 0;
+  if (BF.lookW > 0) {
+    const f = V(0, 0, 1).applyQuaternion(worldQuat(bones.head).multiply(restWorldQ.head.clone().invert()));
+    const d = BF.look.clone().sub(worldPos(bones.head)).normalize();
+    ty = angWrap(Math.atan2(d.x, d.z) - Math.atan2(f.x, f.z)) * BF.lookW;
+    tp = (Math.asin(clamp(f.y, -1, 1)) - Math.asin(clamp(d.y, -1, 1))) * BF.lookW;
+  }
+  BF.hy.target = clamp(ty, -0.9, 0.9); BF.hp.target = clamp(tp, -0.3, 0.9);
+  BF.hy.step(dt); BF.hp.step(dt);
+  const f = V(0, 0, 1).applyQuaternion(worldQuat(bones.head).multiply(restWorldQ.head.clone().invert())), ax = V(f.z, 0, -f.x).normalize();
+  for (const [n, k] of [['neck_01', 0.4], ['head', 0.6]]) { rotateWorld(bones[n], V(0, 1, 0), BF.hy.x * k); rotateWorld(bones[n], ax, BF.hp.x * k); }
+}
+
+const X = V(1, 0, 0), Z = V(0, 0, 1);
+export const recM = new THREE.Matrix4(), tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion();
+export const lastPlaced = V(0, 0, 0);
+export function placeCharacter() {
+  charRoot.position.copy(charPos); charRoot.rotation.set(0, STATE.charYaw, 0); charRoot.updateMatrixWorld(true);
+  const trackPos = LADDER.active ? LADDER.worldTrackPos : charPos;
+  const d = trackPos.clone().sub(lastPlaced); lastPlaced.copy(trackPos);
+  if (!game.active) { camera.position.add(d); controls.target.add(d); }  // orbit camera follows
+  ground.position.set(trackPos.x, 0, trackPos.z);
+  grid.position.set(Math.round(trackPos.x / 20) * 20, 0.05, Math.round(trackPos.z / 20) * 20);
+  sun.position.set(trackPos.x + 180, trackPos.y + 380, trackPos.z + 220); sun.target.position.set(trackPos.x, trackPos.y, trackPos.z);
+  for (const s of ['l', 'r']) ikDbg.feet[s].position.copy(ikState.foot[s]);
+  if (ikEdit.on) syncIKHandles();
+  ikDbg.vel.visible = mm.speed > 1;
+  if (mm.speed > 1) { ikDbg.vel.setDirection(V(mm.vel[0], 0, mm.vel[1]).normalize()); ikDbg.vel.setLength(Math.max(12, mm.speed * 0.25), 6, 4); }
+}
+// Compute the weapon matrix in character space when in Normal Idle / Running (non-aiming low-ready carry)
+function normalCarryGunMatrix(cur, runW, baseMat) {
+  const chest = worldPos(bones.spine_02);
+  const ph = mm.phase * Math.PI * 2;
+  const gSpd = Math.hypot(mm.gaitVel[0], mm.gaitVel[1]);
+  const moveW = sstep(6, 105, gSpd);
+  const bobX = (Math.cos(ph) * lerp(0.85, 3.2, runW)) * moveW;
+  const bobY = (-Math.abs(Math.sin(ph)) * lerp(0.65, 2.5, runW) * moveW + 0.4 * Math.sin(STATE.simTime * 2.0) * (1 - moveW));
+  const bobZ = (Math.sin(ph) * lerp(0.3, 1.2, runW)) * moveW;
+  let pos, pitch, yaw, roll;
+  if (cur.name === 'rpg7') {
+    // RPG-7: over-the-shoulder carry — tube rests cleanly on top of the right shoulder, well clear of the head
+    const baseOff = V(-11.5, 21.5, 17.5);
+    const runOff  = V(-11.0, 22.5, 16.5);
+    pos = chest.clone().add(baseOff.lerp(runOff, runW)).add(V(bobX * 0.6, bobY * 0.7, bobZ * 0.6));
+    pitch = lerp(8, 3, runW) + Math.sin(ph * 2) * 2.0 * runW;
+    yaw   = lerp(10, 14, runW) + Math.cos(ph) * 3.0 * runW;
+    roll  = lerp(6, 10, runW);
+  } else if (cur.long) {
+    // Long guns (M4, Shotgun, Kar98k): across-chest low-ready carry — stock tucked under right shoulder, clear of face
+    const baseOff = cur.name === 'kar' ? V(-5.0, 4.5, 19.5) : cur.name === 'shotgun' ? V(-5.0, 4.0, 17.5) : V(-4.5, 4.0, 18.5);
+    const runOff  = cur.name === 'kar' ? V(-3.5, 6.0, 18.5) : cur.name === 'shotgun' ? V(-3.5, 5.5, 16.5) : V(-3.0, 5.5, 17.5);
+    pos = chest.clone().add(baseOff.lerp(runOff, runW)).add(V(bobX, bobY, bobZ));
+    pitch = lerp(20, 10, runW) + Math.sin(ph * 2) * 3.0 * runW;
+    yaw   = lerp(42, 48, runW) + Math.cos(ph) * 5.0 * runW;
+    roll  = lerp(12, 18, runW);
+  } else {
+    // Pistol: two-handed low-ready carry in front of lower chest, pumping naturally while sprinting
+    const baseOff = V(-1.5, 2.0, 23.0);
+    const runOff  = V(-2.0, 5.5, 19.5);
+    pos = chest.clone().add(baseOff.lerp(runOff, runW)).add(V(bobX * 0.7, bobY * 0.8, bobZ * 0.7));
+    pitch = lerp(30, -12, runW) + Math.sin(ph * 2) * 3.5 * runW;
+    yaw   = lerp(6, 16, runW) + Math.cos(ph) * 4.5 * runW;
+    roll  = lerp(4, 10, runW);
+  }
+  const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch * DEG, yaw * DEG, roll * DEG, 'YXZ'));
+  const sc = baseMat ? V(1, 1, 1).setFromMatrixScale(baseMat) : V(1, 1, 1);
+  return new THREE.Matrix4().compose(pos, q, sc);
+}
+
+// One-off: hand-to-gun matrices of a one-handed weapon in the original (un-untwisted) aim pose.
+function captureAimHandRel(poseOut) {
+  const keep = STATE.NORMAL_W; STATE.NORMAL_W = 0;
+  retargetFrame((ANIM_T0 + STATE.simTime) % rt.dur, poseOut);
+  bones.hand_r.updateWorldMatrix(true, false);
+  setGunMatrix(new THREE.Matrix4().multiplyMatrices(bones.hand_r.matrixWorld, W.cur.inHand));
+  storeHandRel('r'); storeHandRel('l');
+  STATE.NORMAL_W = keep;
+  return { l: handRel.l.clone(), r: handRel.r.clone() };
+}
+export function updateCharacter(dt) {
+  updateRlTimeline(dt);
+  playerCrouch.w += ((playerCrouch.on ? 1 : 0) - playerCrouch.w) * Math.min(1, dt * 10);
+  const wantAim = isAiming() || RL.on || KA.on || RLT.on || SG_PUMP.on;
+  playerAim.w += ((wantAim ? 1 : 0) - playerAim.w) * Math.min(1, dt * 12);
+  for (const k of ['flip', 'back', 'up', 'yaw', 'roll', 'cam', 'hx', 'hy', 'hz']) rec[k].step(dt);
+  const shK = W.cur.shK ?? 0.4;
+  rec.hips.target = 0.8 * rec.back.x + 0.05 * rec.flip.x;
+  rec.hips.step(dt);
+  rec.spine.target = 0.12 * rec.flip.x + (W.cur.bodyK ?? 0.35) * rec.back.x;
+  rec.shrug.target = 0.9 * rec.up.x + 0.35 * shK * rec.back.x;
+  rec.shoulder.target = 0.65 * shK * rec.back.x + 0.08 * shK * rec.flip.x;
+  rec.armBack.target = 0.55 * shK * rec.back.x;
+  rec.elbow.target = 0.45 * shK * rec.back.x;
+  rec.head.target = -0.5 * rec.spine.x;
+  rec.spine.step(dt); rec.shrug.step(dt); rec.shoulder.step(dt); rec.armBack.step(dt); rec.elbow.step(dt); rec.head.step(dt);
+
+  // Solve in character space (charRoot at identity), place in the world at the end.
+  charRoot.position.set(0, 0, 0); charRoot.rotation.set(0, 0, 0); charRoot.updateMatrixWorld(true);
+  if (LADDER.active && updateLadder(dt)) return;
+  if (W.cur?.obj && W.cur.obj.parent !== charRoot) charRoot.add(W.cur.obj);
+  stepSwap(dt); stepReload(dt); stepKar(dt); stepShotgunPump(dt); stepBodyFX(dt);
+  ikSyncContext(); ikTimelineApply();
+
+  stepLocomotion(dt);
+  const poseOut = mm.out.slice();
+  const nw = 1 - playerAim.w; // 1 = Normal Idle (can run), 0 = Aiming ADS (no run)
+  const wIdle = 1 - sstep(5, 60, mm.speed);
+  STATE.NORMAL_W = nw;
+  if (nw > 0.001) {
+    // Relaxed stance: feet planted flat on the ground, shoulder-width, toes slightly out; pelvis height is
+    // resolved by the leg IK (reach fix), so only add breathing sway instead of raising the hips.
+    const kFoot = nw * wIdle;
+    if (kFoot > 0.001) {
+      const fx = STATE.HIP_HALF * 0.95;
+      poseOut[5]  = lerp(poseOut[5],  fx, kFoot);
+      poseOut[6]  = lerp(poseOut[6],  STATE.ANKLE_H, kFoot);
+      poseOut[7]  = lerp(poseOut[7],  0, kFoot);
+      poseOut[8]  = lerp(poseOut[8],  0, kFoot);
+      poseOut[9]  = lerp(poseOut[9],  8, kFoot);
+      poseOut[10] = lerp(poseOut[10], -fx, kFoot);
+      poseOut[11] = lerp(poseOut[11], STATE.ANKLE_H, kFoot);
+      poseOut[12] = lerp(poseOut[12], 0, kFoot);
+      poseOut[13] = lerp(poseOut[13], 0, kFoot);
+      poseOut[14] = lerp(poseOut[14], -8, kFoot);
+      poseOut[1] += 0.35 * Math.sin(STATE.simTime * 2.0) * kFoot + 6.0 * kFoot;   // legs nearly straight; IK reach-fix caps it
+    }
+  }
+  if (playerCrouch.w > 0.001) {
+    const cw = playerCrouch.w;
+    poseOut[1] -= 36 * cw;
+    poseOut[4] += 12 * cw;
+  }
+  if (!W.cur.J && nw > 0.001 && !W.cur.hrCache) W.cur.hrCache = captureAimHandRel(poseOut);
+  retargetFrame((ANIM_T0 + STATE.simTime) % rt.dur, poseOut);
+  const wP = 1 - W.blend;
+  for (const [b, d] of fingerFix) b.quaternion.premultiply(wP >= 1 ? d : _tq.identity().slerp(d, wP));
+  const gSpd = Math.hypot(mm.gaitVel[0], mm.gaitVel[1]);
+  const aimMoveW = sstep(10, 120, gSpd) * playerAim.w;
+  if (aimMoveW > 0.001) {
+    // Subtle cushioned upper-body cadence while moving in ADS (applied before applyAim so muzzle stays locked on target)
+    const phA = mm.phase * Math.PI * 2;
+    rotateWorld(bones.spine_02, Z, -Math.sin(phA) * 0.55 * aimMoveW * DEG);
+    rotateWorld(bones.spine_02, X, Math.cos(phA * 2) * 0.45 * aimMoveW * DEG);
+  }
+  if (W.blend > 0) rotateWorld(bones.spine_03, X, -0.5 * Math.sin(STATE.simTime * 1.7) * W.blend * DEG);   // rifle pose is one frame: breathe
+  if (W.blend > 0 && playerAim.w > 0.01) rotateWorld(bones.head, X, -4.5 * W.blend * playerAim.w * DEG);   // level chin along rifle sightline
+  if (W.dip > 0) { rotateWorld(bones.spine_02, X, 10 * W.dip * DEG); rotateWorld(bones.spine_03, X, 16 * W.dip * DEG); }
+  applyBodyFX();
+  if (playerAim.w > 0.01) applyAim();
+
+  const cur = W.cur;
+  bones.hand_r.updateWorldMatrix(true, false);
+  STATE.gunBase.multiplyMatrices(bones.hand_r.matrixWorld, cur.inHand);
+  const walkW = sstep(6, 85, gSpd), runFactor = sstep(155, 330, gSpd) * nw;
+  if (nw > 0.001) {
+    // Smooth walk & run upper-body rhythm: breathing at rest, natural counter-rotation, shoulder roll & harmonic nod in motion.
+    const ph = mm.phase * Math.PI * 2;
+    const pitchCad = 1.0 * Math.sin(STATE.simTime * 2.0) * (1 - walkW) + lerp(1.6, 7.2, runFactor) * walkW + Math.cos(ph * 2) * lerp(0.55, 1.7, runFactor) * walkW;
+    rotateWorld(bones.spine_02, X, pitchCad * nw * DEG);
+    if (walkW > 0.001) {
+      const yaw2 = Math.cos(ph) * lerp(2.1, 5.2, runFactor) * walkW * nw * DEG;
+      const yaw3 = Math.cos(ph) * lerp(2.5, 6.2, runFactor) * walkW * nw * DEG;
+      const roll2 = -Math.sin(ph) * lerp(1.0, 2.3, runFactor) * walkW * nw * DEG;
+      rotateWorld(bones.spine_02, V(0, 1, 0), yaw2);
+      rotateWorld(bones.spine_03, V(0, 1, 0), yaw3);
+      rotateWorld(bones.spine_02, Z, roll2);
+    }
+  }
+  setGunMatrix(STATE.gunBase);
+  if (!cur.J) {
+    // Pistol: the support hand's grip on the gun is captured once from the untouched aim pose, so the
+    // relaxed-stance torso untwist can't pull the left hand off the weapon.
+    storeHandRel('r'); storeHandRel('l');
+    if (nw > 0.001 && cur.hrCache) {
+      handRel.r = nw >= 0.999 ? cur.hrCache.r.clone() : lerpM(handRel.r, cur.hrCache.r, nw);
+      handRel.l = nw >= 0.999 ? cur.hrCache.l.clone() : lerpM(handRel.l, cur.hrCache.l, nw);
+    }
+  }
+  if (nw > 0.001) {
+    // Across-chest / low-ready carry: lowers the weapon to chest height so the buttstock stays tucked under the right shoulder.
+    STATE.gunBase.copy(lerpM(STATE.gunBase, normalCarryGunMatrix(cur, runFactor, STATE.gunBase), nw));
+    setGunMatrix(STATE.gunBase);
+  }
+  // Edit-IK weapon offset: move/rotate the gun about its origin; both hands follow via handRel.
+  ikBase.gun.setFromMatrixPosition(STATE.gunBase);
+  if (userIK.gun.lengthSq() > 0 || Math.abs(userIK.gunQ.w) < 0.999999) {
+    const o = ikBase.gun, u = userIK.gun;
+    STATE.gunBase.premultiply(tmpM.makeTranslation(-o.x, -o.y, -o.z)).premultiply(tmpM.makeRotationFromQuaternion(userIK.gunQ))
+      .premultiply(tmpM.makeTranslation(o.x + u.x, o.y + u.y, o.z + u.z));
+  }
+
+  reloadGunPose(STATE.gunBase);
+  const Y = V(0, 1, 0), shBack = rec.shoulder.x;
+  // Upper torso pitches back and twists around Y as the stock drives the right shoulder backward
+  rotateWorld(bones.spine_01, X, -0.22 * shBack * DEG);
+  rotateWorld(bones.spine_02, X, -(0.45 * rec.spine.x + 0.55 * shBack) * DEG);
+  rotateWorld(bones.spine_03, X, -(0.55 * rec.spine.x + 0.75 * shBack) * DEG);
+  rotateWorld(bones.spine_02, Y, -0.45 * shBack * DEG);
+  rotateWorld(bones.spine_03, Y, -0.65 * shBack * DEG);
+  // Both shoulders (clavicle_r / clavicle_l) kick backward (-Z via Y rotation) and shrug upward (Z rotation)
+  rotateWorld(bones.clavicle_r, Y, -2.4 * shBack * DEG);
+  rotateWorld(bones.clavicle_l, Y,  1.6 * shBack * DEG);
+  rotateWorld(bones.clavicle_r, Z, -(rec.shrug.x * 1.2 + 0.95 * shBack) * DEG);
+  rotateWorld(bones.clavicle_l, Z,  (rec.shrug.x * 1.2 + 0.70 * shBack) * DEG);
+  rotateWorld(bones.head, X, rec.head.x * DEG);
+  // Small random head vibration while the rifle runs full-auto (kicked per shot + a little tremor while held).
+  if (W.cur.auto && STATE.triggerHeld && cur.ammo > 0) for (const k of ['hx', 'hy', 'hz']) rec[k].v += (Math.random() - 0.5) * 140 * dt;
+  rotateWorld(bones.head, X, rec.hx.x * DEG); rotateWorld(bones.head, Y, rec.hy.x * DEG); rotateWorld(bones.head, Z, rec.hz.x * DEG);
+  applyHeadLook(dt);
+
+  const armBack = rec.armBack.x;
+  const e = new THREE.Euler(-(rec.flip.x + 0.35 * shBack) * DEG, (rec.yaw.x - 0.30 * shBack) * DEG, rec.roll.x * DEG, 'YXZ'), pv = cur.pivot;
+  recM.makeTranslation(-0.18 * armBack, rec.up.x + 0.15 * shBack, -(rec.back.x + 0.85 * armBack))
+    .multiply(tmpM.makeTranslation(pv.x, pv.y, pv.z))
+    .multiply(tmpM.makeRotationFromEuler(e))
+    .multiply(tmpM.makeTranslation(-pv.x, -pv.y, -pv.z));
+  setGunMatrix(STATE.gunBase.clone().multiply(recM));
+  cur.obj.matrix.copy(gunState.mat);
+  cur.obj.matrixWorldNeedsUpdate = true;
+
+  if (cur.J) {   // long guns: both hands retargeted from the FPS pack (grip, M4 reload, Kar bolt work, Shotgun pump slider)
+    const G = gunState.mat;
+    poseHandFrom('r', KA.on ? karHandR() : cur.J.r, G, KA.on ? 1 : W.leftW, cur.fq.r, 1);
+    if (KA.on) {   // working the bolt / clip: index leaves the trigger and closes like the middle finger
+      const mid = chainOf('middle', 'r'), idx = chainOf('index', 'r');
+      idx.forEach((b, i) => b.quaternion.slerp(mid[i].quaternion, KA.env));
+    }
+    const pumpZ = cur.pump ? cur.pump.position.z : 0;
+    const jl = RL.frame ? RL.frame.l : (Math.abs(pumpZ) > 1e-4 ? cur.J.l.map(p => V(p.x, p.y, p.z + pumpZ)) : cur.J.l);
+    const fqWL = RL.frame ? (RL.gripPump ? 1 : 1 - RL.env) : 1;
+    poseHandFrom('l', jl, G, RL.on ? 1 : W.leftW, cur.fq.l, fqWL);
+  } else {
+    driveHand('r');
+    if (RL.on && !RL.loading) reloadLeftHand();
+    else driveHand('l', W.leftW);
+  }
+
+  applyUserHands();   // manual hand / elbow Edit-IK for this weapon stance
+
+  const tv = RL.on || KA.on ? 0 : weaponTrigger(dt);
+  if (cur.trigPivot) cur.trigPivot.rotation.x = tv * TRIGGER_PULL;
+  cur.trigFn?.(tv);
+  if (!KA.on) chainOf('index', 'r').forEach((b, i) => b.quaternion.copy(cur.trig.rest[i]).slerp(cur.trig.pulled[i], tv));
+
+  placeCharacter();
+
+  const st = STATE.simTime - STATE.fireTime;
+  if (cur.kar) updateKarParts();
+  else {
+    const so = Math.max(slideOffset(st) * cur.cycleK, cur.locked ? cur.lockTravel : 0, RL.on ? RL.rack : 0);
+    if (cur.slide) cur.slide.position.z = -so;
+    cur.setBolt?.(so, RL.frame);
+    if (cur.clips) { cur.mag.matrix.copy(RL.frame ? RL.frame.mag : M4.restM.mag); cur.mag.matrixWorldNeedsUpdate = true; }
+  }
+  if (!STATE.ejected && st >= 0.01) { STATE.ejected = true; ejectShell(); }
+}
+// ======================================================================
+//  AIMING  the spine (3 bones, distributed) turns and pitches so the barrel points at the aim point
+// ======================================================================
+export const aim = { point: V(0, 140, 3000), smooth: V(0, 140, 3000) };
+export const AIM_SPLIT = [['spine_01', 0.2], ['spine_02', 0.35], ['spine_03', 0.45]];
+function applyAim() {
+  if (!game.active) return;
+  const P = aim.smooth.clone().sub(charPos).applyAxisAngle(V(0, 1, 0), -STATE.charYaw);   // character space
+  for (let it = 0; it < 2; it++) {
+    bones.hand_r.updateWorldMatrix(true, false);
+    const M = new THREE.Matrix4().multiplyMatrices(bones.hand_r.matrixWorld, W.cur.inHand);
+    const muzzle = W.cur.muzzle.clone().applyMatrix4(M), B = V(0, 0, 1).transformDirection(M);
+    const D = P.clone().sub(muzzle).normalize();
+    const yawE = clamp(angWrap(Math.atan2(D.x, D.z) - Math.atan2(B.x, B.z)), -1.2, 1.2);
+    const pitchE = clamp(Math.asin(clamp(D.y, -1, 1)) - Math.asin(clamp(B.y, -1, 1)), -1, 1);
+    const ax = new THREE.Vector3().crossVectors(V(D.x, 0, D.z).normalize(), V(0, 1, 0));
+    for (const [n, k] of AIM_SPLIT) { rotateWorld(bones[n], V(0, 1, 0), yawE * k); rotateWorld(bones[n], ax, pitchE * k); }
+  }
+}

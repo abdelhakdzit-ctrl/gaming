@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Mannequin Viewer — Animation Fix v2</title>
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.186.1/build/three.module.js",
+  "three/addons/loaders/FBXLoader.js": "./vendor/loaders/FBXLoader.js",
+  "three/addons/": "https://unpkg.com/three@0.186.1/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="ui">
+  <button data-view="photo" class="active">Photo view</button>
+  <button data-view="front">Front</button>
+  <button data-view="left">Left</button>
+  <button data-view="right">Right</button>
+  <button data-view="back">Back</button>
+  <button data-view="gripL">Grip L</button>
+  <button data-view="gripR">Grip R</button>
+  <button data-view="shoulder">Over shoulder</button>
+  <span class="sep"></span>
+  <button id="fire" class="fire">Fire (Space)</button>
+  <button id="auto">Auto fire</button>
+  <button id="slow">Slow-mo</button>
+  <button id="sound" class="active">Sound</button>
+  <button id="colliders">Colliders</button>
+  <button id="demo">Demo move</button>
+  <button id="ikdbg">IK / MM debug</button>
+  <span class="sep"></span>
+  <button id="weap">Pistol ⇄</button>
+  <button id="normalMode" class="active" title="Normal Idle Stance — Can Run with Shift (Key V)">🧍 Normal Idle</button>
+  <button id="aimMode" title="Aiming ADS Stance — Running Disabled while Aiming (Key V)">🎯 Aiming (V)</button>
+  <button id="reload">Reload (R)</button>
+  <button id="rlTimelineBtn" title="Smart Reload Timeline Lite — scrub & edit reload IK keyframes">⏱ Reload IK</button>
+  <button id="ladderBtn" title="Climb Up / Slide Down Ladder (Key F)">🪜 Ladder (F)</button>
+  <button id="ikedit">Edit IK</button>
+  <button id="motionLibrary" class="active">Animation Studio · FIXED v2</button>
+  <button id="game" class="fire">&#9654; Aim game</button>
+  <span class="sep"></span>
+  <button id="spin">Auto-rotate</button>
+  <button id="toggleRef">Reference</button>
+</div>
+<img id="ref" src="assets/reference.jpg" alt="Reference pose">
+<div id="status">Loading mannequin and ready-to-use animations…</div>
+<div id="ikpanel" class="hidden">
+  <b>Edit IK pose</b>
+  <div id="iksel">Click a handle</div>
+  <div id="ikctx" style="color:#8fd3ff;font-size:11px;word-break:break-all"></div>
+  <div class="keys" id="ikkeys"></div>
+  <div class="row"><button id="ikMove" class="active">Move (T)</button><button id="ikRot">Rotate (R)</button></div>
+  <div class="row"><button id="ikResetSel">Reset handle</button><button id="ikReset">Reset all</button></div>
+  <button id="ikRlOpen" title="Open Smart Reload Timeline Lite for the equipped weapon">⏱ Reload Timeline</button>
+  <button id="ikCopy">Copy pose JSON</button>
+  <div class="row"><button id="ikExport" title="Download every saved fix as ik-defaults.json">⬇ Export all</button><button id="ikImport" title="Load an ik-defaults.json file">⬆ Import</button></div>
+  <input id="ikFile" type="file" accept=".json,application/json" style="display:none">
+  <span style="opacity:.7">Offsets are layered on the animation and saved in this browser.</span>
+</div>
+<div id="rlTimeline" class="hidden" aria-label="Smart Reload Timeline Lite">
+  <div class="rlHead">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <b id="rlTitle" style="font-size:13px;color:#ffd23c">Reload timeline</b>
+      <button id="rlEmpty" title="Switch between tactical and empty reload">Tactical reload</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="rlInfo" style="color:#8fd3ff;font-variant-numeric:tabular-nums">0.00 / 0.00 s · 0 keys</span>
+      <button id="rlClose" title="Close reload timeline">✕</button>
+    </div>
+  </div>
+  <div class="rlChips" id="rlChips"></div>
+  <div class="rlTrack">
+    <input id="rlSlider" type="range" min="0" max="0.999" step="0.001" value="0">
+    <div id="rlTicks"></div>
+  </div>
+  <div class="rlActions">
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <button id="rlPlay">▶ Play</button>
+      <button id="rlPrev" title="Jump to previous keyframe">◀ Key</button>
+      <button id="rlSetKey" class="primary" title="Save current IK offsets as a keyframe at this reload time">◆ Set key</button>
+      <button id="rlDelKey" class="warn" title="Delete keyframe near current playhead">✕ Del key</button>
+      <button id="rlNext" title="Jump to next keyframe">Key ▶</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <label class="rlAuto" title="Automatically set/update a keyframe when you finish dragging an IK handle"><input id="rlAutoKey" type="checkbox" checked> Auto-key</label>
+      <button id="rlClearKeys" class="warn" title="Clear all reload keyframes for this weapon">Clear keys</button>
+    </div>
+  </div>
+</div>
+<section id="motionPanel" aria-label="Animation studio">
+  <div class="motionHead"><b>Ready-to-use Motion Library</b><button id="motionClose" title="Close studio">✕</button></div>
+  <select id="motionSelect" aria-label="Choose animation">
+    <option value="handgun-empty" selected>Handgun — Empty reload</option>
+    <option value="rifle-reload">Rifle — Reload</option>
+    <option value="smg-reload">SMG — Reload</option>
+    <option value="smg-empty">SMG — Empty reload</option>
+    <option value="shotgun-bolt">Shotgun — Bolt reload</option>
+    <option value="sniper-bolt">Sniper — Bolt reload</option>
+    <option value="sniper-insert">Sniper — Insert reload</option>
+    <option value="sniper-crouch">Sniper — Crouch aim pose</option>
+    <option value="ladder-up-start">Ladder — Climb Up Start</option>
+    <option value="ladder-up-loop">Ladder — Climb Up Loop</option>
+    <option value="ladder-up-end">Ladder — Climb Up End (Top)</option>
+    <option value="ladder-down-start">Ladder — Slide Down Start (Top)</option>
+    <option value="ladder-down-loop">Ladder — Slide Down Loop</option>
+    <option value="ladder-down-end">Ladder — Slide Down End (Bottom)</option>
+  </select>
+  <div class="motionActions"><button id="motionPlay" class="primary">Ⅱ Pause</button><button id="motionRestart">↺ Restart</button><select id="motionSpeed" aria-label="Playback speed" style="width:88px"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></div>
+  <div id="motionProgress"><div id="motionBar"></div></div>
+  <div class="motionRow"><label><input id="motionLoop" type="checkbox" checked> Loop animation</label><span id="motionTime">0.00 / 0.00 s</span></div>
+  <div id="motionStatus" role="status">Choose a motion to preview on the mannequin.</div>
+  <div class="motionHint">The selected FBX plays immediately on the mannequin with the currently equipped weapon attached to the animated right hand. Choose another clip, adjust speed, pause or loop. Close this panel to return to the live weapon viewer.</div>
+</section>
+<div id="touch">
+  <div id="joyHint"></div><div id="joy"><i></i></div>
+  <div class="tb" id="tFire">FIRE</div><div class="tb" id="tAim">AIM</div>
+  <div class="tb" id="tReload">R</div><div class="tb" id="tSwap">⇄</div>
+  <div class="tb" id="tRun">RUN</div><div class="tb" id="tCrouch">C</div><div class="tb" id="tLadder">🪜</div><div class="tb" id="tPause">II</div><div class="tb" id="tFull">⛶</div>
+</div>
+<div id="hud" class="hidden">
+  <div id="scope"><i></i></div>
+  <div id="xh"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><b id="hm"></b></div>
+  <div id="hudTop"><span><small>TIME</small><span id="hTime">60</span></span><span><small>SCORE</small><span id="hScore">0</span></span><span><small>ACC</small><span id="hAcc">-</span></span><span><small>WEAPON</small><span id="hWeap"></span></span><span class="aiOnly"><small>WAVE</small><span id="hWave">1</span> <small id="hLeft"></small></span></div>
+  <div id="hudHelp">WASD move · Shift run · F ladder · Mouse look · RMB aim (2× scope) · LMB fire · C crouch · R reload · 1-5 weapons · Esc pause</div>
+  <div id="dmg"></div><div id="dmgDir"><i></i></div>
+  <div id="hp"><b id="hpBar"></b><span>HP</span></div>
+  <div id="banner"></div>
+  <div id="ammo"><span id="aCur">16</span> <small>/ <span id="aCap">15</span></small></div>
+  <div id="rotateHint">Rotate to landscape for the best view ⟲</div>
+  <div id="ov"><div id="ovBox"><h2 id="ovTitle">Aim trainer</h2><p id="ovText"></p><button id="ovGo">Start</button><button id="ovAI">VS AI</button><button id="ovExit" class="sec">Exit</button></div></div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
