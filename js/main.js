@@ -252,7 +252,7 @@ renderer.setAnimationLoop(() => {
         updateCharacter(0);
       }
     } else {
-      const dt = real * STATE.timeScale;
+      const dt = real * STATE.timeScale * timeScaleFor(real);
       STATE.simTime += dt;
       if (STATE.autoFire && STATE.simTime >= STATE.nextAuto) { pullTrigger(); STATE.nextAuto = STATE.simTime + 0.42; }
       if (!(game.active && game.state !== 'play')) { updateCharacter(dt); updateFX(dt); updateTargets(dt); updateAI(dt); }
