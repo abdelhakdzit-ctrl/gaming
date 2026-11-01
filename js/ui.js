@@ -5,7 +5,7 @@ import { bones, worldPos } from './skeleton.js';
 import { updateFX } from './fx.js';
 import { ikDbg, ikEdit, ikState, setIKMode, toggleIKEdit } from './ik.js';
 import { RLT, rlClearKeys, rlDeleteKey, rlJump, rlSetKey, rlSetU, startRlTimeline, stopRlTimeline } from './reload-timeline.js';
-import { charPos, keys, mm, toWorld, toggleLadder, turnOff } from './locomotion.js';
+import { LADDER, charPos, dropFromLadder, keys, mm, toWorld, toggleLadder, turnOff } from './locomotion.js';
 import { KA, RL, W, fire, fromGun, gunState, nextWeapon, pressFire, pullTrigger, releaseFire, startKarAction, startReload, switchWeapon } from './weapons.js';
 import { aim, isAiming, lastPlaced, placeCharacter, playerAim, playerCrouch, setAimMode, toggleAimMode, toggleCrouch, updateCharacter } from './character.js';
 import { motionPreview, previewMotionSelection, renderMotionFrame, stopMotionPreview } from './motion-studio.js';
@@ -44,7 +44,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && gam
   btn('tReload', () => startReload());
   btn('tSwap', () => nextWeapon());
   btn('tRun', () => { touch.run = !touch.run; document.getElementById('tRun').classList.toggle('on', touch.run); });
-  btn('tCrouch', () => { toggleCrouch(); document.getElementById('tCrouch').classList.toggle('on', playerCrouch.on); });
+  btn('tCrouch', () => { if (LADDER.active) { dropFromLadder(); return; } toggleCrouch(); document.getElementById('tCrouch').classList.toggle('on', playerCrouch.on); });
   btn('tLeanL', () => { LEAN.touch = -1; }, () => { if (LEAN.touch < 0) LEAN.touch = 0; });
   btn('tLeanR', () => { LEAN.touch = 1; }, () => { if (LEAN.touch > 0) LEAN.touch = 0; });
   btn('tLadder', () => { setAimStage(0); toggleLadder(); });
@@ -193,7 +193,7 @@ addEventListener('keydown', e => {
   const pick = { Digit1: 'pistol', Digit2: 'rifle', Digit3: 'shotgun', Digit4: 'kar', Digit5: 'rpg7' }[e.code];
   if (pick) { if (game.active && (RL.on || KA.on)) queueWeapon(pick); else switchWeapon(pick); }   // mid-reload: switch as soon as it finishes
   if (e.code === 'KeyX' && game.active && !e.repeat) swapShoulder();
-  if (e.code === 'KeyC') toggleCrouch();
+  if (e.code === 'KeyC') { if (LADDER.active) dropFromLadder(); else toggleCrouch(); }
   if (e.code === 'KeyV' && !game.active) toggleAimMode();
   if (e.code === 'KeyF') { setAimStage(0); toggleLadder(); }
   if (RLT.on && e.code === 'KeyK') rlSetKey();
