@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mannequin TPS — Advanced Locomotion Shooter</title>
+<link rel="stylesheet" href="src/style.css">
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="game"></div>
+<div id="hud">
+  <div id="vig"></div><div id="dmgdir"></div>
+  <div id="xh"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><b id="hit"></b></div>
+  <div id="scope"></div>
+  <div id="top"><span id="wave"></span><span id="kills"></span></div>
+  <div id="feed"></div>
+  <div id="banner"></div>
+  <div id="bl"><div id="hpbar"><div id="hpfill"></div></div><span id="hptext"></span></div>
+  <div id="br"><div id="wlist"></div><div id="wname"></div><div id="ammo"></div><div id="wstate"></div></div>
+  <div id="labels"></div>
+</div>
+<div id="loading"><h2>Loading animations…</h2><div class="bar"><div id="loadbar"></div></div></div>
+<div id="start" class="overlay"><h2>CLICK TO PLAY</h2>
+  <p><b>WASD</b> move · <b>Shift</b> sprint · <b>Alt</b> walk · <b>C</b> crouch · <b>Space</b> jump / vault · <b>V</b> roll</p>
+  <p><b>Mouse</b> aim · <b>LMB</b> fire · <b>RMB</b> aim down sights · <b>R</b> reload · <b>1-5 / wheel</b> weapons · <b>H</b> holster · <b>Z</b> swap shoulder · <b>F3</b> AI debug</p></div>
+<div id="over" class="overlay hidden"><h2>YOU DIED</h2><p></p></div>
+<pre id="err"></pre>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
