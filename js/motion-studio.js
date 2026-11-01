@@ -120,6 +120,7 @@ export async function previewMotionSelection() {
   try {
     const profile = await getMotionProfile(id);
     if (token !== motionPreview.token) return;
+    if (game.active) { motionPreview.token++; document.getElementById('motionPanel').classList.add('hidden'); return; }   // game started while the FBX loaded: don't hijack the character
     motionPreview.profile = profile; motionPreview.active = true; motionPreview.playing = true; motionPreview.time = 0;
     charRoot.position.set(0, 0, 0); charRoot.rotation.set(0, 0, 0); charRoot.updateMatrixWorld(true);
     Object.values(W.list).forEach(w => { w.obj.visible = false; });
