@@ -761,7 +761,11 @@ export function weaponTrigger(dt) {
   return STATE.tvAuto;
 }
 export function pressFire() {
-  if (!STATE.ready || motionPreview.active || W.swapT >= 0 || RL.on) return;
+  if (!STATE.ready || motionPreview.active || W.swapT >= 0) return;
+  if (RL.on) {   // firing before the magazine leaves the gun aborts a tactical reload
+    if (cancelReload(!W.cur.auto) && W.cur.auto) STATE.triggerHeld = true;
+    return;
+  }
   playerAim.fireHoldT = 0.85;
   if (W.cur.auto) STATE.triggerHeld = true; else pullTrigger();
 }
@@ -777,17 +781,38 @@ export function startReload() {
   if (motionPreview.active) return;
   const c = W.cur;
   RL.pending = -1;
-  if (!STATE.ready || RL.on || KA.on || W.swapT >= 0 || c.ammo >= c.cap) return;
+  if (!STATE.ready || RL.on || KA.on || W.swapT >= 0 || c.ammo >= c.cap + (c.name === 'pistol' ? 1 : 0)) return;   // pistol holds one in the chamber
   if (game.active) setAimStage(0);
   releaseFire(); STATE.trigStart = -1;
   if (c.kar) { startKarAction('reload'); return; }
   RL.empty = c.ammo === 0;
   RL.on = true; RL.t = 0; RL.ev = {}; RL.rack = 0; RL.frame = null;
+  RL.rev = false; RL.fireAfter = false; RL.sprintStart = isSprinting(); RL.weapon = c; RL.hand = 0;
+  if (c.rl) snapLeftFingers();
   RL.external = null; RL.loading = false; RL.externalEvents = null;
   RL.key = c.clips ? (RL.empty ? c.clips.empty : c.clips.tac) : (c.rl ? (RL.empty ? c.rl.empty : c.rl.tac) : null);
   RL.dur = c.clips ? RL.key.dur : (c.rl ? (RL.empty ? c.rlDur.empty : c.rlDur.tac) : (c.rlDur || 2.5));
   if (c.mag) c.mag.visible = true;
   if (c.warhead) c.warhead.visible = true;
+}
+const sm5 = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * t * (t * (t * 6 - 15) + 10); };
+function isSprinting() { return Math.hypot(charVelW.x, charVelW.z) > 330; }
+// Left-hand fingers are not driven by the pistol pose each frame, so keep the pre-reload pose and put it back afterwards.
+const LFING = ['thumb', ...FINGERS].flatMap(f => chainOf(f, 'l'));
+const FCURL = [[65, 60, 50], [65, 60, 50], [65, 60, 50], [65, 60, 50]].map(a => a.map(d => d * DEG));
+function snapLeftFingers() { RL.fb = LFING.map(b => b.quaternion.clone()); RL.fcurl = 0.35; }
+function restoreReload() {
+  const c = RL.weapon; RL.weapon = null; RL.mag = null; RL.rack = 0;
+  if (RL.fb) { LFING.forEach((b, i) => b.quaternion.copy(RL.fb[i])); RL.fb = null; }
+  if (!c) return;
+  if (c.mag) c.mag.visible = true;
+  if (c.magInHand && c.mag) { c.mag.matrix.identity(); c.mag.matrixWorldNeedsUpdate = true; }
+}
+// Back out of a tactical reload before the magazine leaves the gun: play the lead-in backwards (no pop), optionally fire after.
+export function cancelReload(fire = false) {
+  const K = RL.key;
+  if (!RL.on || RL.rev || RLT.on || RL.external || !K || RL.empty || RL.ev.release || RL.t >= K.release) return false;
+  RL.rev = true; RL.fireAfter = !!fire; return true;
 }
 export function playClick(f, dur, gain, delay = 0) {
   if (!STATE.soundOn) return;
@@ -856,9 +881,16 @@ function lerpKey(A, B, u, arc) {
 }
 export function stepReload(dt) {
   if (RL.pending >= 0 && STATE.simTime >= RL.pending && !RL.on) startReload();
-  if (!RL.on) { RL.env = 0; return; }
+  if (!RL.on) { RL.env = 0; if (RL.weapon) restoreReload(); return; }
   const c = W.cur;
-  RL.t = RLT.on ? RLT.u : Math.min(1, RL.t + dt / RL.dur);   // reload timeline scrubs the time by hand
+  RL.dt = dt;
+  if (!RL.rev && !RL.sprintStart && !RLT.on && isSprinting()) cancelReload(false);
+  RL.t = RLT.on ? RLT.u : RL.rev ? Math.max(0, RL.t - dt * 1.7 / RL.dur) : Math.min(1, RL.t + dt / RL.dur);   // reload timeline scrubs the time by hand
+  if (RL.rev && RL.t <= 0) {
+    RL.on = false; RL.env = 0; RL.frame = null; RL.rev = false; restoreReload();
+    if (RL.fireAfter && !c.auto) pullTrigger();
+    RL.fireAfter = false; return;
+  }
   const u = RL.t, ev = RL.ev, K = RL.key;
   const at = (name, t, fn) => { if (RLT.on) return; if (!ev[name] && u >= t) { ev[name] = true; fn(); } };
   if (c.name === 'shotgun') {
@@ -941,13 +973,13 @@ export function stepReload(dt) {
     if (K.empty) at('release', K.release, () => { playClick(2600, 0.025, 0.3); c.mag.matrix.copy(RL.frame.mag); dropMag(c); c.mag.visible = false; });
     else at('release', K.release, () => playClick(2600, 0.025, 0.3));
     at('low', K.low, () => { c.mag.visible = true; playClick(900, 0.05, 0.15); });
-    at('seat', K.seat, () => { playSample('mag_in', { rate: 0.92 }) || playClick(1500, 0.05, 0.5); rec.up.kick(0.6); c.ammo = c.cap; });
+    at('seat', K.seat, () => { playSample('mag_in', { rate: 0.92 }) || playClick(1500, 0.05, 0.5); rec.up.kick(0.6); c.ammo = c.cap + (K.empty ? 0 : 1); });
     if (K.boltRel > 0) at('boltRel', K.boltRel, () => { c.locked = false; playSample('slide_rack', { rate: 0.85, gain: 0.9 }) || playClick(1200, 0.07, 0.6); rec.back.kick(1.0); });
     if (u >= 1) { RL.on = false; RL.frame = null; c.mag.visible = true; c.locked = false; c.ammo = c.cap + (K.empty ? 0 : 1); }
     return;
   }
   if (K) {
-    RL.env = sstep(0, 0.13, u) * (1 - sstep(0.86, 1, u));
+    RL.env = sm5(0, 0.17, u) * (1 - sm5(0.8, 1, u));
     if (RLT.on) {
       c.mag.visible = !(u >= K.release && u < K.grab);
       RL.mag = (u >= K.grab && u < K.seat) ? 'hand' : null;
@@ -956,12 +988,12 @@ export function stepReload(dt) {
     if (K.rackAt) at('rackS', K.rackAt, () => playSample('slide_rack') || playClick(1300, 0.06, 0.5));
     at('release', K.release, () => { playClick(2600, 0.025, 0.3); dropMag(c); c.mag.visible = false; });
     at('grab', K.grab, () => { c.mag.visible = true; RL.mag = 'hand'; playClick(900, 0.05, 0.15); });
-    at('seat', K.seat, () => { RL.mag = null; playSample('mag_in') || playClick(1500, 0.05, 0.5); rec.up.kick(0.6); c.ammo = c.cap - (RL.empty ? 1 : 0); });
+    at('seat', K.seat, () => { RL.mag = null; playSample('mag_in') || playClick(1500, 0.05, 0.5); rec.up.kick(0.6); c.ammo = RL.empty ? c.cap - 1 : c.cap + (c.name === 'pistol' ? 1 : 0); });
     if (K.slam) at('slam', K.slam, () => { c.locked = false; c.ammo = c.cap; if (!K.rackAt) playClick(1200, 0.07, 0.6); rec.back.kick(1.2); rec.flip.kick(1.5); });
     if (u >= 1) {
       RL.on = false; RL.mag = null; c.mag.visible = true; c.locked = false;
-      if (!RL.empty) c.ammo = c.cap + (c.name === 'pistol' ? 1 : 0);
-      else c.ammo = c.cap;
+      c.ammo = RL.empty ? c.cap : c.cap + (c.name === 'pistol' ? 1 : 0);
+      restoreReload();
       return;
     }
   }
@@ -982,11 +1014,24 @@ export function reloadGunPose(gb) {
   if (RL.frame && RL.D) { gb.multiply(RL.D); return; }
   const c = W.cur, e = RL.env, pv = c.gripPivot || V(0, -6, -4);
   if (!c.rlPose) return;
-  const seatBump = RL.ev.seat && RL.key ? Math.max(0, 1 - (RL.t - RL.key.seat) * RL.dur / 0.12) : 0;
+  const seatBump = RL.ev.seat && RL.key ? Math.sin(Math.PI * clamp((RL.t - RL.key.seat) * RL.dur / 0.16, 0, 1)) : 0;
   const R = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(-c.rlPose.pitch * e * DEG, c.rlPose.yaw * e * DEG, c.rlPose.cant * e * DEG, 'YXZ'));
   gb.multiply(tmpM.makeTranslation(pv.x, pv.y, pv.z)).multiply(R).multiply(tmpM.makeTranslation(-pv.x, -pv.y + seatBump * 1.2, -pv.z));
   const o = c.rlPose.off;
   gb.premultiply(tmpM.makeTranslation(o.x * e, o.y * e, o.z * e));
+}
+// Fingers leave the two-hand grip, stay relaxed on approach, close round the magazine, and return to the grip.
+const FBLEND = { grip: 0, pouch: 1, wellOut: 1, well: 1, rack: 1, rackBack: 1 }, FAMT = { grip: 0.35, pouch: 0.3, wellOut: 0.4, well: 0.4, rack: 0.6, rackBack: 0.6 };
+const _fz = V(0, 0, 1), _fq = new THREE.Quaternion();
+function reloadFingers(k0, k1, e) {
+  const blend = lerp(FBLEND[k0] ?? 1, FBLEND[k1] ?? 1, e);
+  const target = RL.mag === 'hand' ? 0.9 : lerp(FAMT[k0] ?? 0.4, FAMT[k1] ?? 0.4, e);
+  RL.fcurl += (target - RL.fcurl) * (1 - Math.exp(-(RL.dt || 1 / 60) / 0.07));
+  FINGERS.forEach((f, fi) => chainOf(f, 'l').forEach((b, j) => {
+    const i = (fi + 1) * 3 + j;
+    _fq.setFromAxisAngle(_fz, FCURL[fi][j] * RL.fcurl);
+    b.quaternion.copy(RL.fb[i]).slerp(_fq.premultiply(restLocalQ[b.name]), blend);
+  }));
 }
 export function reloadLeftHand() {
   const c = W.cur, K = RL.key, u = RL.t, path = K.path;
@@ -998,11 +1043,13 @@ export function reloadLeftHand() {
   RL.rack = 0;
   if (k0 === 'rack' && k1 === 'rackBack') RL.rack = ease(w) * (c.slide ? SLIDE_TRAVEL : 4.4);
   if (k0 === 'rackBack' && k1 === 'rackBack') RL.rack = c.slide ? SLIDE_TRAVEL : 4.4;
+  if (K.slam && u >= K.slam) RL.rack = Math.max(RL.rack, (c.slide ? SLIDE_TRAVEL : 4.4) * (1 - sm5(0, 1, (u - K.slam) * RL.dur / 0.07)));   // slide springs home
   M.decompose(_hp, _hq, _hs);
   const up = bones.upperarm_l, lo = bones.lowerarm_l, hand = bones.hand_l;
   twoBoneIK(up, lo, hand, _hp, worldPos(lo).sub(worldPos(up)));
   setWorldQuat(hand, _hq);
   RL.err = +worldPos(hand).distanceTo(_hp).toFixed(1); RL.seg = k0 + '>' + k1;
+  if (RL.fb) reloadFingers(k0, k1, ease(w));
   if (RL.mag === 'hand') {   // new magazine rides in the left hand until it seats
     hand.updateWorldMatrix(true, false);
     c.mag.matrix.copy(gunState.inv.clone().multiply(hand.matrixWorld).multiply(c.magInHand));
