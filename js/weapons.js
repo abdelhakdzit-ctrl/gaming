@@ -777,12 +777,14 @@ export function startReload() {
   if (motionPreview.active) return;
   const c = W.cur;
   RL.pending = -1;
-  if (!STATE.ready || RL.on || KA.on || W.swapT >= 0 || c.ammo >= c.cap) return;
+  if (!STATE.ready || RL.on || KA.on || W.swapT >= 0 || c.ammo >= c.cap + (c.name === 'pistol' ? 1 : 0)) return;   // pistol holds one in the chamber
   if (game.active) setAimStage(0);
   releaseFire(); STATE.trigStart = -1;
   if (c.kar) { startKarAction('reload'); return; }
   RL.empty = c.ammo === 0;
   RL.on = true; RL.t = 0; RL.ev = {}; RL.rack = 0; RL.frame = null;
+  RL.rev = false; RL.fireAfter = false; RL.sprintStart = isSprinting(); RL.weapon = c; RL.hand = 0;
+  if (c.rl) snapLeftFingers();
   RL.external = null; RL.loading = false; RL.externalEvents = null;
   RL.key = c.clips ? (RL.empty ? c.clips.empty : c.clips.tac) : (c.rl ? (RL.empty ? c.rl.empty : c.rl.tac) : null);
   RL.dur = c.clips ? RL.key.dur : (c.rl ? (RL.empty ? c.rlDur.empty : c.rlDur.tac) : (c.rlDur || 2.5));
