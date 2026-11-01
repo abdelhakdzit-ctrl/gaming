@@ -1,0 +1,27 @@
+<body style="margin:0"><iframe id="f" src="index.html?play&harness" style="width:1280px;height:720px;border:0"></iframe>
+<pre id="o" style="position:fixed;left:0;top:0;color:#0f0;font:11px monospace;z-index:9;background:#0008"></pre>
+<script>
+const log=[];window.onerror=(m,s,l)=>log.push('ERR '+m+' '+s+':'+l);
+const f=document.getElementById('f');
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+(async()=>{
+  const q=new URLSearchParams(location.search).get('step')||'1';
+  const w=f.contentWindow; w.addEventListener('error',e=>log.push('IFERR '+e.message));
+  await wait(7000);
+  try{
+  const E=c=>w.APP_EVAL(c); E(`import('./game.js').then(m=>window.__g=m); import('./gameplay/director.js').then(m=>window.__d=m)`); await wait(500);
+  E(`document.getElementById('ovAI').click()`);
+  await wait(4000);
+  log.push('state '+E(`game.state+' '+game.mode+' wave '+AI.wave`));
+  if(q>='2'){
+    E(`AI.hp=30; AI.lastHit=STATE.simTime; AI.hitFrom=V(300,0,800); AI.hitT=STATE.simTime+0.01; AI.flash=0.8;`);
+    await wait(1500);
+    E(`window.__g.popup('HEADSHOT +150', V(0,150,600)); window.__g.popup('KILL +100', V(30,150,700)); window.__g.popup('KILL +100', V(30,150,700));`);
+    E(`window.__d.spawnPickup('health', 100, 300); window.__d.spawnPickup('ammo', -100, 300);`);
+  }
+  await wait(1500);
+  log.push('score '+E(`game.score`));
+  }catch(e){log.push('EXC '+e)}
+  document.getElementById('o').textContent=log.join('\n');
+})();
+</script>
