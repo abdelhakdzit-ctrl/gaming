@@ -1,16 +1,17 @@
 import * as THREE from 'three';
-import { DEG, Spring, V, angWrap, clamp, lerp, sstep } from './math.js';
-import { STATE, rec } from './state.js';
+import { DEG, Spring, V, angWrap, clamp, lerp, rayBox, sstep } from './math.js';
+import { BLOCK, LEAN, STATE, rec } from './state.js';
 import { camera, charRoot, controls, grid, ground, sun } from './scene.js';
 import { bones, driveHand, handRel, restWorldQ, rotateWorld, rt, storeHandRel, worldPos, worldQuat } from './skeleton.js';
 import { ejectShell } from './fx.js';
 import { _tq, applyUserHands, ikBase, ikDbg, ikEdit, ikState, ikSyncContext, syncIKHandles, userIK } from './ik.js';
 import { RLT, ikTimelineApply, updateRlTimeline } from './reload-timeline.js';
-import { LADDER, charPos, mm, retargetFrame, stepLocomotion, updateLadder } from './locomotion.js';
+import { LADDER, charPos, keys, mm, retargetFrame, stepLocomotion, toWorld, toWorldDir, updateLadder } from './locomotion.js';
 import { CLIP_GUIDE, KA, M4, RL, SG_PUMP, TRIGGER_PULL, W, chainOf, fingerFix, fromGun, gunState, karHandR, lerpM, poseHandFrom, reloadGunPose, reloadLeftHand, setGunMatrix, slideOffset, stepKar, stepReload, stepShotgunPump, stepSwap, updateKarParts, weaponTrigger } from './weapons.js';
 import { game, tps } from './game.js';
 import { ANIM_T0 } from './main.js';
-import { dampW } from './anim/curves.js';
+import { damp, dampW } from './anim/curves.js';
+import { ARENA } from './ai.js';
 import { SEC, stepSecondary } from './anim/secondary.js';
 
 // Player Crouch State
@@ -149,6 +150,51 @@ function captureAimHandRel(poseOut) {
   STATE.NORMAL_W = keep;
   return { l: handRel.l.clone(), r: handRel.r.clone() };
 }
+// ---- Lean / peek: Q = left, E = right (hold). Critically damped, limited by free space beside the player. ----
+const LEAN_DEG = 24, LEAN_OFF = 24, LEAN_CLEAR = 22;
+const LEAN_SPLIT = [['spine_01', 4.5], ['spine_02', 6], ['spine_03', 6.5], ['neck_01', 2.5], ['head', -6]];
+const _leanS = { x: 0, v: 0 };
+function stepLean(dt) {
+  const playing = game.active && game.state === 'play' && !LADDER.active;
+  const dir = playing ? (keys.has('KeyE') ? 1 : 0) - (keys.has('KeyQ') ? 1 : 0) || LEAN.touch : 0;
+  LEAN.dir = dir;
+  let free = 1;
+  if (dir && ARENA.group.visible) {
+    const yaw = STATE.charYaw, r = V(-Math.cos(yaw) * dir, 0, Math.sin(yaw) * dir), cd = 34 * playerCrouch.w;
+    let t = LEAN_OFF + LEAN_CLEAR;
+    for (const cv of ARENA.covers) for (const y of [158 - cd, 120 - cd]) { const h = rayBox(V(charPos.x, y, charPos.z), r, cv, t); if (h) t = Math.min(t, h.t); }
+    free = clamp((t - LEAN_CLEAR) / LEAN_OFF, 0, 1);
+  }
+  LEAN.free = free;
+  let w = damp(_leanS, dir * free, 11, dt);
+  if (dir && Math.sign(w) === dir && Math.abs(w) > free) { w = dir * free; _leanS.x = w; _leanS.v = 0; }   // never lean into a wall
+  LEAN.w = w; LEAN.off = w * LEAN_OFF;
+}
+
+// ---- Weapon vs wall: pull the gun toward the chest and raise the muzzle (damped) so it never pokes through cover. ----
+const _wbS = { x: 0, v: 0 }, _wbM1 = new THREE.Matrix4(), _wbM2 = new THREE.Matrix4(), _wbQ = new THREE.Quaternion();
+function applyWeaponBlock(dt, cur) {
+  const G = STATE.gunBase, S = worldPos(bones.upperarm_r), M = V(cur.muzzle.x, cur.muzzle.y, cur.muzzle.z).applyMatrix4(G);
+  const fwd = V(0, 0, 1).transformDirection(G), reach = M.distanceTo(S), gunLen = cur.long ? 95 : 38;
+  let pen = 0;
+  if (game.active && ARENA.group.visible && !LADDER.active) {
+    const dA = M.clone().sub(S).normalize(), oA = toWorld(S), dAw = toWorldDir(dA), oB = toWorld(M.clone().addScaledVector(fwd, -gunLen)), dBw = toWorldDir(fwd.clone());
+    for (const cv of ARENA.covers) {
+      const a = rayBox(oA, dAw, cv, reach + 5), b = rayBox(oB, dBw, cv, gunLen + 5);
+      if (a) pen = Math.max(pen, reach + 5 - a.t);
+      if (b) pen = Math.max(pen, gunLen + 5 - b.t);
+    }
+  }
+  const ps = Math.max(0, damp(_wbS, pen, pen > _wbS.x ? 22 : 8, dt));   // quick in (never clip), slow out
+  BLOCK.pen = ps; BLOCK.w = sstep(2, 20, ps);
+  if (ps < 0.15) return;
+  const pull = Math.min(ps * 0.5, cur.long ? 24 : 16), rem = ps - pull;
+  const tilt = Math.min(Math.acos(clamp(1 - rem / Math.max(reach, 30), -1, 1)), (cur.long ? 62 : 50) * DEG);
+  const piv = worldPos(bones.hand_r), ax = V().crossVectors(fwd, V(0, 1, 0)).normalize();
+  const fh = V(fwd.x, 0, fwd.z).normalize();
+  G.premultiply(_wbM1.makeTranslation(-piv.x, -piv.y, -piv.z)).premultiply(_wbM2.makeRotationFromQuaternion(_wbQ.setFromAxisAngle(ax, tilt)))
+    .premultiply(_wbM1.makeTranslation(piv.x - fh.x * pull, piv.y, piv.z - fh.z * pull));
+}
 const _crS = { x: 0, v: 0 }, _aimS = { x: 0, v: 0 };   // critically-damped blend states (no start/stop pop)
 export function updateCharacter(dt) {
   updateRlTimeline(dt);
@@ -178,7 +224,8 @@ export function updateCharacter(dt) {
   const poseOut = mm.out.slice();
   const nw = 1 - playerAim.w; // 1 = Normal Idle (can run), 0 = Aiming ADS (no run)
   stepSecondary(dt, { vel: mm.vel, speed: mm.speed, yaw: STATE.charYaw, phase: mm.phase, aimW: playerAim.w, crouchW: playerCrouch.w, nw });
-  poseOut[0] += SEC.dx; poseOut[1] += SEC.dy; poseOut[3] += SEC.roll; poseOut[4] += SEC.lean; poseOut[15] += SEC.yaw;
+  stepLean(dt);
+  poseOut[0] += SEC.dx + LEAN.w * 3; poseOut[1] += SEC.dy; poseOut[3] += SEC.roll + LEAN.w * 3.5; poseOut[4] += SEC.lean; poseOut[15] += SEC.yaw;
   const wIdle = 1 - sstep(5, 60, mm.speed);
   STATE.NORMAL_W = nw;
   if (nw > 0.001) {
@@ -233,6 +280,7 @@ export function updateCharacter(dt) {
     rotateWorld(bones.clavicle_l, Z, SEC.clavL * DEG);
     rotateWorld(bones.clavicle_r, Z, -SEC.clavR * DEG);
   }
+  if (Math.abs(LEAN.w) > 1e-3) for (const [n, k] of LEAN_SPLIT) rotateWorld(bones[n], Z, LEAN.w * k * DEG);
   applyBodyFX();
   if (playerAim.w > 0.01) applyAim();
 
@@ -277,6 +325,7 @@ export function updateCharacter(dt) {
       .premultiply(tmpM.makeTranslation(o.x + u.x, o.y + u.y, o.z + u.z));
   }
 
+  applyWeaponBlock(dt, cur);
   reloadGunPose(STATE.gunBase);
   const Y = V(0, 1, 0), shBack = rec.shoulder.x;
   // Upper torso pitches back and twists around Y as the stock drives the right shoulder backward
