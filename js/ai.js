@@ -5,13 +5,16 @@ import { IS_TOUCH, STATE, rec } from './state.js';
 import { camera, charRoot, scene } from './scene.js';
 import { audio, playSample, sfxBus } from './audio.js';
 import { bones, rotateWorld, worldPos } from './skeleton.js';
-import { impactFX, muzzleFlashAt, radialTexture, tracerFX } from './fx.js';
+import { grenadeExplosionFX, impactFX, muzzleFlashAt, radialTexture, tracerFX } from './fx.js';
 import { ikFromJson, ikToJson } from './ik.js';
 import { charPos, charVelW, footRoll, gaitParams, gaitPose, mm, retargetFrame } from './locomotion.js';
 import { KA, M4, RIFLE_MUZZLE, RL, W, chainOf, dropped, playClick, poseHandFrom, setGunMatrix } from './weapons.js';
 import { AIM_SPLIT, playerCrouch, tmpM, tmpQ } from './character.js';
 import { TGROUP, endRound, game, hitMarker, hittables, playDing, popup, ray, tps } from './game.js';
 import { ANIM_T0 } from './main.js';
+import { Ragdoll } from './physics/ragdoll.js';
+import { difficultyFor, pickArchetype } from './ai/difficulty.js';
+import { addTrauma } from './gameplay/juice.js';
 
 // ======================================================================
 //  COMBAT  arena with cover + AI squad. Enemies are clones of the mannequin posed from snapshots of the
@@ -23,7 +26,8 @@ import { ANIM_T0 } from './main.js';
 // ======================================================================
 export const AI = { on: false, enemies: [], snaps: null, names: [], template: null, gunGeo: null, gunInHand: null, yaw0: 0, pitch0: 0, crouchH: 115,
   walkCycle: 165, runCycle: 276, strCycle: 100, hp: 100, lastHit: -9, wave: 1, toKill: 5, killed: 0, spawned: 0, kills: 0, heads: 0, spawnT: 0, breakT: 0,
-  lastSeen: 0, heardAt: -9, knownPos: V(), knownVel: V(), shooting: 0, chest: V(), head: V(), caps: [], diff: null, drops: [], src: [], flash: 0, hitFrom: null, hitT: -9 };
+  lastSeen: 0, heardAt: -9, knownPos: V(), knownVel: V(), shooting: 0, chest: V(), head: V(), caps: [], diff: null, drops: [], src: [], flash: 0, hitFrom: null, hitT: -9,
+  nades: [], spawnLog: [], seen: new Set(), campT: 0, nadeCd: 10, ragdoll: true };
 export const ARENA = { group: new THREE.Group(), covers: [], pts: [],
   spawns: [V(-1300, 0, 3700), V(0, 0, 3950), V(1300, 0, 3700), V(-1750, 0, 2500), V(1750, 0, 2500)] };
 ARENA.group.visible = false; scene.add(ARENA.group);
@@ -235,18 +239,33 @@ function setEnemyBadge(e, kind, dur = 1.6) {
 }
 const enemyMat = new THREE.MeshStandardMaterial({ color: 0x8b3a2f, roughness: 0.6, metalness: 0.05 });
 const enemyGunMat = new THREE.MeshStandardMaterial({ color: 0x2b2d31, roughness: 0.5, metalness: 0.6 });
+const ENEMY_MATS = { rifleman: enemyMat, rusher: new THREE.MeshStandardMaterial({ color: 0xb8741a, roughness: 0.6, metalness: 0.05 }),
+  marksman: new THREE.MeshStandardMaterial({ color: 0x35566f, roughness: 0.6, metalness: 0.05 }) };
+// Archetypes: gun = viewmodel scale, speed/hp multipliers, range = max effective fire distance, pref = preferred cover distance to the player
+const ARCH = {
+  rifleman: { gun: 1, speed: 1, hp: 1, range: 1e9, pref: 0, peekLim: [2, 3], react: 1 },
+  rusher: { gun: 0.78, speed: 1.3, hp: 0.85, range: 800, pref: 460, peekLim: [1, 1], react: 0.7 },
+  marksman: { gun: 1.14, speed: 0.9, hp: 0.7, range: 1e9, pref: 2450, peekLim: [1, 2], react: 1 } };
+const MAX_RAGDOLLS = IS_TOUCH ? 3 : 5, BLAST_R = 380, _gs = new THREE.Matrix4();
+const LASER_GEO = new THREE.CylinderGeometry(1.5, 1.5, 1, 6, 1, true).translate(0, 0.5, 0);
 const POOL = IS_TOUCH ? 6 : 7;
-let blobIM = null;
+let blobIM = null, glintTex = null;
 export function buildEnemyPool() {
   for (let i = 0; i < POOL; i++) {
-    const skin = SkeletonUtils.clone(AI.template), B = {};
-    skin.traverse(n => { if (n.isBone) B[n.name] = n; if (n.isMesh) { n.material = enemyMat; n.castShadow = false; } });
+    const skin = SkeletonUtils.clone(AI.template), B = {}, meshes = [];
+    skin.traverse(n => { if (n.isBone) B[n.name] = n; if (n.isMesh) { n.material = enemyMat; n.castShadow = false; meshes.push(n); } });
     const root = new THREE.Group(); root.add(skin); ARENA.group.add(root);
     const gun = new THREE.Mesh(AI.gunGeo, enemyGunMat); gun.matrixAutoUpdate = false; ARENA.group.add(gun);
     const badge = new THREE.Sprite(new THREE.SpriteMaterial({ map: AI_BADGES.hesitate, transparent: true, depthTest: false, depthWrite: false }));
     badge.scale.set(44, 18, 1); badge.renderOrder = 15; badge.visible = false; ARENA.group.add(badge);
+    const laser = new THREE.Mesh(LASER_GEO, new THREE.MeshBasicMaterial({ color: 0xff3a20, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+    laser.visible = false; laser.frustumCulled = false; laser.renderOrder = 14; ARENA.group.add(laser);
+    const glint = new THREE.Sprite(new THREE.SpriteMaterial({ map: glintTex ||= radialTexture([[0, 'rgba(255,255,255,1)'], [0.25, 'rgba(255,255,255,0.5)'], [1, 'rgba(255,255,255,0)']], 64),
+      color: 0xff6040, transparent: true, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending }));
+    glint.visible = false; glint.renderOrder = 16; ARENA.group.add(glint);
     root.visible = gun.visible = false;
-    AI.enemies.push({ root, B, bones: AI.names.map(n => B[n]), gun, badge, badgeKind: null, badgeT: 0,
+    AI.enemies.push({ root, B, meshes, rag: new Ragdoll(B, () => ARENA.covers), type: 'rifleman', cfg: ARCH.rifleman, laser, glint, lase: 0, lockPt: V(), stagger: 0, callAt: -9, spd: 1,
+      searchQueue: [], searchPause: 0, blockedT: 0, strafeT: 0, strafeDir: 1, maxHp: 100, throwT: 0, bones: AI.names.map(n => B[n]), gun, badge, badgeKind: null, badgeT: 0,
       pos: V(), lastKnown: V(), searchPos: V(), yaw: 0, moveYaw: 0, muzzle: V(), flinch: new Spring(3.5, 0.4), seed: i * 1.7,
       lookYaw: 0, lookPitch: 0, headTilt: 0, wantLookYaw: 0, wantLookPitch: 0, wantTilt: 0,
       alert: 1, searchCount: 0, patrolWait: 0, dur: 1.4, nextIntent: 'plan', role: i % 3 === 0 ? 'flanker' : i % 3 === 1 ? 'assault' : 'support',
@@ -258,12 +277,7 @@ export function buildEnemyPool() {
     new THREE.MeshBasicMaterial({ map: radialTexture([[0, 'rgba(0,0,0,0.5)'], [1, 'rgba(0,0,0,0)']], 64), transparent: true, depthWrite: false }), POOL);
   blobIM.count = 0; blobIM.frustumCulled = false; blobIM.renderOrder = 1; ARENA.group.add(blobIM);
 }
-function aiDifficulty() {
-  const w = AI.wave;
-  return { sigma: Math.max(0.015, 0.034 - 0.0028 * (w - 1)) * (IS_TOUCH ? 1.25 : 1), react: Math.max(0.3, 0.75 - 0.06 * (w - 1)) * (IS_TOUCH ? 1.2 : 1),
-    maxAlive: Math.min(2 + w, IS_TOUCH ? 4 : 5), shooters: w < 3 ? 2 : 3, toKill: 3 + 2 * w,
-    stagger: Math.max(0.25, 0.95 - 0.07 * (w - 1)), missShots: w < 3 ? 3 : w < 6 ? 2 : 1 };
-}
+function aiDifficulty() { return difficultyFor(AI.wave, IS_TOUCH); }
 function banner(text) {
   const b = document.getElementById('banner'); b.textContent = text; b.classList.add('on');
   clearTimeout(banner.t); banner.t = setTimeout(() => b.classList.remove('on'), 1600);
@@ -274,7 +288,8 @@ export function startAI() {
   AI.drops.length = 0;
   for (const p of ARENA.pts) p.owner = null;
   Object.assign(AI, { on: true, hp: 100, lastHit: -9, wave: 1, killed: 0, spawned: 0, kills: 0, heads: 0, spawnT: 1.0, breakT: 0,
-    lastSeen: STATE.simTime - 3.5, heardAt: -9, flash: 0, hitT: -9, tokenAt: 0, roleT: 0, bb: null });
+    lastSeen: STATE.simTime - 3.5, heardAt: -9, flash: 0, hitT: -9, tokenAt: 0, roleT: 0, bb: null, campT: 0, nadeCd: 10, seen: new Set(), spawnLog: [] });
+  clearNades();
   AI.knownPos.copy(charPos); AI.knownVel.set(0, 0, 0);
   AI.diff = aiDifficulty(); AI.toKill = AI.diff.toKill;
   ARENA.group.visible = true;
@@ -284,12 +299,12 @@ export function stopAI() {
   AI.on = false; ARENA.group.visible = false;
   for (const e of AI.enemies) despawn(e);
   for (const d of AI.drops) scene.remove(d.m);
-  AI.drops.length = 0;
+  AI.drops.length = 0; clearNades();
 }
 function despawn(e) {
   if (e.cp) e.cp.owner = null;
   Object.assign(e, { active: false, alive: false, state: 'off', cp: null, badgeT: 0 });
-  e.root.visible = e.gun.visible = false;
+  e.root.visible = e.gun.visible = false; e.root.position.y = 0; e.rag.on = false; e.laser.visible = e.glint.visible = false; e.lase = 0;
   if (e.badge) e.badge.visible = false;
 }
 function playerReloading() { return RL.on || (KA.on && KA.kind === 'reload'); }
@@ -301,13 +316,13 @@ function tokenOk(e) {
 }
 // Squad roles on a shared blackboard: one flanker per ~3 enemies, one suppressor, the rest anchor. Sticky to avoid flip-flopping.
 function assignRoles() {
-  const live = AI.enemies.filter(e => e.alive && e.active && e.alert >= 0.85);
+  const live = AI.enemies.filter(e => e.alive && e.active && e.alert >= 0.85 && e.type === 'rifleman');
   const P = AI.knownPos;
   AI.bb = { n: live.length, seen: AI.lastSeen, heard: AI.heardAt, reloading: playerReloading(), hurt: AI.hp < 50 };
   if (!live.length) return;
-  const sc = (e, st) => (e.role === st ? 1.4 : 0) + (e.hp >= 60 ? 0.8 : -1) + (e.ammo > 8 ? 0.4 : 0) + Math.min(e.pos.distanceTo(P), 2400) / 2400 + (e.seed % 1) * 0.3;
+  const sc = (e, st) => (e.role === st ? 1.4 : 0) + (e.hp >= 0.6 * e.maxHp ? 0.8 : -1) + (e.ammo > 8 ? 0.4 : 0) + Math.min(e.pos.distanceTo(P), 2400) / 2400 + (e.seed % 1) * 0.3;
   const used = new Set();
-  const nFl = live.length >= 5 ? 2 : live.length >= 2 ? 1 : 0;
+  const nFl = AI.diff.flank < 0.12 ? 0 : live.length >= 5 ? 2 : live.length >= 2 ? 1 : 0;
   for (let i = 0; i < nFl; i++) {
     let b = null, bs = -Infinity;
     for (const e of live) if (!used.has(e)) { const v = sc(e, 'flanker'); if (v > bs) { bs = v; b = e; } }
@@ -357,15 +372,18 @@ function enterPlan(e, dur = rnd(0.85, 1.4)) {
 }
 function enterSearch(e) {
   if (e.cp) { e.cp.owner = null; e.cp = null; }
-  e.state = 'search'; e.t = 0; e.alert = 0.65; e.detect = Math.min(e.detect || 0, 0.4);
-  // Fan squadmates out across different angles around the player's last known position + predicted drift
-  const ang = e.seed * 1.9 + e.searchCount * 2.1;
-  const rad = e.searchCount === 0 ? rnd(140, 340) : rnd(340, 650);
-  const pred = AI.knownPos.clone().addScaledVector(AI.knownVel, 0.75);
-  const sx = clamp(pred.x + Math.cos(ang) * rad, -1650, 1650);
-  const sz = clamp(pred.z + Math.sin(ang) * rad, 220, 3700);
-  e.searchPos.set(sx, 0, sz);
-  pushOutOfCover(e.searchPos, 46);
+  e.state = 'search'; e.t = 0; e.alert = 0.65; e.detect = Math.min(e.detect || 0, 0.4); e.searchPause = 0;
+  // Squad search: candidate check-points are the predicted drift, the last-known spot, a fan point and nearby cover; each searcher
+  // takes the ones nobody else has claimed so the squad splits up instead of walking in a pack.
+  const K = AI.knownPos, ang = e.seed * 1.9 + e.searchCount * 2.1, rad = e.searchCount === 0 ? rnd(140, 340) : rnd(340, 650);
+  const cand = [K.clone().addScaledVector(AI.knownVel, 0.75), K.clone(), V(K.x + Math.cos(ang) * rad, 0, K.z + Math.sin(ang) * rad)];
+  for (const cp of ARENA.pts) if (Math.hypot(cp.pos.x - K.x, cp.pos.z - K.z) < 1000) cand.push(cp.pos.clone());
+  const taken = [];
+  for (const o of AI.enemies) if (o !== e && o.alive && o.state === 'search') { taken.push(o.searchPos, ...o.searchQueue); }
+  const pts = cand.map(p => { p.x = clamp(p.x, -1650, 1650); p.z = clamp(p.z, 220, 3700); p.y = 0; pushOutOfCover(p, 46);
+    return { p, s: -p.distanceTo(e.pos) / 1100 - (taken.some(t => t.distanceTo(p) < 300) ? 3 : 0) + rnd(0, 0.6) }; }).sort((a, b) => b.s - a.s);
+  e.searchQueue = pts.slice(1, 3).map(x => x.p);
+  e.searchPos.copy(pts[0].p);
   e.lastKnown.copy(e.searchPos);
   e.path = planPath(e.pos, e.searchPos);
   setEnemyBadge(e, 'search', 3.2);
@@ -430,7 +448,7 @@ function enemyCanDetect(e) {
   const spd = Math.hypot(charVelW.x, charVelW.z);
   e.heard = false;
   if (inView) {
-    let rate = 0.55 + 2.4 * Math.pow(clamp(1 - dP / 2600, 0.12, 1), 2);
+    let rate = (0.55 + 2.4 * Math.pow(clamp(1 - dP / 2600, 0.12, 1), 2)) * AI.diff.detectMul;
     rate *= spd > 250 ? 1.5 : (spd < 40 || playerCrouch.w > 0.5) ? 0.65 : 1;
     if (STATE.simTime - AI.heardAt < 1.2) rate *= 1.8;
     if (dP < 360) rate = 9;
@@ -445,14 +463,19 @@ function enemyCanDetect(e) {
   return e.detect >= 1 ? inView : null;
 }
 function spawnEnemy() {
-  const e = AI.enemies.find(x => !x.active); if (!e) return;
+  let e = AI.enemies.find(x => !x.active);
+  if (!e) { e = AI.enemies.filter(x => x.state === 'dead').sort((a, b) => b.deadT - a.deadT)[0]; if (!e) return; despawn(e); }
+  const type = pickArchetype(AI.diff, AI.spawned, AI.seen), cfg = ARCH[type];
+  AI.seen.add(type); AI.spawnLog.push({ wave: AI.wave, type });
   const far = ARENA.spawns.slice().sort((a, b) => b.distanceTo(charPos) - a.distanceTo(charPos));
   e.pos.copy(far[Math.random() * 3 | 0]).add(V(rnd(-150, 150), 0, rnd(-150, 150)));
   const startPatrol = (STATE.simTime - AI.lastSeen > 3.2 && Math.random() < 0.65) || (AI.spawned % 3 === 1 && e.pos.distanceTo(charPos) > 1900);
-  Object.assign(e, { active: true, alive: true, hp: 100, state: 'move', t: 0, dur: 1.2, cp: null, path: [], ammo: 30, peeks: 0, peekLimit: 2, aimT: 0, lostT: 0,
+  Object.assign(e, { type, cfg, maxHp: 100 * AI.diff.hpMul * cfg.hp, hp: 100 * AI.diff.hpMul * cfg.hp, spd: AI.diff.speed * cfg.speed, stagger: 0, lase: 0, searchQueue: [], searchPause: 0, blockedT: 0, strafeT: 0, throwT: 0, role: type === 'rusher' ? 'assault' : type === 'marksman' ? 'support' : e.role, active: true, alive: true, state: 'move', t: 0, dur: 1.2, cp: null, path: [], ammo: type === 'rusher' ? 8 : 30, peeks: 0, peekLimit: 2, aimT: 0, lostT: 0,
     suppress: 0, burstLeft: 0, burstIdx: 0, bursts: 0, burstLimit: 1, nextShot: 0, wWalk: 0, wRun: startPatrol ? 0 : 1, wCrouch: 0, wStr: 0, speed: 0, deadT: 0, fallX: 0, yOff: 0,
     lookYaw: 0, lookPitch: 0, headTilt: 0, wantLookYaw: 0, wantLookPitch: 0, wantTilt: 0, alert: startPatrol ? 0.2 : 1, searchCount: 0, patrolWait: 0,
-    landed: false, crouch: false, strafing: false, exposed: 0, vis: null, detect: startPatrol ? 0 : 1, seeAt: -9, seeVal: null, cur: 0, movedFlag: false, stuckT: 0, lpx: 0, lpz: 0, reposAt: -9, unprotN: 0, heard: false, shotsPeek: 0, dtc: 0.016, sigma: AI.diff.sigma * rnd(0.85, 1.2), react: AI.diff.react * rnd(0.8, 1.25) });
+    landed: false, crouch: false, strafing: false, exposed: 0, vis: null, detect: startPatrol ? 0 : 1, seeAt: -9, seeVal: null, cur: 0, movedFlag: false, stuckT: 0, lpx: 0, lpz: 0, reposAt: -9, unprotN: 0, heard: false, shotsPeek: 0, dtc: 0.016, sigma: AI.diff.sigma * rnd(0.85, 1.2) * (type === 'marksman' ? 0.4 : 1), react: AI.diff.react * rnd(0.8, 1.25) * cfg.react });
+  for (const m of e.meshes) m.material = ENEMY_MATS[type];
+  e.root.position.y = 0; e.rag.on = false; e.laser.visible = e.glint.visible = false;
   e.lastKnown.copy(AI.knownPos);
   e.yaw = e.moveYaw = Math.atan2(e.lastKnown.x - e.pos.x, e.lastKnown.z - e.pos.z);
   e.flinch.x = e.flinch.v = 0;
@@ -463,12 +486,12 @@ function spawnEnemy() {
   else if (!reposition(e, e.role === 'flanker' ? 'flank' : 'advance')) { e.state = 'cover'; e.t = 0.8; }
 }
 function pickCover(e, mode) {
-  const P = targetPosFor(e), pref = (mode === 'advance' ? 1020 : mode === 'retreat' ? 2550 : mode === 'ambush' ? 1450 : 1580) + (e.role === 'support' ? 250 : e.role === 'flanker' ? -200 : 0);
+  const P = targetPosFor(e), pref = (mode !== 'retreat' && e.cfg.pref) || ((mode === 'advance' ? 1020 : mode === 'retreat' ? 2550 : mode === 'ambush' ? 1450 : 1580) + (e.role === 'support' ? 250 : e.role === 'flanker' ? -200 : 0)), minD = e.type === 'rusher' ? 250 : 620;
   let best = null, bs = -Infinity;
   for (const cp of ARENA.pts) {
     if (cp.owner && cp.owner !== e) continue;
     const dP = Math.hypot(cp.pos.x - P.x, cp.pos.z - P.z);
-    if (dP < 620 || !isProtected(cp, P)) continue;
+    if (dP < minD || !isProtected(cp, P)) continue;
     const dE = Math.hypot(cp.pos.x - e.pos.x, cp.pos.z - e.pos.z);
     let sc = -Math.abs(dP - pref) / 450 - dE / 1100 + rnd(0, 0.55);
     sc += canPeek(cp, P) ? (mode === 'flank' ? 2.6 : mode === 'ambush' ? 2.2 : 1.4) : -1.2;
@@ -494,21 +517,23 @@ function reposition(e, mode) {
   if (!cp) return false;
   if (e.cp) e.cp.owner = null;
   e.cp = cp; cp.owner = e; e.reposAt = STATE.simTime; e.unprotN = 0;
-  e.path = planPath(e.pos, cp.pos); e.state = 'move'; e.t = 0; e.peeks = 0; e.peekLimit = 2 + (Math.random() * 2 | 0);
+  e.path = planPath(e.pos, cp.pos); e.state = 'move'; e.t = 0; e.peeks = 0; e.peekLimit = e.cfg.peekLim[0] + (Math.random() * (e.cfg.peekLim[1] - e.cfg.peekLim[0] + 1) | 0);
   return true;
 }
 function aiMode(e) {
-  if (e.hp < 45) return 'retreat';
+  if (e.type === 'rusher') return STATE.simTime - AI.lastSeen > 3.4 ? 'search' : 'advance';
+  if (e.hp < 0.45 * e.maxHp) return 'retreat';
   if (STATE.simTime - AI.lastSeen > 3.4) return 'search';
+  if (e.type === 'marksman') return 'snipe';
   if (playerReloading() && e.role !== 'support' && STATE.simTime - AI.lastSeen < 2.5) return 'advance';
-  if (e.role === 'flanker' || Math.random() < 0.5) return 'flank';
-  if (Math.hypot(e.pos.x - e.lastKnown.x, e.pos.z - e.lastKnown.z) > 2200) return 'advance';
+  if (e.role === 'flanker' || Math.random() < AI.diff.flank) return 'flank';
+  if (Math.hypot(e.pos.x - e.lastKnown.x, e.pos.z - e.lastKnown.z) > 2200 || Math.random() < AI.diff.advance) return 'advance';
   return 'any';
 }
 function executePlan(e) {
   const dKnown = Math.hypot(e.pos.x - e.lastKnown.x, e.pos.z - e.lastKnown.z);
   const intelAge = STATE.simTime - AI.lastSeen;
-  if (e.hp < 45 || dKnown < 500) {
+  if (e.type !== 'rusher' && (e.hp < 0.45 * e.maxHp || dKnown < 500)) {
     if (reposition(e, 'retreat')) return;
   }
   if (intelAge > 3.2) {
@@ -531,6 +556,7 @@ function executePlan(e) {
   if (!reposition(e, mode)) { e.state = 'cover'; e.t = 0.5; e.peeks = 0; }
 }
 function moveAlong(e, dt, speed) {   // accel/turn-rate limited steering with ally separation
+  speed *= e.spd * (e.stagger > 0 ? 0.35 : 1);
   if (e.path.length && e.cur > 30) {   // stuck on cover (steering drift): step clear of it and re-plan around its corner
     const prog = Math.hypot(e.pos.x - e.lpx, e.pos.z - e.lpz);
     e.stuckT = prog < 0.3 * e.cur * dt ? e.stuckT + dt : Math.max(0, e.stuckT - dt);
