@@ -1,0 +1,59 @@
+<!doctype html><meta charset=utf-8><pre id=out>running</pre>
+<script type="importmap">{"imports":{"three":"../vendor/three/build/three.module.js","three/addons/":"../vendor/three/examples/jsm/"}}</script>
+<script type="module">
+// Retarget QA: cycle extraction, root speed, arm direction error vs source, planted-foot slip.
+import * as THREE from 'three';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { Assets } from '../src/character/Assets.js';
+import { CLIPS, BONE_MAP } from '../src/data/clips.js';
+const out = [], A = new Assets(); await A.init();
+const names = (new URLSearchParams(location.search).get('c') || 'idle,walk_f,walk_b,walk_l,walk_r,run_f,run_b,run_l,sprint,crouch_f,crouch_b,crouch_idle,jump,roll,vault,turn_l90').split(',');
+const L = new FBXLoader();
+for (const n of names) {
+  const clip = await A.getClip(n), u = clip.userData;
+  const m = SkeletonUtils.clone(A.template), mx = new THREE.AnimationMixer(m); mx.clipAction(clip).play();
+  const B = k => m.getObjectByName(k), P = k => B(k).getWorldPosition(new THREE.Vector3());
+  // slip: foot world speed while low, with root moving at clip velocity
+  let slip = 0, cnt = 0, minY = 1e9, prev = null, lowY = 1e9;
+  for (let i = 0; i <= Math.round(clip.duration * 30); i++) { mx.setTime(Math.min(i / 30, clip.duration - 1e-4)); m.updateMatrixWorld(true); lowY = Math.min(lowY, P("foot_l").y, P("foot_r").y); }
+  const N = Math.round(clip.duration * 30);
+  for (let i = 0; i <= N; i++) {
+    const t = Math.min(i / 30, clip.duration - 1e-4); mx.setTime(t); m.updateMatrixWorld(true);
+    const off = new THREE.Vector3(u.vel.x, 0, u.vel.z).multiplyScalar(t * 100);
+    const f = [P('foot_l').add(off), P('foot_r').add(off)];
+    if (prev) { const v = [0, 1].map(k => Math.hypot(f[k].x - prev[k].x, f[k].z - prev[k].z) * 30); (window.__s ||= []).push(Math.min(...v)); }
+    prev = f; minY = Math.min(minY, f[0].y, f[1].y);
+  }
+  // arm direction error at t=1.0 of the source vs baked
+  const src = await L.loadAsync(`../assets/animations/${CLIPS[n].file}.fbx`);
+  const ss = (window.__s || []).sort((x, y) => x - y); slip = ss[ss.length >> 1] || 0; cnt = 1; window.__s = [];
+  out.push(`${n.padEnd(12)} dur ${clip.duration.toFixed(2)} cyc ${u.cyclic} speed ${u.speed.toFixed(2)} vel ${u.vel.x.toFixed(2)},${u.vel.z.toFixed(2)} slip ${(cnt ? slip / cnt : 0).toFixed(1)}cm/s footMinY ${minY.toFixed(1)}` + (u.motion ? ` rootEnd ${[...u.motion.slice(-3)].map(v => v.toFixed(2))}` : ''));
+}
+// Pose fidelity: compare bone directions source vs target over walk_f (no root yaw)
+{
+  const n = 'walk_f', clip = await A.getClip(n);
+  const src = await L.loadAsync(`../assets/animations/${CLIPS[n].file}.fbx`), smx = new THREE.AnimationMixer(src); smx.clipAction(src.animations[0]).play();
+  const m = SkeletonUtils.clone(A.template), mx = new THREE.AnimationMixer(m); mx.clipAction(clip).play();
+  const pairs = [['LeftArm', 'LeftForeArm'], ['LeftForeArm', 'LeftHand'], ['RightArm', 'RightForeArm'], ['LeftLeg', 'LeftShin'], ['LeftShin', 'LeftFoot'], ['Spine1', 'Spine2'], ['LeftHand', 'LeftHandMiddle1']];
+  const res = {};
+  for (let i = 0; i < 10; i++) {
+    const t = i * 0.1; mx.setTime(t); m.updateMatrixWorld(true);
+    // source time = cycle start offset unknown -> compare first frame direction sets by best alignment over the clip
+    let best = 1e9;
+    for (let ts = 0; ts < src.animations[0].duration - 0.05; ts += 1 / 30) {
+      smx.setTime(ts); src.updateMatrixWorld(true);
+      let e = 0;
+      for (const [a, b] of pairs) {
+        const ds = src.getObjectByName(b).getWorldPosition(new THREE.Vector3()).sub(src.getObjectByName(a).getWorldPosition(new THREE.Vector3())).normalize();
+        const dt = m.getObjectByName(BONE_MAP[b]).getWorldPosition(new THREE.Vector3()).sub(m.getObjectByName(BONE_MAP[a]).getWorldPosition(new THREE.Vector3())).normalize();
+        e += ds.angleTo(dt);
+      }
+      best = Math.min(best, e);
+    }
+    res[t.toFixed(1)] = (best / pairs.length * 57.3).toFixed(1);
+  }
+  out.push('walk_f mean bone-direction error (deg) per sample: ' + JSON.stringify(res));
+}
+document.getElementById('out').textContent = out.join('\n');
+</script>

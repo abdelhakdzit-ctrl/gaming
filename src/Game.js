@@ -133,7 +133,7 @@ export class Game {
       // waves
       if (this.state === 'play') {
         const alive = this.ais.filter(a => !a.c.dead).length;
-        if (alive === 0) {
+        if (alive === 0 && !this.params.has('peaceful')) {
           this.waveT -= dt;
           if (this.waveT <= 0) {
             if (this.wave > 0) { P.health = Math.min(P.maxHealth, P.health + 40); for (const s of P.weapons.slots) { s.reserve = s.def.reserve; } }

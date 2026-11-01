@@ -13,6 +13,11 @@ export class PlayerController {
     this.sprinting = false;
     character.getAimRay = () => this.aimRay();
     character.onFired = d => this.recoil(d);
+    // Upper-body aim converges on what the crosshair actually covers.
+    character.getAimPoint = () => {
+      const { origin, dir } = this.aimRay(), h = game.world.raycast(origin, dir, 300);
+      return origin.addScaledVector(dir, h ? Math.max(2, h.dist) : 300);
+    };
   }
   recoil(d) {
     const r = d.recoil, k = THREE.MathUtils.degToRad(1) * (this.c.intent.ads ? 0.7 : 1);
