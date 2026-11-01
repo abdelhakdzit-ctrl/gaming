@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { DEG, Spring, V, clamp, lerp, rayBox } from './math.js';
+import { DEG, Spring, V, clamp, lerp, rayBox, sstep } from './math.js';
 import { IS_TOUCH, STATE, rec } from './state.js';
-import { camera, controls, renderer, scene } from './scene.js';
-import { audio } from './audio.js';
+import { camera, controls, renderer, scene, setAtmosphere } from './scene.js';
+import { audio, playHit, setMuffle, sfxBus, startAmbient, stepHeartbeat, stopAmbient } from './audio.js';
 import { burst, impactFX, tracerFX } from './fx.js';
 import { ikEdit, toggleIKEdit } from './ik.js';
 import { RLT, stopRlTimeline } from './reload-timeline.js';
@@ -11,6 +11,8 @@ import { KA, RL, W, box, fromGun, gunState, pressFire, releaseFire } from './wea
 import { aim, isAiming, lastPlaced, playerAim, playerCrouch, tmpM, tmpQ } from './character.js';
 import { motionPreview, stopMotionPreview } from './motion-studio.js';
 import { AI, ARENA, castWorld, onEnemyHit, startAI, stopAI, suppressNear } from './ai.js';
+import { Damp, feel, shake, stepBloom, stepShake } from './gameplay/juice.js';
+import { addDamageIndicator, clearIndicators, onKill, onPlayerDamaged, resetDirector, summaryHTML, updateDirector, updateIndicators } from './gameplay/director.js';
 import { goFullscreen, leaveFullscreen, setView, touch } from './ui.js';
 
 // ======================================================================
@@ -142,13 +144,21 @@ function onTargetHit(hit, d) {
   hitMarker(head);
   popup((head ? 'HEAD +' : '+') + pts, hit.point);
 }
-export function hitMarker(head) {
-  const m = document.getElementById('hm'); m.className = 'on' + (head ? ' head' : '');
-  clearTimeout(hitMarker.t); hitMarker.t = setTimeout(() => (m.className = head ? 'head' : ''), 90);
+export function hitMarker(head, kill = false) {
+  const m = document.getElementById('hm'); m.className = ''; void m.offsetWidth;   // restart the pop animation on every hit
+  m.className = 'on' + (head ? ' head' : '') + (kill ? ' kill' : '');
+  if (game.mode === 'ai' && !head && !kill) playHit('hit');
+  clearTimeout(hitMarker.t); hitMarker.t = setTimeout(() => (m.className = head ? 'head' : ''), kill ? 220 : 110);
 }
 export function popup(text, p) {
+  const isKill = game.mode === 'ai' && /^(HEADSHOT|KILL|BLAST KILL)/.test(text);
+  if (isKill) {
+    const head = text[0] === 'H', mult = onKill(p, head, game);
+    hitMarker(head, true);
+    if (mult > 1) text += `  x${mult}`;
+  }
   const s = p.clone().project(camera); if (s.z > 1) return;
-  const el = document.createElement('div'); el.className = 'pop'; el.textContent = text;
+  const el = document.createElement('div'); el.className = 'pop' + (isKill ? (text[0] === 'H' ? ' head' : ' kill') : ''); el.textContent = text;
   el.style.left = ((s.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - s.y) / 2 * innerHeight) + 'px';
   document.body.appendChild(el);
   requestAnimationFrame(() => { el.style.transform = 'translateY(-40px)'; el.style.opacity = '0'; });
@@ -161,29 +171,46 @@ export function playDing(delay, f) {
   for (const [mul, gain, dec] of [[1, 0.25, 0.9], [2.76, 0.12, 0.5], [5.4, 0.05, 0.25]]) {
     const o = ac.createOscillator(), g = ac.createGain();
     o.frequency.value = f * mul; g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0005, t + dec);
-    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dec + 0.05);
+    o.connect(g).connect(sfxBus); o.start(t); o.stop(t + dec + 0.05);
   }
 }
 
 const fmtTime = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
-// Third-person camera over the right shoulder; the camera ray picks the aim point.
+// Third-person camera over the shoulder: critically damped follow/offsets, collision against cover, FOV curves, shake.
+const cam = { px: new Damp(), py: new Damp(), pz: new Damp(), side: new Damp(1), sideOff: new Damp(48), up: new Damp(160), dist: new Damp(170), fov: new Damp(50), z: new Damp(0), shoulder: 1, init: false, t: 0 };
+export function swapShoulder() { cam.shoulder = -cam.shoulder; }
+const _head = V(), _lat = V();
 export function updateGameCamera(real) {
-  tps.z += ((tps.zoom ? 1 : 0) - tps.z) * (1 - Math.exp(-12 * real));
+  real = Math.min(real, 0.05); cam.t += real;
+  tps.z = clamp(cam.z.step(tps.zoom ? 1 : 0, 0.11, real), 0, 1);
+  const e = tps.z * tps.z * (3 - 2 * tps.z);   // smoothstep curve over the damped zoom
   const p = tps.pitch + rec.cam.x * DEG;
   const fwd = V(Math.sin(tps.yaw) * Math.cos(p), Math.sin(p), Math.cos(tps.yaw) * Math.cos(p));
   const right = V(-Math.cos(tps.yaw), 0, Math.sin(tps.yaw));
   const crouchDrop = (playerCrouch?.w || 0) * 34;
   const basePos = LADDER.active ? LADDER.worldTrackPos : charPos;
   const longW = W.blend || (W.cur?.long ? 1 : 0);
-  const sideOff = lerp(lerp(48, 56, longW), lerp(38, 46, longW), tps.z);
-  const upOff = lerp(160, 157, tps.z) + 4 * longW + Math.max(0, p) * 16 - crouchDrop;
-  const pivot = basePos.clone().add(V(0, upOff, 0)).addScaledVector(right, sideOff);
-  let dist = lerp(IS_TOUCH ? 210 : lerp(165, 180, longW), lerp(92, 108, longW), tps.z);
-  if (ARENA.group.visible) {   // keep walls from blocking the view: pull the camera in front of them
+  if (!cam.init || Math.hypot(basePos.x - cam.px.x, basePos.z - cam.pz.x) > 250) { cam.px.snap(basePos.x); cam.py.snap(basePos.y); cam.pz.snap(basePos.z); cam.side.snap(cam.shoulder); cam.init = true; }
+  const fx = cam.px.step(basePos.x, 0.06, real), fy = cam.py.step(basePos.y, 0.1, real), fz = cam.pz.step(basePos.z, 0.06, real);
+  const sideOff = cam.sideOff.step(lerp(lerp(48, 56, longW), lerp(38, 46, longW), e), 0.14, real) * cam.side.step(cam.shoulder, 0.16, real);
+  const upOff = cam.up.step(lerp(160, 157, e) + 4 * longW + Math.max(0, p) * 16 - crouchDrop, 0.12, real);
+  _head.set(fx, fy + upOff, fz);
+  _lat.copy(right).multiplyScalar(sideOff);
+  let lat = _lat.length(), latDir = V(Math.sign(sideOff) * right.x, 0, Math.sign(sideOff) * right.z);
+  const arena = ARENA.group.visible;
+  if (arena) for (const cv of ARENA.covers) { const h = rayBox(_head, latDir, cv, lat); if (h) lat = Math.max(0, h.t - 10); }   // shoulder never inside cover
+  const pivot = _head.clone().addScaledVector(latDir, lat);
+  const wantDist = lerp(IS_TOUCH ? 210 : lerp(165, 180, longW), lerp(92, 108, longW), e);
+  let limit = wantDist;
+  if (arena) {
     const back = fwd.clone().negate();
-    for (const cv of ARENA.covers) { const h = rayBox(pivot, back, cv, dist); if (h) dist = Math.max(25, h.t - 12); }
+    for (const cv of ARENA.covers) { const h = rayBox(pivot, back, cv, wantDist); if (h) limit = Math.min(limit, Math.max(25, h.t - 12)); }
   }
+  if (fwd.y > 0.02) limit = Math.min(limit, Math.max(25, (pivot.y - 14) / fwd.y));   // camera stays above the ground
+  // pull in instantly when blocked, ease back out when clear
+  if (limit < cam.dist.x) cam.dist.snap(limit);
+  const dist = cam.dist.step(limit, 0.22, real);
   camera.position.copy(pivot).addScaledVector(fwd, -dist);
   camera.lookAt(camera.position.clone().add(fwd));
   // Scoped weapons (Kar98k / RPG-7): 1st right-click (aimStage === 1) aims over the shoulder without scope;
@@ -195,8 +222,18 @@ export function updateGameCamera(real) {
     const eye = toWorld(fromGun(W.cur.scope.clone().add(V(0, 0, 2)))), d = toWorldDir(V(0, 0, 1).applyQuaternion(gunState.q));
     camera.position.copy(eye); camera.lookAt(eye.clone().add(d));
   }
-  const fov = scoped ? 7 : lerp(50, 34, tps.z);
+  // FOV: aim zoom curve, sprint widening, kill punch
+  const sprintK = sstep(230, 400, mm.speed) * (1 - e);
+  feel.fovKick = Math.max(0, feel.fovKick - real * 5);
+  const tFov = scoped ? 7 : lerp(50, 34, e) + 7 * sprintK - 2.2 * feel.fovKick;
+  const fov = cam.fov.step(tFov, scoped ? 0.04 : 0.09, real);
   if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
+  // shake + idle breathing / sprint sway (rotations only, so the aim ray below stays clean)
+  stepShake(real, cam.t);
+  const k = scoped ? 0.12 : 1, breath = Math.sin(cam.t * 1.25) * 0.0011 * (0.4 + e) * (scoped ? 6 : 1);
+  camera.rotateY((shake.yaw + Math.sin(cam.t * 0.8) * 0.0007 * (0.4 + e)) * k);
+  camera.rotateX((shake.pitch + breath) * k);
+  camera.rotateZ((shake.roll + Math.sin(cam.t * 8.5) * 0.0016 * sprintK) * k);
   const h = castWorld(camera.position, fwd, 9000, scoped ? 20 : dist + 30);   // skip anything between the camera and the player
   aim.point.copy(h.kind !== 'none' ? h.point : camera.position.clone().addScaledVector(fwd, 5000));
   if (aim.point.distanceTo(charPos) < 150) aim.point.copy(camera.position).addScaledVector(fwd, 600);
