@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DEG, V, clamp, ease, lerp, sstep } from './math.js';
-import { STATE, rec } from './state.js';
+import { BLOCK, STATE, rec } from './state.js';
 import { scene } from './scene.js';
 import { audio, playSample, playShot } from './audio.js';
 import { GRIP_R, _hp, _hq, _hs, bones, handFrame, handRel, orient, restWorldQ, rotateWorld, setWorldQuat, twoBoneIK, worldPos, worldQuat } from './skeleton.js';
@@ -1155,6 +1155,7 @@ export function fitLong(eye) {
 }
 export function fire() {
   if (KA.on || SG_PUMP.on) return;
+  if (game.active && BLOCK.w > 0.7) { playClick(900, 0.03, 0.2); return; }   // muzzle against a wall: weapon is raised, no shot
   if (W.cur.ammo <= 0 || RL.on) { if (!RL.on) { playClick(1800, 0.03, 0.25); scheduleReload(0.25); } return; }
   STATE.fireTime = STATE.simTime; STATE.ejected = false;
   const v = () => 0.85 + Math.random() * 0.3, cur = W.cur, k = cur.kick;

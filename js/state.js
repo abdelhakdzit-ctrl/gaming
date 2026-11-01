@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { Spring, V } from './math.js';
 
+// Lean/peek (w: signed -1 left .. +1 right, off: lateral head shift in cm) and weapon-vs-wall block (pen in cm, w 0..1)
+export const LEAN = { dir: 0, touch: 0, w: 0, off: 0, free: 1 };
+export const BLOCK = { pen: 0, w: 0 };
+
 export const STATE = {
   soundOn: true,
   NORMAL_W: 0,
