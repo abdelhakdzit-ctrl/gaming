@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { DEG, V, angWrap, clamp, ease, lerp, sstep } from './math.js';
+import { damp, smoother } from './anim/curves.js';
 import { LEAN, STATE, rec } from './state.js';
-import { scene } from './scene.js';
+import { charRoot, scene } from './scene.js';
 import { STANCE, bones, restWorldPos, restWorldQ, rt, setWorldQuat, twoBoneIK, worldPos, worldQuat } from './skeleton.js';
 import { GAIT_HIP, HEEL_BACK, ikBase, ikState, solveLegs, userIK } from './ik.js';
 import { RLT, stopRlTimeline } from './reload-timeline.js';
@@ -44,6 +45,11 @@ export const LADDER = {
   clips: {},
   group: new THREE.Group(),
   worldTrackPos: V(),
+  grip: null,
+  gripW: { l: 0, r: 0 },
+  zS: { x: 0, v: 0 },
+  from: null,
+  enterT: 1,
   lastRungSfx: -1,
   toWorld(localP) {
     return localP.clone().applyAxisAngle(V(0, 1, 0), this.yaw).add(this.pos);
@@ -198,40 +204,104 @@ export function slingWeaponOnBack(cur) {
   cur.obj.matrixWorldNeedsUpdate = true;
 }
 
-export function solveLadderIK(state, u, anchorPos, anchorYaw, paused = false) {
+// ---- Hand-over-hand rung gripping ----
+// Each climb clip is scanned once for the spans where a hand / foot is planted (almost still in ladder space). A planted span
+// is pinned to the nearest rung; between two spans the animated limb keeps its own arc and is shifted by a smoothly eased
+// offset from the previous rung to the next one, so hands travel rung to rung instead of freezing or snapping.
+const GRIP_LIMBS = [['hand_l', 'middle_01_l', 0.5], ['hand_r', 'middle_01_r', 0.5], ['foot_l', 'ball_l', 3.2], ['foot_r', 'ball_r', 3.2]];
+const GRIP_X = { hand_l: [6, 22], hand_r: [-22, -6], foot_l: [5, 16], foot_r: [-16, -5] };
+function buildGripTables() {
+  if (LADDER.grip || !LADDER.ready) return;
+  const keepP = charRoot.position.clone(), keepR = charRoot.rotation.clone();
+  charRoot.position.set(0, 0, 0); charRoot.rotation.set(0, 0, 0); charRoot.updateMatrixWorld(true);
+  const top = LADDER.startH + LADDER.loops * LADDER.loopH;
+  const defs = [['upStart', 48, false, 0], ['upLoop', 72, true, LADDER.startH], ['upEnd', 48, false, top]];
+  const grip = {}, zs = { hand: [], foot: [] };
+  for (const [key, N, loop, ay] of defs) {
+    const src = LADDER.clips[key], n = loop ? N : N + 1, P = GRIP_LIMBS.map(() => []);
+    for (let i = 0; i < n; i++) {
+      retargetFrame(i / N * src.dur, null, src, true);
+      GRIP_LIMBS.forEach(([, b], k) => { const w = worldPos(bones[b]); w.y += ay; P[k].push(w); });
+    }
+    grip[key] = { loop, dur: src.dur };
+    GRIP_LIMBS.forEach(([name], k) => {
+      const pt = P[k], at = i => { const j = loop ? i % n : i; return pt[j].clone().add(V(0, loop ? Math.floor(i / n) * LADDER.loopH : 0, 0)); };
+      const total = loop ? 2 * n : n - 1, still = [];
+      for (let i = 0; i < total; i++) still.push(at(i).distanceTo(at(i + 1 < (loop ? 2 * n + 1 : n) ? i + 1 : i)) / (src.dur / N) < 45);
+      const runs = []; let i = 0;
+      while (i < total) {
+        if (!still[i]) { i++; continue; }
+        let j = i; while (j + 1 < total && still[j + 1]) j++;
+        if (j - i >= 2 && (!loop || i < n)) { const m = V(); for (let q = i; q <= j + 1; q++) m.add(at(q)); runs.push({ U0: i / N, U1: (j + 1) / N, pos: m.multiplyScalar(1 / (j - i + 2)) }); }
+        i = j + 1;
+      }
+      grip[key][name] = runs;
+      if (loop) runs.forEach(r => zs[name.slice(0, 4)].push(r.pos.z));
+    });
+  }
+  const zc = { hand: zs.hand.reduce((x, y) => x + y, 0) / Math.max(1, zs.hand.length), foot: zs.foot.reduce((x, y) => x + y, 0) / Math.max(1, zs.foot.length) };
+  for (const key in grip) GRIP_LIMBS.forEach(([name]) => {
+    grip[key][name] = grip[key][name].filter(r => Math.abs(r.pos.z - zc[name.slice(0, 4)]) < 10 && r.pos.y > LADDER.rung0 - 8 && r.pos.y < LADDER.rungs[LADDER.rungs.length - 1] + 8);
+  });
+  grip.zoff = LADDER.rungZ - 0.8 - zc.hand;   // body shift that puts the animation's hand plane on the real rung plane
+  LADDER.grip = grip;
+  charRoot.position.copy(keepP); charRoot.rotation.copy(keepR); charRoot.updateMatrixWorld(true);
+}
+// -> { target, grip (0..1 closed) } in ladder space, or null when the limb is not on the rungs
+function gripTarget(name, key, U, a, zoff) {
+  const tab = LADDER.grip?.[key], runs = tab?.[name];
+  if (!runs?.length) return null;
+  const off = GRIP_LIMBS.find(l => l[0] === name)[2], inst = [];
+  for (let m = tab.loop ? Math.floor(U) - 2 : 0; m <= (tab.loop ? Math.floor(U) + 1 : 0); m++) for (const r of runs) inst.push({ U0: r.U0 + m, U1: r.U1 + m, m, r });
+  inst.sort((p, q) => p.U0 - q.U0);
+  const meta = i => {
+    const P = i.r.pos.clone().add(V(0, i.m * LADDER.loopH * (tab.loop ? 1 : 0), zoff));
+    const ry = LADDER.nearestRung(P.y - off), R = V(clamp(P.x, ...GRIP_X[name]), ry + off, LADDER.rungZ - (name[0] === 'h' ? 0.8 : 0.5));
+    return { P, R };
+  };
+  const cur = inst.find(i => U >= i.U0 && U <= i.U1);
+  if (cur) return { target: meta(cur).R, grip: 1 };
+  let prev = null, next = null;
+  for (const i of inst) { if (i.U1 <= U) prev = i; else if (i.U0 >= U && !next) next = i; }
+  const dPrev = prev ? (() => { const { P, R } = meta(prev); return R.clone().sub(P); })() : null;
+  const dNext = next ? (() => { const { P, R } = meta(next); return R.clone().sub(P); })() : null;
+  let d, sw = 0.5;
+  if (prev && next) { sw = (U - prev.U1) / (next.U0 - prev.U1); d = dPrev.clone().lerp(dNext, smoother(sw)); }
+  else if (next) { sw = 1; d = dNext.multiplyScalar(smoother(1 - (next.U0 - U) / 0.25)); }
+  else if (prev) { sw = 0; d = dPrev.multiplyScalar(1 - smoother((U - prev.U1) / 0.25)); }
+  else return null;
+  const t = a.clone().add(d);
+  if (prev && next) t.z -= (name[0] === 'h' ? 5 : 3.5) * Math.sin(Math.PI * sw);   // lift off the rung while travelling
+  return { target: t, grip: 0.3 + 0.7 * Math.max(1 - sstep(0, 0.2, sw), sstep(0.75, 1, sw)) * (prev && next ? 1 : 1) };
+}
+
+export function solveLadderIK(state, u, anchorPos, anchorYaw, paused = false, uTab = u, fade = 1) {
   const charToLad = p => p.clone().applyAxisAngle(V(0, 1, 0), anchorYaw).add(anchorPos);
   const ladToChar = p => p.clone().sub(anchorPos).applyAxisAngle(V(0, 1, 0), -anchorYaw);
 
-  // 1. Rung Climbing IK (Up_Start, Up_Loop, Up_End)
+  // 1. Rung Climbing IK (Up_Start, Up_Loop, Up_End): hand-over-hand on the rungs
   if (state === 'up_start' || state === 'up_loop' || state === 'up_end') {
-    const wClimb = state === 'up_start' ? sstep(0.20, 0.45, u)
+    const wClimb = (state === 'up_start' ? sstep(0.12, 0.38, u)
                  : state === 'up_loop'  ? 1.0
-                 : (1 - sstep(0.08, 0.32, u));
+                 : (1 - sstep(0.08, 0.32, u))) * fade;
+    const key = state === 'up_start' ? 'upStart' : state === 'up_loop' ? 'upLoop' : 'upEnd', zoff = LADDER.zS.x;
     if (wClimb > 0.001) {
       for (const s of ['l', 'r']) {
         const up = bones['upperarm_' + s], lo = bones['lowerarm_' + s], hand = bones['hand_' + s], kn = bones['middle_01_' + s];
         const hp = worldPos(hand), hq = worldQuat(hand), kp = worldPos(kn);
-        const kLad = charToLad(kp), hLad = charToLad(hp);
-        const ry = LADDER.nearestRung(kLad.y);
-        const wHand = wClimb * (paused ? 0.92 : sstep(20.0, 25.5, hLad.z) * (1 - sstep(7.0, 14.5, Math.abs(kLad.y - ry))));
-        if (wHand > 0.001) {
-          const tKLad = V(clamp(kLad.x, s === 'l' ? 8 : -22, s === 'l' ? 22 : -8), ry, LADDER.rungZ - 0.8);
-          const tWChar = ladToChar(tKLad).add(hp.clone().sub(kp));
-          const ikW = hp.clone().lerp(tWChar, wHand * 0.9);
-          twoBoneIK(up, lo, hand, ikW, worldPos(lo).sub(worldPos(up)));
-          setWorldQuat(hand, hq);
-        }
+        const g = gripTarget('hand_' + s, key, uTab, charToLad(kp), zoff);
+        if (!g) continue;
+        const ikW = hp.clone().lerp(ladToChar(g.target).add(hp.clone().sub(kp)), wClimb);
+        twoBoneIK(up, lo, hand, ikW, worldPos(lo).sub(worldPos(up)));
+        setWorldQuat(hand, hq);
+        LADDER.gripW[s] = g.grip * wClimb;
       }
       for (const s of ['l', 'r']) {
         const thigh = bones['thigh_' + s], calf = bones['calf_' + s], foot = bones['foot_' + s], ball = bones['ball_' + s];
         const fp = worldPos(foot), fq = worldQuat(foot), bp = ball ? worldPos(ball) : fp;
-        const bLad = charToLad(bp), fLad = charToLad(fp);
-        const ry = LADDER.nearestRung(bLad.y - 2.2);
-        const wFoot = wClimb * (paused ? 0.92 : sstep(13.5, 18.5, fLad.z) * (1 - sstep(7.5, 15.0, Math.abs((bLad.y - 2.2) - ry))));
-        if (wFoot > 0.001) {
-          const tBLad = V(clamp(bLad.x, s === 'l' ? 4 : -16, s === 'l' ? 16 : -4), ry + 2.2, LADDER.rungZ - 0.5);
-          const tFChar = ladToChar(tBLad).add(fp.clone().sub(bp));
-          const ikF = fp.clone().lerp(tFChar, wFoot * 0.9);
+        const g = gripTarget('foot_' + s, key, uTab, charToLad(bp), zoff);
+        if (g) {
+          const ikF = fp.clone().lerp(ladToChar(g.target).add(fp.clone().sub(bp)), wClimb);
           twoBoneIK(thigh, calf, foot, ikF, worldPos(calf).sub(worldPos(thigh)));
           setWorldQuat(foot, fq);
         }
