@@ -1,0 +1,8 @@
+<!doctype html><meta charset=utf-8><body><pre id=out></pre>
+<iframe src="../index.html?keys=KeyW,ShiftLeft&weapon=0" style="width:1280px;height:720px"></iframe>
+<script>
+const f=document.querySelector('iframe');
+setTimeout(()=>{const g=f.contentWindow.game;g.paused=true;const errs=[];try{for(let i=0;i<30*40;i++){g.update(1/30);if(i%300==0)g.player.health=100;}}catch(e){errs.push(e.stack)}window.__errs=errs;
+document.getElementById('out').textContent=JSON.stringify({state:g.state,wave:g.wave,kills:g.kills,enemies:g.ais.length,pp:g.player.pos,hp:g.player.health,errs:window.__errs});},8000);
+f.addEventListener('load',()=>{f.contentWindow.addEventListener('error',e=>(window.__errs=window.__errs||[]).push(e.message));});
+</script>
