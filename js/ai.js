@@ -5,13 +5,16 @@ import { IS_TOUCH, STATE, rec } from './state.js';
 import { camera, charRoot, scene } from './scene.js';
 import { audio, playSample, sfxBus } from './audio.js';
 import { bones, rotateWorld, worldPos } from './skeleton.js';
-import { impactFX, muzzleFlashAt, radialTexture, tracerFX } from './fx.js';
+import { grenadeExplosionFX, impactFX, muzzleFlashAt, radialTexture, tracerFX } from './fx.js';
 import { ikFromJson, ikToJson } from './ik.js';
 import { charPos, charVelW, footRoll, gaitParams, gaitPose, mm, retargetFrame } from './locomotion.js';
 import { KA, M4, RIFLE_MUZZLE, RL, W, chainOf, dropped, playClick, poseHandFrom, setGunMatrix } from './weapons.js';
 import { AIM_SPLIT, playerCrouch, tmpM, tmpQ } from './character.js';
 import { TGROUP, endRound, game, hitMarker, hittables, playDing, popup, ray, tps } from './game.js';
 import { ANIM_T0 } from './main.js';
+import { Ragdoll } from './physics/ragdoll.js';
+import { difficultyFor, pickArchetype } from './ai/difficulty.js';
+import { addTrauma } from './gameplay/juice.js';
 
 // ======================================================================
 //  COMBAT  arena with cover + AI squad. Enemies are clones of the mannequin posed from snapshots of the
@@ -23,7 +26,8 @@ import { ANIM_T0 } from './main.js';
 // ======================================================================
 export const AI = { on: false, enemies: [], snaps: null, names: [], template: null, gunGeo: null, gunInHand: null, yaw0: 0, pitch0: 0, crouchH: 115,
   walkCycle: 165, runCycle: 276, strCycle: 100, hp: 100, lastHit: -9, wave: 1, toKill: 5, killed: 0, spawned: 0, kills: 0, heads: 0, spawnT: 0, breakT: 0,
-  lastSeen: 0, heardAt: -9, knownPos: V(), knownVel: V(), shooting: 0, chest: V(), head: V(), caps: [], diff: null, drops: [], src: [], flash: 0, hitFrom: null, hitT: -9 };
+  lastSeen: 0, heardAt: -9, knownPos: V(), knownVel: V(), shooting: 0, chest: V(), head: V(), caps: [], diff: null, drops: [], src: [], flash: 0, hitFrom: null, hitT: -9,
+  nades: [], spawnLog: [], seen: new Set(), campT: 0, nadeCd: 10, ragdoll: true };
 export const ARENA = { group: new THREE.Group(), covers: [], pts: [],
   spawns: [V(-1300, 0, 3700), V(0, 0, 3950), V(1300, 0, 3700), V(-1750, 0, 2500), V(1750, 0, 2500)] };
 ARENA.group.visible = false; scene.add(ARENA.group);
@@ -77,18 +81,18 @@ export function pushOutOfCover(p, r) {
     p.x = cv.c.x + lx * c + lz * s; p.z = cv.c.z - lx * s + lz * c;
   }
 }
-const _la = V(), _ld = V();
+const _la = V(), _lv = V();
 function losClear(a, b) {
-  _ld.subVectors(b, a); const L = _ld.length(); _ld.divideScalar(L);
-  for (const cv of ARENA.covers) if (rayBox(a, _ld, cv, L)) return false;
+  _lv.subVectors(b, a); const L = _lv.length(); _lv.divideScalar(L);
+  for (const cv of ARENA.covers) if (rayBox(a, _lv, cv, L)) return false;
   return true;
 }
 // Hidden from the player: the spot's own cover is between the (crouched / standing) head and the player's eyes.
 function isProtected(cp, P) {
   const a = _la.set(cp.pos.x, cp.tall ? 165 : AI.crouchH, cp.pos.z);
   const targetY = 150 - (playerCrouch?.w || 0) * 35;
-  _ld.set(P.x - a.x, targetY - a.y, P.z - a.z); const L = _ld.length(); _ld.divideScalar(L);
-  return !!rayBox(a, _ld, cp.cover, L);
+  _lv.set(P.x - a.x, targetY - a.y, P.z - a.z); const L = _lv.length(); _lv.divideScalar(L);
+  return !!rayBox(a, _lv, cp.cover, L);
 }
 function canPeek(cp, P) { const q = cp.tall ? cp.peek : cp.pos; return losClear(V(q.x, 150, q.z), V(P.x, 135, P.z)); }
 function planPath(from, to) {   // straight line with detours around the corners of blocking cover
@@ -235,18 +239,33 @@ function setEnemyBadge(e, kind, dur = 1.6) {
 }
 const enemyMat = new THREE.MeshStandardMaterial({ color: 0x8b3a2f, roughness: 0.6, metalness: 0.05 });
 const enemyGunMat = new THREE.MeshStandardMaterial({ color: 0x2b2d31, roughness: 0.5, metalness: 0.6 });
+const ENEMY_MATS = { rifleman: enemyMat, rusher: new THREE.MeshStandardMaterial({ color: 0xb8741a, roughness: 0.6, metalness: 0.05 }),
+  marksman: new THREE.MeshStandardMaterial({ color: 0x35566f, roughness: 0.6, metalness: 0.05 }) };
+// Archetypes: gun = viewmodel scale, speed/hp multipliers, range = max effective fire distance, pref = preferred cover distance to the player
+const ARCH = {
+  rifleman: { gun: 1, speed: 1, hp: 1, range: 1e9, pref: 0, peekLim: [2, 3], react: 1 },
+  rusher: { gun: 0.78, speed: 1.3, hp: 0.85, range: 800, pref: 460, peekLim: [1, 1], react: 0.7 },
+  marksman: { gun: 1.14, speed: 0.9, hp: 0.7, range: 1e9, pref: 2450, peekLim: [1, 2], react: 1 } };
+const MAX_RAGDOLLS = IS_TOUCH ? 3 : 5, BLAST_R = 380, _gs = new THREE.Matrix4();
+const LASER_GEO = new THREE.CylinderGeometry(1.5, 1.5, 1, 6, 1, true).translate(0, 0.5, 0);
 const POOL = IS_TOUCH ? 6 : 7;
-let blobIM = null;
+let blobIM = null, glintTex = null;
 export function buildEnemyPool() {
   for (let i = 0; i < POOL; i++) {
-    const skin = SkeletonUtils.clone(AI.template), B = {};
-    skin.traverse(n => { if (n.isBone) B[n.name] = n; if (n.isMesh) { n.material = enemyMat; n.castShadow = false; } });
+    const skin = SkeletonUtils.clone(AI.template), B = {}, meshes = [];
+    skin.traverse(n => { if (n.isBone) B[n.name] = n; if (n.isMesh) { n.material = enemyMat; n.castShadow = false; meshes.push(n); } });
     const root = new THREE.Group(); root.add(skin); ARENA.group.add(root);
     const gun = new THREE.Mesh(AI.gunGeo, enemyGunMat); gun.matrixAutoUpdate = false; ARENA.group.add(gun);
     const badge = new THREE.Sprite(new THREE.SpriteMaterial({ map: AI_BADGES.hesitate, transparent: true, depthTest: false, depthWrite: false }));
     badge.scale.set(44, 18, 1); badge.renderOrder = 15; badge.visible = false; ARENA.group.add(badge);
+    const laser = new THREE.Mesh(LASER_GEO, new THREE.MeshBasicMaterial({ color: 0xff3a20, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+    laser.visible = false; laser.frustumCulled = false; laser.renderOrder = 14; ARENA.group.add(laser);
+    const glint = new THREE.Sprite(new THREE.SpriteMaterial({ map: glintTex ||= radialTexture([[0, 'rgba(255,255,255,1)'], [0.25, 'rgba(255,255,255,0.5)'], [1, 'rgba(255,255,255,0)']], 64),
+      color: 0xff6040, transparent: true, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending }));
+    glint.visible = false; glint.renderOrder = 16; ARENA.group.add(glint);
     root.visible = gun.visible = false;
-    AI.enemies.push({ root, B, bones: AI.names.map(n => B[n]), gun, badge, badgeKind: null, badgeT: 0,
+    AI.enemies.push({ root, B, meshes, rag: new Ragdoll(B, () => ARENA.covers), type: 'rifleman', cfg: ARCH.rifleman, laser, glint, lase: 0, lockPt: V(), stagger: 0, callAt: -9, spd: 1,
+      searchQueue: [], searchPause: 0, blockedT: 0, strafeT: 0, strafeDir: 1, maxHp: 100, throwT: 0, bones: AI.names.map(n => B[n]), gun, badge, badgeKind: null, badgeT: 0,
       pos: V(), lastKnown: V(), searchPos: V(), yaw: 0, moveYaw: 0, muzzle: V(), flinch: new Spring(3.5, 0.4), seed: i * 1.7,
       lookYaw: 0, lookPitch: 0, headTilt: 0, wantLookYaw: 0, wantLookPitch: 0, wantTilt: 0,
       alert: 1, searchCount: 0, patrolWait: 0, dur: 1.4, nextIntent: 'plan', role: i % 3 === 0 ? 'flanker' : i % 3 === 1 ? 'assault' : 'support',
@@ -258,12 +277,7 @@ export function buildEnemyPool() {
     new THREE.MeshBasicMaterial({ map: radialTexture([[0, 'rgba(0,0,0,0.5)'], [1, 'rgba(0,0,0,0)']], 64), transparent: true, depthWrite: false }), POOL);
   blobIM.count = 0; blobIM.frustumCulled = false; blobIM.renderOrder = 1; ARENA.group.add(blobIM);
 }
-function aiDifficulty() {
-  const w = AI.wave;
-  return { sigma: Math.max(0.015, 0.034 - 0.0028 * (w - 1)) * (IS_TOUCH ? 1.25 : 1), react: Math.max(0.3, 0.75 - 0.06 * (w - 1)) * (IS_TOUCH ? 1.2 : 1),
-    maxAlive: Math.min(2 + w, IS_TOUCH ? 4 : 5), shooters: w < 3 ? 2 : 3, toKill: 3 + 2 * w,
-    stagger: Math.max(0.25, 0.95 - 0.07 * (w - 1)), missShots: w < 3 ? 3 : w < 6 ? 2 : 1 };
-}
+function aiDifficulty() { return difficultyFor(AI.wave, IS_TOUCH); }
 function banner(text) {
   const b = document.getElementById('banner'); b.textContent = text; b.classList.add('on');
   clearTimeout(banner.t); banner.t = setTimeout(() => b.classList.remove('on'), 1600);
@@ -274,7 +288,8 @@ export function startAI() {
   AI.drops.length = 0;
   for (const p of ARENA.pts) p.owner = null;
   Object.assign(AI, { on: true, hp: 100, lastHit: -9, wave: 1, killed: 0, spawned: 0, kills: 0, heads: 0, spawnT: 1.0, breakT: 0,
-    lastSeen: STATE.simTime - 3.5, heardAt: -9, flash: 0, hitT: -9, tokenAt: 0, roleT: 0, bb: null });
+    lastSeen: STATE.simTime - 3.5, heardAt: -9, flash: 0, hitT: -9, tokenAt: 0, roleT: 0, bb: null, campT: 0, nadeCd: 10, seen: new Set(), spawnLog: [] });
+  clearNades();
   AI.knownPos.copy(charPos); AI.knownVel.set(0, 0, 0);
   AI.diff = aiDifficulty(); AI.toKill = AI.diff.toKill;
   ARENA.group.visible = true;
@@ -284,12 +299,12 @@ export function stopAI() {
   AI.on = false; ARENA.group.visible = false;
   for (const e of AI.enemies) despawn(e);
   for (const d of AI.drops) scene.remove(d.m);
-  AI.drops.length = 0;
+  AI.drops.length = 0; clearNades();
 }
 function despawn(e) {
   if (e.cp) e.cp.owner = null;
   Object.assign(e, { active: false, alive: false, state: 'off', cp: null, badgeT: 0 });
-  e.root.visible = e.gun.visible = false;
+  e.root.visible = e.gun.visible = false; e.root.position.y = 0; e.rag.on = false; e.laser.visible = e.glint.visible = false; e.lase = 0;
   if (e.badge) e.badge.visible = false;
 }
 function playerReloading() { return RL.on || (KA.on && KA.kind === 'reload'); }
@@ -301,13 +316,13 @@ function tokenOk(e) {
 }
 // Squad roles on a shared blackboard: one flanker per ~3 enemies, one suppressor, the rest anchor. Sticky to avoid flip-flopping.
 function assignRoles() {
-  const live = AI.enemies.filter(e => e.alive && e.active && e.alert >= 0.85);
+  const live = AI.enemies.filter(e => e.alive && e.active && e.alert >= 0.85 && e.type === 'rifleman');
   const P = AI.knownPos;
   AI.bb = { n: live.length, seen: AI.lastSeen, heard: AI.heardAt, reloading: playerReloading(), hurt: AI.hp < 50 };
   if (!live.length) return;
-  const sc = (e, st) => (e.role === st ? 1.4 : 0) + (e.hp >= 60 ? 0.8 : -1) + (e.ammo > 8 ? 0.4 : 0) + Math.min(e.pos.distanceTo(P), 2400) / 2400 + (e.seed % 1) * 0.3;
+  const sc = (e, st) => (e.role === st ? 1.4 : 0) + (e.hp >= 0.6 * e.maxHp ? 0.8 : -1) + (e.ammo > 8 ? 0.4 : 0) + Math.min(e.pos.distanceTo(P), 2400) / 2400 + (e.seed % 1) * 0.3;
   const used = new Set();
-  const nFl = live.length >= 5 ? 2 : live.length >= 2 ? 1 : 0;
+  const nFl = AI.diff.flank < 0.12 ? 0 : live.length >= 5 ? 2 : live.length >= 2 ? 1 : 0;
   for (let i = 0; i < nFl; i++) {
     let b = null, bs = -Infinity;
     for (const e of live) if (!used.has(e)) { const v = sc(e, 'flanker'); if (v > bs) { bs = v; b = e; } }
@@ -357,15 +372,18 @@ function enterPlan(e, dur = rnd(0.85, 1.4)) {
 }
 function enterSearch(e) {
   if (e.cp) { e.cp.owner = null; e.cp = null; }
-  e.state = 'search'; e.t = 0; e.alert = 0.65; e.detect = Math.min(e.detect || 0, 0.4);
-  // Fan squadmates out across different angles around the player's last known position + predicted drift
-  const ang = e.seed * 1.9 + e.searchCount * 2.1;
-  const rad = e.searchCount === 0 ? rnd(140, 340) : rnd(340, 650);
-  const pred = AI.knownPos.clone().addScaledVector(AI.knownVel, 0.75);
-  const sx = clamp(pred.x + Math.cos(ang) * rad, -1650, 1650);
-  const sz = clamp(pred.z + Math.sin(ang) * rad, 220, 3700);
-  e.searchPos.set(sx, 0, sz);
-  pushOutOfCover(e.searchPos, 46);
+  e.state = 'search'; e.t = 0; e.alert = 0.65; e.detect = Math.min(e.detect || 0, 0.4); e.searchPause = 0;
+  // Squad search: candidate check-points are the predicted drift, the last-known spot, a fan point and nearby cover; each searcher
+  // takes the ones nobody else has claimed so the squad splits up instead of walking in a pack.
+  const K = AI.knownPos, ang = e.seed * 1.9 + e.searchCount * 2.1, rad = e.searchCount === 0 ? rnd(140, 340) : rnd(340, 650);
+  const cand = [K.clone().addScaledVector(AI.knownVel, 0.75), K.clone(), V(K.x + Math.cos(ang) * rad, 0, K.z + Math.sin(ang) * rad)];
+  for (const cp of ARENA.pts) if (Math.hypot(cp.pos.x - K.x, cp.pos.z - K.z) < 1000) cand.push(cp.pos.clone());
+  const taken = [];
+  for (const o of AI.enemies) if (o !== e && o.alive && o.state === 'search') { taken.push(o.searchPos, ...o.searchQueue); }
+  const pts = cand.map(p => { p.x = clamp(p.x, -1650, 1650); p.z = clamp(p.z, 220, 3700); p.y = 0; pushOutOfCover(p, 46);
+    return { p, s: -p.distanceTo(e.pos) / 1100 - (taken.some(t => t.distanceTo(p) < 300) ? 3 : 0) + rnd(0, 0.6) }; }).sort((a, b) => b.s - a.s);
+  e.searchQueue = pts.slice(1, 3).map(x => x.p);
+  e.searchPos.copy(pts[0].p);
   e.lastKnown.copy(e.searchPos);
   e.path = planPath(e.pos, e.searchPos);
   setEnemyBadge(e, 'search', 3.2);
@@ -430,7 +448,7 @@ function enemyCanDetect(e) {
   const spd = Math.hypot(charVelW.x, charVelW.z);
   e.heard = false;
   if (inView) {
-    let rate = 0.55 + 2.4 * Math.pow(clamp(1 - dP / 2600, 0.12, 1), 2);
+    let rate = (0.55 + 2.4 * Math.pow(clamp(1 - dP / 2600, 0.12, 1), 2)) * AI.diff.detectMul;
     rate *= spd > 250 ? 1.5 : (spd < 40 || playerCrouch.w > 0.5) ? 0.65 : 1;
     if (STATE.simTime - AI.heardAt < 1.2) rate *= 1.8;
     if (dP < 360) rate = 9;
@@ -445,14 +463,19 @@ function enemyCanDetect(e) {
   return e.detect >= 1 ? inView : null;
 }
 function spawnEnemy() {
-  const e = AI.enemies.find(x => !x.active); if (!e) return;
+  let e = AI.enemies.find(x => !x.active);
+  if (!e) { e = AI.enemies.filter(x => x.state === 'dead').sort((a, b) => b.deadT - a.deadT)[0]; if (!e) return; despawn(e); }
+  const type = pickArchetype(AI.diff, AI.spawned, AI.seen), cfg = ARCH[type];
+  AI.seen.add(type); AI.spawnLog.push({ wave: AI.wave, type });
   const far = ARENA.spawns.slice().sort((a, b) => b.distanceTo(charPos) - a.distanceTo(charPos));
   e.pos.copy(far[Math.random() * 3 | 0]).add(V(rnd(-150, 150), 0, rnd(-150, 150)));
   const startPatrol = (STATE.simTime - AI.lastSeen > 3.2 && Math.random() < 0.65) || (AI.spawned % 3 === 1 && e.pos.distanceTo(charPos) > 1900);
-  Object.assign(e, { active: true, alive: true, hp: 100, state: 'move', t: 0, dur: 1.2, cp: null, path: [], ammo: 30, peeks: 0, peekLimit: 2, aimT: 0, lostT: 0,
+  Object.assign(e, { type, cfg, maxHp: 100 * AI.diff.hpMul * cfg.hp, hp: 100 * AI.diff.hpMul * cfg.hp, spd: AI.diff.speed * cfg.speed, stagger: 0, lase: 0, searchQueue: [], searchPause: 0, blockedT: 0, strafeT: 0, throwT: 0, role: type === 'rusher' ? 'assault' : type === 'marksman' ? 'support' : e.role, active: true, alive: true, state: 'move', t: 0, dur: 1.2, cp: null, path: [], ammo: type === 'rusher' ? 8 : 30, peeks: 0, peekLimit: 2, aimT: 0, lostT: 0,
     suppress: 0, burstLeft: 0, burstIdx: 0, bursts: 0, burstLimit: 1, nextShot: 0, wWalk: 0, wRun: startPatrol ? 0 : 1, wCrouch: 0, wStr: 0, speed: 0, deadT: 0, fallX: 0, yOff: 0,
     lookYaw: 0, lookPitch: 0, headTilt: 0, wantLookYaw: 0, wantLookPitch: 0, wantTilt: 0, alert: startPatrol ? 0.2 : 1, searchCount: 0, patrolWait: 0,
-    landed: false, crouch: false, strafing: false, exposed: 0, vis: null, detect: startPatrol ? 0 : 1, seeAt: -9, seeVal: null, cur: 0, movedFlag: false, stuckT: 0, lpx: 0, lpz: 0, reposAt: -9, unprotN: 0, heard: false, shotsPeek: 0, dtc: 0.016, sigma: AI.diff.sigma * rnd(0.85, 1.2), react: AI.diff.react * rnd(0.8, 1.25) });
+    landed: false, crouch: false, strafing: false, exposed: 0, vis: null, detect: startPatrol ? 0 : 1, seeAt: -9, seeVal: null, cur: 0, movedFlag: false, stuckT: 0, lpx: 0, lpz: 0, reposAt: -9, unprotN: 0, heard: false, shotsPeek: 0, dtc: 0.016, sigma: AI.diff.sigma * rnd(0.85, 1.2) * (type === 'marksman' ? 0.4 : 1), react: AI.diff.react * rnd(0.8, 1.25) * cfg.react });
+  for (const m of e.meshes) m.material = ENEMY_MATS[type];
+  e.root.position.y = 0; e.rag.on = false; e.laser.visible = e.glint.visible = false;
   e.lastKnown.copy(AI.knownPos);
   e.yaw = e.moveYaw = Math.atan2(e.lastKnown.x - e.pos.x, e.lastKnown.z - e.pos.z);
   e.flinch.x = e.flinch.v = 0;
@@ -463,12 +486,12 @@ function spawnEnemy() {
   else if (!reposition(e, e.role === 'flanker' ? 'flank' : 'advance')) { e.state = 'cover'; e.t = 0.8; }
 }
 function pickCover(e, mode) {
-  const P = targetPosFor(e), pref = (mode === 'advance' ? 1020 : mode === 'retreat' ? 2550 : mode === 'ambush' ? 1450 : 1580) + (e.role === 'support' ? 250 : e.role === 'flanker' ? -200 : 0);
+  const P = targetPosFor(e), pref = ((e.type === 'rusher' || mode !== 'retreat') && e.cfg.pref) || ((mode === 'advance' ? 1020 : mode === 'retreat' ? 2550 : mode === 'ambush' ? 1450 : 1580) + (e.role === 'support' ? 250 : e.role === 'flanker' ? -200 : 0)), minD = e.type === 'rusher' ? 250 : 620;
   let best = null, bs = -Infinity;
   for (const cp of ARENA.pts) {
     if (cp.owner && cp.owner !== e) continue;
     const dP = Math.hypot(cp.pos.x - P.x, cp.pos.z - P.z);
-    if (dP < 620 || !isProtected(cp, P)) continue;
+    if (dP < minD || !isProtected(cp, P)) continue;
     const dE = Math.hypot(cp.pos.x - e.pos.x, cp.pos.z - e.pos.z);
     let sc = -Math.abs(dP - pref) / 450 - dE / 1100 + rnd(0, 0.55);
     sc += canPeek(cp, P) ? (mode === 'flank' ? 2.6 : mode === 'ambush' ? 2.2 : 1.4) : -1.2;
@@ -494,21 +517,23 @@ function reposition(e, mode) {
   if (!cp) return false;
   if (e.cp) e.cp.owner = null;
   e.cp = cp; cp.owner = e; e.reposAt = STATE.simTime; e.unprotN = 0;
-  e.path = planPath(e.pos, cp.pos); e.state = 'move'; e.t = 0; e.peeks = 0; e.peekLimit = 2 + (Math.random() * 2 | 0);
+  e.path = planPath(e.pos, cp.pos); e.state = 'move'; e.t = 0; e.peeks = 0; e.peekLimit = e.cfg.peekLim[0] + (Math.random() * (e.cfg.peekLim[1] - e.cfg.peekLim[0] + 1) | 0);
   return true;
 }
 function aiMode(e) {
-  if (e.hp < 45) return 'retreat';
+  if (e.type === 'rusher') return STATE.simTime - AI.lastSeen > 3.4 ? 'search' : 'advance';
+  if (e.hp < 0.45 * e.maxHp) return 'retreat';
   if (STATE.simTime - AI.lastSeen > 3.4) return 'search';
+  if (e.type === 'marksman') return 'snipe';
   if (playerReloading() && e.role !== 'support' && STATE.simTime - AI.lastSeen < 2.5) return 'advance';
-  if (e.role === 'flanker' || Math.random() < 0.5) return 'flank';
-  if (Math.hypot(e.pos.x - e.lastKnown.x, e.pos.z - e.lastKnown.z) > 2200) return 'advance';
+  if (e.role === 'flanker' || Math.random() < AI.diff.flank) return 'flank';
+  if (Math.hypot(e.pos.x - e.lastKnown.x, e.pos.z - e.lastKnown.z) > 2200 || Math.random() < AI.diff.advance) return 'advance';
   return 'any';
 }
 function executePlan(e) {
   const dKnown = Math.hypot(e.pos.x - e.lastKnown.x, e.pos.z - e.lastKnown.z);
   const intelAge = STATE.simTime - AI.lastSeen;
-  if (e.hp < 45 || dKnown < 500) {
+  if (e.type !== 'rusher' && (e.hp < 0.45 * e.maxHp || dKnown < 500)) {
     if (reposition(e, 'retreat')) return;
   }
   if (intelAge > 3.2) {
@@ -531,6 +556,7 @@ function executePlan(e) {
   if (!reposition(e, mode)) { e.state = 'cover'; e.t = 0.5; e.peeks = 0; }
 }
 function moveAlong(e, dt, speed) {   // accel/turn-rate limited steering with ally separation
+  speed *= e.spd * (e.stagger > 0 ? 0.35 : 1);
   if (e.path.length && e.cur > 30) {   // stuck on cover (steering drift): step clear of it and re-plan around its corner
     const prog = Math.hypot(e.pos.x - e.lpx, e.pos.z - e.lpz);
     e.stuckT = prog < 0.3 * e.cur * dt ? e.stuckT + dt : Math.max(0, e.stuckT - dt);
@@ -577,10 +603,10 @@ function startPeek(e) {
   Object.assign(e, { state: 'peek', t: 0, aimT: e.aimT > 0 ? Math.min(e.aimT, e.react * 0.45) : 0, lostT: 0, bursts: 0, burstIdx: 0, burstLeft: 3 + (Math.random() * 3 | 0), burstLimit: AI.hp < 40 ? 1 : 1 + (Math.random() * 2.5 | 0), nextShot: 0, shotsPeek: 0 });
   AI.shooting++; AI.tokenAt = STATE.simTime + AI.diff.stagger * rnd(0.7, 1.3);
 }
-function endPeek(e) { e.state = 'cover'; e.t = rnd(0.75, 1.65) + e.suppress; e.peeks++; e.aimT = 0; }
+function endPeek(e) { e.state = 'cover'; e.t = (rnd(0.75, 1.65) + e.suppress) * (e.type === 'rusher' ? 0.45 : 1); e.lase = 0; e.peeks++; e.aimT = 0; }
 function stepEnemy(e, dt) {
   if (e.state === 'dead') { deadStep(e, dt); return; }
-  e.suppress = Math.max(0, e.suppress - 0.6 * dt);
+  e.suppress = Math.max(0, e.suppress - 0.6 * dt); e.stagger = Math.max(0, e.stagger - dt);
   e.flinch.step(dt);
   if (e.badgeT > 0) {
     e.badgeT -= dt;
@@ -678,10 +704,13 @@ function stepEnemy(e, dt) {
         break;
       }
       if (e.badgeT < 0.3) setEnemyBadge(e, 'search', 1.5);
-      if (moveAlong(e, dt, 182) || e.t > 7.5) {
-        e.searchCount++;
-        enterHesitate(e, e.searchCount < 2 ? 'plan' : 'patrol', rnd(1.25, 1.9));
-      }
+      if (e.searchPause > 0) {   // look around at each check-point, then move on to the next one
+        e.searchPause -= dt; e.wantLookYaw = 0.95 * Math.sin(e.t * 2.6 + e.seed);
+        if (e.searchPause <= 0) {
+          if (e.searchQueue.length) { e.searchPos.copy(e.searchQueue.shift()); e.lastKnown.copy(e.searchPos); e.path = planPath(e.pos, e.searchPos); }
+          else { e.searchCount++; enterHesitate(e, e.searchCount < 2 ? 'plan' : 'patrol', rnd(1.25, 1.9)); }
+        }
+      } else if (moveAlong(e, dt, 182) || e.t > 11) e.searchPause = rnd(0.7, 1.1);
       break;
     }
     case 'move': {
@@ -693,6 +722,12 @@ function stepEnemy(e, dt) {
         else if (++e.unprotN >= 2 && STATE.simTime - e.reposAt > 1.2) reposition(e, 'any');
       }
       if (moveAlong(e, dt, 380)) { e.state = 'cover'; e.t = rnd(0.35, 0.9); }
+      break;
+    }
+    case 'throw': {
+      e.t += dt; e.crouch = false;
+      if (!e.thrown && e.t >= 0.55) { e.thrown = true; throwGrenade(e); e.flinch.kick(-0.35); }
+      if (e.t >= 1.0) enterPlan(e, rnd(0.5, 0.9));
       break;
     }
     case 'cover': case 'reload': {
@@ -712,15 +747,16 @@ function stepEnemy(e, dt) {
       }
       e.exposed = 0;
       e.t -= dt;
-      if (e.state === 'reload') { if (e.t <= 0) { e.ammo = 30; e.state = 'cover'; e.t = rnd(0.2, 0.55); } break; }
+      if (e.state === 'reload') { if (e.t <= 0) { e.ammo = e.type === 'rusher' ? 8 : 30; e.state = 'cover'; e.t = rnd(0.2, 0.55); } break; }
       if (dReal < 520 && visDirect && e.t > 0.18) e.t = 0.18;
       else if (visDirect && playerReloading() && e.t > 0.3) e.t = 0.3;   // punish the reload
       if (e.t > 0 || away) break;
       if (e.ammo <= 0) { e.state = 'reload'; e.t = 2.3; break; }
       // Player vanished behind cover for a while -> pause to plan / search instead of staring at walls forever
       if (STATE.simTime - AI.lastSeen > 3.4) { enterPlan(e, rnd(0.85, 1.35)); break; }
+      if (e.type === 'rusher' && dReal > e.cfg.range && reposition(e, 'advance')) break;   // cover hop
       if (e.peeks >= e.peekLimit || (dReal < 520 && visDirect && Math.random() < 0.5)) {
-        enterPlan(e, dReal < 520 ? 0.35 : rnd(0.75, 1.25));
+        enterPlan(e, e.type === 'rusher' ? 0.3 : dReal < 520 ? 0.35 : rnd(0.75, 1.25));
         break;
       }
       if ((tokenOk(e) || (dReal < 520 && visDirect && AI.hp >= 40)) && e.suppress < 0.65) startPeek(e);
@@ -730,9 +766,10 @@ function stepEnemy(e, dt) {
     case 'peek': {
       if (!cp) { enterPlan(e, 0.6); break; }
       e.t += dt;
-      const out = cp.tall ? sideStep(e, cp.peek.x, cp.peek.z, dt) : e.wCrouch < 0.3;
+      const out = cp.tall ? (e.type === 'rusher' && e.t > 0.5 ? true : sideStep(e, cp.peek.x, cp.peek.z, dt)) : e.wCrouch < 0.3;
       if (!out) { if (e.t > 2.5) endPeek(e); break; }
       const vis = enemySees(e);
+      if (e.type === 'rusher' && vis && dReal < e.cfg.range + 150) rusherStrafe(e, dt);
       if (vis) {
         e.aimT += dt; e.lostT = 0;
         spotPlayer(e, vis);
@@ -740,17 +777,28 @@ function stepEnemy(e, dt) {
         e.lostT += dt; e.aimT = Math.max(0, e.aimT - 2 * dt);
         e.wantLookYaw = 0.32 * Math.sin(e.lostT * 5.0 + e.seed);
       }
-      const supp = !vis && e.role === 'support' && STATE.simTime - AI.lastSeen < 3.2 && e.ammo > 6 && AI.hp >= 40;
+      const supp = !vis && e.role === 'support' && e.type === 'rifleman' && STATE.simTime - AI.lastSeen < 3.2 && e.ammo > 6 && AI.hp >= 40;
       if (e.lostT > (supp ? 2.2 : 0.85)) {
         // Player disappeared from sightline! Look puzzled briefly, then plan a search or flank
         endPeek(e); e.peeks = e.peekLimit;
         if (STATE.simTime - AI.lastSeen > 1.6) enterHesitate(e, 'plan', rnd(0.95, 1.45));
         break;
       }
-      if (((vis && e.aimT >= e.react) || (supp && e.lostT > 0.35)) && STATE.simTime >= e.nextShot && e.ammo > 0) {
-        enemyShoot(e, vis ? null : AI.knownPos); e.ammo--; e.burstIdx++;
-        if (--e.burstLeft > 0) e.nextShot = STATE.simTime + rnd(0.095, 0.13);
-        else { e.bursts++; e.burstIdx = 0; e.burstLeft = 3 + (Math.random() * 3 | 0); e.nextShot = STATE.simTime + rnd(0.45, 0.85); }
+      const ready = (vis && e.aimT >= e.react) || (supp && e.lostT > 0.35);
+      if (e.type === 'marksman') marksmanStep(e, dt, vis);
+      else if (ready && STATE.simTime >= e.nextShot && e.ammo > 0 && !(e.type === 'rusher' && dReal > e.cfg.range + 250)) {
+        const aimPt = vis ? (e.vis === 'head' ? AI.head : AI.chest) : AI.knownPos;
+        if (allyInLine(e, aimPt)) {   // never shoot through a squadmate: hold fire, then reposition
+          e.nextShot = STATE.simTime + 0.22;
+          if ((e.blockedT += 0.22) > 0.9) { e.blockedT = 0; endPeek(e); }
+        } else if (e.type === 'rusher') {
+          e.blockedT = 0; rusherShoot(e); e.ammo--; e.bursts++; e.nextShot = STATE.simTime + rnd(0.85, 1.2);
+        } else {
+          e.blockedT = 0;
+          enemyShoot(e, vis ? null : AI.knownPos); e.ammo--; e.burstIdx++;
+          if (--e.burstLeft > 0) e.nextShot = STATE.simTime + rnd(0.095, 0.13);
+          else { e.bursts++; e.burstIdx = 0; e.burstLeft = 3 + (Math.random() * 3 | 0); e.nextShot = STATE.simTime + rnd(0.45, 0.85); }
+        }
       }
       if (e.bursts >= e.burstLimit || e.ammo <= 0 || e.suppress > 1.8 || e.t > 4.5) endPeek(e);
       break;
@@ -829,7 +877,9 @@ function poseEnemy(e, dt) {
     if (Math.abs(e.headTilt) > 1e-3) rotateWorld(e.B.head, f, e.headTilt);
 
     e.B.hand_r.updateWorldMatrix(true, false);
-    e.gun.matrix.multiplyMatrices(e.B.hand_r.matrixWorld, AI.gunInHand); e.gun.matrixWorldNeedsUpdate = true;
+    e.gun.matrix.multiplyMatrices(e.B.hand_r.matrixWorld, AI.gunInHand);
+    if (e.cfg.gun !== 1) e.gun.matrix.multiply(_gs.makeScale(e.cfg.gun, e.cfg.gun, e.cfg.gun));
+    e.gun.matrixWorldNeedsUpdate = true;
     e.muzzle.copy(RIFLE_MUZZLE).applyMatrix4(e.gun.matrix);
     if (e.badge && e.badge.visible) {
       const hp = _cd.setFromMatrixPosition(e.B.head.matrixWorld);
@@ -876,13 +926,174 @@ function enemyShoot(e, blind = null) {
   const h = castEnemyShot(m, d);
   muzzleFlashAt(m, d, 1.35);
   tracerFX(m.clone().addScaledVector(d, 40), h.point, false);
-  if (h.kind === 'player') damagePlayer(h.part === 'head' ? 30 : h.part === 'torso' ? 11 : 7, e.pos);
+  if (h.kind === 'player') damagePlayer((h.part === 'head' ? 30 : h.part === 'torso' ? 11 : 7) * AI.diff.dmgMul, e.pos);
   else {
     if (h.kind !== 'none') impactFX(h.point, h.n, h.kind === 'cover' ? (h.cover.kind === 'crate' ? 'wood' : 'concrete') : 'ground');
     nearMiss(m, d, h.t);
   }
   const dist = m.distanceTo(camera.position);
   playSample('rifle_shot', { rate: 0.94 + Math.random() * 0.1, gain: clamp(1.1 - dist / 4500, 0.25, 0.85), delay: dist / 34300, pan: panFor(m), lp: 2500 + 15000 * clamp(1 - dist / 4000, 0, 1) });
+}
+// ---------- archetype weapons ----------
+const _mv = new THREE.Vector3(), _Y = V(0, 1, 0);
+function allyInLine(e, aim) {   // friendly-fire guard: is a squadmate on the line from the muzzle to the aim point?
+  const m = e.muzzle, d = _mv.copy(aim).sub(m), L = d.length(); if (L < 1) return false;
+  d.multiplyScalar(1 / L);
+  for (const o of AI.enemies) {
+    if (o === e || !o.alive) continue;
+    for (const c of o.caps) { const t = rayCapsule(m, d, c[1], c[2], c[3] + 6); if (t >= 0 && t < L - 15) return true; }
+  }
+  return false;
+}
+function rusherStrafe(e, dt) {
+  if ((e.strafeT -= dt) <= 0) { e.strafeT = rnd(0.5, 1.0); e.strafeDir = -e.strafeDir; }
+  const dx = charPos.x - e.pos.x, dz = charPos.z - e.pos.z, d = Math.hypot(dx, dz) || 1, sx = -dz / d * e.strafeDir, sz = dx / d * e.strafeDir;
+  e.pos.x += sx * 170 * dt; e.pos.z += sz * 170 * dt; e.strafing = true;
+  e.strDir = sx * Math.cos(e.yaw) - sz * Math.sin(e.yaw) >= 0 ? 1 : -1; e.sPhase = (e.sPhase + 170 * dt / AI.strCycle) % 1;
+}
+function rusherShoot(e) {   // close-range shotgun: 6 pellets, damage falls off past ~3 m
+  const m = e.muzzle.clone(), tgt = AI.chest.clone(), base = tgt.clone().sub(m), dist = base.length(); base.normalize();
+  if (e.shotsPeek < AI.diff.missShots) tgt.addScaledVector(V(base.z, 0, -base.x), (e.seed % 2 < 1 ? 1 : -1) * 90);
+  e.shotsPeek++;
+  const aim = tgt.sub(m).normalize(), sp = 0.05 + e.sigma * 0.8, fall = 1 - clamp((dist - 300) / 600, 0, 0.85);
+  let dmg = 0;
+  for (let k = 0; k < 6; k++) {
+    const d = aim.clone(); d.x += gauss() * sp; d.y += gauss() * sp; d.z += gauss() * sp; d.normalize();
+    const h = castEnemyShot(m, d);
+    if (k < 3) tracerFX(m.clone().addScaledVector(d, 30), h.point, false);
+    if (h.kind === 'player') dmg += (h.part === 'head' ? 9 : h.part === 'torso' ? 5 : 3.5) * fall;
+    else if (h.kind !== 'none') impactFX(h.point, h.n, h.kind === 'cover' ? (h.cover.kind === 'crate' ? 'wood' : 'concrete') : 'ground');
+  }
+  muzzleFlashAt(m, aim, 1.9);
+  if (dmg > 0) damagePlayer(dmg * AI.diff.dmgMul, e.pos);
+  const dd = m.distanceTo(camera.position);
+  playSample('rifle_shot', { rate: 0.6 + Math.random() * 0.06, gain: clamp(1.15 - dd / 4000, 0.3, 0.9), delay: dd / 34300, pan: panFor(m), lp: 1800 + 9000 * clamp(1 - dd / 3000, 0, 1) });
+}
+function marksmanStep(e, dt, vis) {   // laser + glint telegraph, aim locks at 75% so a late sidestep dodges; relocates after the shot
+  const lt = clamp(1.6 - 0.08 * Math.max(0, AI.wave - 5), 0.85, 1.6), now = STATE.simTime;
+  if (vis && e.aimT >= e.react * 0.5 && e.ammo > 0 && now >= e.nextShot) {
+    if (e.lase <= 0) { e.lockPt.copy(AI.chest); setEnemyBadge(e, 'alert', 0.8); }
+    e.lase = Math.min(1, e.lase + dt / lt);
+    if (e.lase < 0.75) e.lockPt.lerp(AI.chest, 1 - Math.exp(-7 * dt));
+    if (now >= (e.beepAt || 0)) { tone(850 + 900 * e.lase, 0.06, 0.22, panFor(e.muzzle)); e.beepAt = now + 0.36 - 0.24 * e.lase; }
+    if (e.lase >= 1) {
+      if (allyInLine(e, e.lockPt)) { e.lase = 0.9; if ((e.blockedT += dt) > 1) { e.blockedT = 0; endPeek(e); } return; }
+      marksmanShoot(e); e.ammo--; e.lase = 0; e.nextShot = now + 1; e.bursts = e.burstLimit = 1;
+      endPeek(e); e.peeks = e.peekLimit; reposition(e, 'snipe');
+    }
+  } else e.lase = Math.max(0, e.lase - dt * 1.6);
+}
+function marksmanShoot(e) {
+  const m = e.muzzle.clone(), d = e.lockPt.clone().sub(m).normalize();
+  d.x += gauss() * e.sigma * 0.5; d.y += gauss() * e.sigma * 0.5; d.z += gauss() * e.sigma * 0.5; d.normalize();
+  const h = castEnemyShot(m, d);
+  muzzleFlashAt(m, d, 2.0); tracerFX(m.clone().addScaledVector(d, 40), h.point, false);
+  if (h.kind === 'player') damagePlayer((h.part === 'head' ? 55 : h.part === 'torso' ? 34 : 20) * AI.diff.dmgMul, e.pos);
+  else { if (h.kind !== 'none') impactFX(h.point, h.n, h.kind === 'cover' ? (h.cover.kind === 'crate' ? 'wood' : 'concrete') : 'ground'); nearMiss(m, d, h.t); }
+  const dd = m.distanceTo(camera.position);
+  playSample('rifle_shot', { rate: 0.7, gain: clamp(1.3 - dd / 5000, 0.4, 1), delay: dd / 34300, pan: panFor(m), lp: 2200 + 12000 * clamp(1 - dd / 4000, 0, 1) });
+}
+function updateLaser(e) {
+  const on = e.alive && e.type === 'marksman' && e.lase > 0.02 && e.state === 'peek';
+  e.laser.visible = e.glint.visible = on; if (!on) return;
+  const m = e.muzzle, dir = _mv.copy(e.lockPt).sub(m); let len = dir.length(); dir.multiplyScalar(1 / len);
+  len = Math.min(len + 80, castEnemyShot(m, dir).t);
+  e.laser.position.copy(m); e.laser.quaternion.setFromUnitVectors(_Y, dir); e.laser.scale.set(1, len, 1);
+  const locked = e.lase > 0.75, flick = 0.8 + 0.2 * Math.sin(STATE.simTime * 55);
+  e.laser.material.color.setHex(locked ? 0xff1a10 : 0xff8a30); e.laser.material.opacity = locked ? 0.95 * flick : 0.3 + 0.5 * e.lase;
+  e.glint.position.copy(m); e.glint.scale.setScalar((16 + 46 * e.lase) * flick);
+}
+function tone(freq, dur, gain, pan = 0, type = 'sine', slide = 0) {
+  if (!STATE.soundOn) return;
+  const ac = audio(), t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t); if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, t + dur);
+  g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  let node = o.connect(g);
+  if (ac.createStereoPanner) { const pn = ac.createStereoPanner(); pn.pan.value = pan; node = node.connect(pn); }
+  node.connect(sfxBus); o.start(t); o.stop(t + dur + 0.03);
+}
+// Squad call-out: radio the player's position to nearby squadmates (on being hit, or on a squadmate's death)
+function callAllies(e) {
+  const now = STATE.simTime; if (now - e.callAt < 2.5) return; e.callAt = now;
+  tone(300, 0.2, 0.2, panFor(e.pos), 'sawtooth', 0.7); setEnemyBadge(e, 'alert', 0.9);
+  for (const o of AI.enemies) {
+    if (o === e || !o.alive || o.pos.distanceTo(e.pos) > 1800) continue;
+    o.lastKnown.copy(charPos); o.alert = Math.max(o.alert, 0.9); o.detect = Math.max(o.detect, 0.9);
+    if (o.state === 'patrol' || o.state === 'search' || o.state === 'hesitate') { setEnemyBadge(o, 'alert', 0.8); if (!reposition(o, 'advance')) enterPlan(o, 0.5); }
+  }
+}
+
+// ---------- grenades: thrown to flush a player who has camped behind cover ----------
+const NADE_GEO = new THREE.SphereGeometry(7, 12, 8), RING_GEO = new THREE.RingGeometry(0.9, 1, 64).rotateX(-Math.PI / 2);
+function clearNades() { for (const g of AI.nades) { ARENA.group.remove(g.m, g.ring); g.m.material.dispose(); g.ring.material.dispose(); } AI.nades.length = 0; }
+function pickThrower() {
+  if (AI.enemies.some(o => o.alive && o.pos.distanceTo(charPos) < 330)) return null;   // never gas a squadmate
+  let best = null, bs = -1e9;
+  for (const e of AI.enemies) {
+    if (!e.alive || !e.active || !['cover', 'plan', 'move', 'search'].includes(e.state)) continue;
+    const dd = Math.hypot(e.pos.x - charPos.x, e.pos.z - charPos.z); if (dd < 600 || dd > 2300) continue;
+    const sc = -Math.abs(dd - 1100) / 500 + rnd(0, 0.5) - (e.type === 'marksman' ? 2 : 0);
+    if (sc > bs) { bs = sc; best = e; }
+  }
+  return best;
+}
+function startThrow(e) {
+  if (e.cp) { e.cp.owner = null; e.cp = null; }
+  Object.assign(e, { state: 'throw', t: 0, thrown: false, path: [], lase: 0, throwTo: charPos.clone().add(V(rnd(-45, 45), 0, rnd(-45, 45))) });
+  setEnemyBadge(e, 'alert', 1.1); popup('GRENADE!', e.pos.clone().add(V(0, 200, 0)));
+  tone(240, 0.35, 0.3, panFor(e.pos), 'sawtooth', 0.6);
+}
+function throwGrenade(e) {
+  const from = worldPos(e.B.hand_r), to = e.throwTo.clone().setY(0); pushOutOfCover(to, 24);
+  const dist = Math.hypot(to.x - from.x, to.z - from.z), T = clamp(dist / 950, 0.75, 1.3);
+  const v = V((to.x - from.x) / T, (6.5 - from.y + 0.5 * 981 * T * T) / T, (to.z - from.z) / T);
+  const m = new THREE.Mesh(NADE_GEO, new THREE.MeshStandardMaterial({ color: 0x3d4a2f, roughness: 0.6, metalness: 0.3, emissive: 0xff2200, emissiveIntensity: 0 }));
+  m.position.copy(from); ARENA.group.add(m);
+  const ring = new THREE.Mesh(RING_GEO, new THREE.MeshBasicMaterial({ color: 0xff3318, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+  ring.scale.setScalar(BLAST_R); ring.position.set(to.x, 3, to.z); ARENA.group.add(ring);
+  AI.nades.push({ m, ring, p: m.position, v, fuse: 2.5, beepAt: 0.2, touched: false, thrower: e });
+  tone(520, 0.18, 0.2, panFor(from), 'triangle', 0.5);
+}
+function explodeNade(g) {
+  const p = g.p.clone(); grenadeExplosionFX(p);
+  const d = p.distanceTo(AI.chest);
+  if (d < BLAST_R && game.state === 'play') {
+    const covered = !losClear(V(p.x, 30, p.z), AI.chest) && d > 60;   // solid cover between blast and player blocks it
+    if (!covered) damagePlayer(75 * AI.diff.dmgMul * Math.pow(1 - d / BLAST_R, 1.2), p);
+    addTrauma(clamp(1 - d / BLAST_R, 0.2, 0.9));
+  }
+  for (const e of AI.enemies) if (e.state === 'dead' && e.rag.on) { const dd = e.rag.P[0].p.distanceTo(p); if (dd < BLAST_R * 1.2) e.rag.blast(p, 1 - dd / (BLAST_R * 1.2)); }
+}
+function grenadeStep(dt) {
+  const now = STATE.simTime, d = AI.diff, spd = Math.hypot(charVelW.x, charVelW.z);
+  const aware = now - AI.lastSeen < 14 && AI.enemies.some(e => e.alive && e.alert >= 0.85);
+  if (spd < 90 && aware && now - AI.lastSeen > 0.8) AI.campT += dt; else AI.campT = Math.max(0, AI.campT - dt * (spd > 90 ? 2.5 : 0.8));
+  AI.nadeCd -= dt;
+  if (d.grenade < Infinity && AI.campT > d.campNeed && AI.nadeCd <= 0 && !AI.nades.length && AI.breakT <= 0 && AI.hp > 35) {
+    const t = pickThrower();
+    if (t) { startThrow(t); AI.nadeCd = d.grenade; AI.campT = 0; } else AI.nadeCd = 1.5;
+  }
+  for (let i = AI.nades.length - 1; i >= 0; i--) {
+    const g = AI.nades[i], pos = g.p; g.fuse -= dt;
+    if (!g.rest) {
+      const px = pos.x, py = pos.y, pz = pos.z; g.v.y -= 981 * dt; pos.addScaledVector(g.v, dt);
+      for (const cv of ARENA.covers) {
+        if (pos.y >= cv.h + 6 || pos.y < -6 || !insideBox2(pos.x, pos.z, cv, 6)) continue;
+        if (py >= cv.h + 6 && g.v.y < 0) { pos.y = cv.h + 6; g.v.y *= -0.3; g.v.x *= 0.6; g.v.z *= 0.6; g.touched = true; }
+        else { pos.x = px; pos.z = pz; g.v.x *= -0.35; g.v.z *= -0.35; }
+      }
+      if (pos.y <= 6.5) {
+        pos.y = 6.5; g.touched = true;
+        if (Math.abs(g.v.y) > 120) { g.v.y *= -0.38; g.v.x *= 0.62; g.v.z *= 0.62; } else { g.v.y = 0; const k = Math.exp(-4 * dt); g.v.x *= k; g.v.z *= k; }
+      }
+      if (g.touched) g.ring.position.set(pos.x, 3, pos.z);
+    }
+    if (g.fuse > 0) {
+      if ((g.beepAt -= dt) <= 0) { tone(1500, 0.05, 0.3, panFor(pos)); g.beepAt = g.fuse > 1.5 ? 0.5 : g.fuse > 0.7 ? 0.25 : 0.1; }
+      const pulse = 0.5 + 0.5 * Math.sin(now * (g.fuse > 1.5 ? 8 : g.fuse > 0.7 ? 16 : 30));
+      g.m.material.emissiveIntensity = pulse * 2; g.ring.material.opacity = 0.25 + 0.4 * pulse * (1.3 - g.fuse / 2.5);
+    } else { explodeNade(g); ARENA.group.remove(g.m, g.ring); g.m.material.dispose(); g.ring.material.dispose(); AI.nades.splice(i, 1); }
+  }
 }
 function nearMiss(o, d, tHit) {   // supersonic crack when a round passes close to the player's head
   const t = clamp(_cd.subVectors(AI.head, o).dot(d), 0, tHit);
