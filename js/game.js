@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { DEG, Spring, V, clamp, lerp, rayBox, sstep } from './math.js';
-import { IS_TOUCH, STATE, rec } from './state.js';
+import { IS_TOUCH, LEAN, STATE, rec } from './state.js';
 import { camera, controls, renderer, scene, setAtmosphere } from './scene.js';
 import { audio, playHit, setMuffle, sfxBus, startAmbient, stepHeartbeat, stopAmbient } from './audio.js';
 import { burst, impactFX, tracerFX } from './fx.js';
@@ -194,9 +194,9 @@ export function updateGameCamera(real) {
   const longW = W.blend || (W.cur?.long ? 1 : 0);
   if (!cam.init || Math.hypot(basePos.x - cam.px.x, basePos.z - cam.pz.x) > 250) { cam.px.snap(basePos.x); cam.py.snap(basePos.y); cam.pz.snap(basePos.z); cam.side.snap(cam.shoulder); cam.init = true; }
   const fx = cam.px.step(basePos.x, 0.06, real), fy = cam.py.step(basePos.y, 0.1, real), fz = cam.pz.step(basePos.z, 0.06, real);
-  const sideOff = cam.sideOff.step(lerp(lerp(48, 56, longW), lerp(38, 46, longW), e), 0.14, real) * cam.side.step(cam.shoulder, 0.16, real);
+  const sideOff = cam.sideOff.step(lerp(lerp(48, 56, longW), lerp(38, 46, longW), e), 0.14, real) * cam.side.step(LEAN.dir && LEAN.free > 0.3 ? LEAN.dir : cam.shoulder, 0.16, real);
   const upOff = cam.up.step(lerp(160, 157, e) + 4 * longW + Math.max(0, p) * 16 - crouchDrop, 0.12, real);
-  _head.set(fx, fy + upOff, fz);
+  _head.set(fx, fy + upOff, fz).addScaledVector(right, LEAN.off);   // camera travels with the leaning head
   _lat.copy(right).multiplyScalar(sideOff);
   let lat = _lat.length(), latDir = V(Math.sign(sideOff) * right.x, 0, Math.sign(sideOff) * right.z);
   const arena = ARENA.group.visible;
@@ -234,7 +234,7 @@ export function updateGameCamera(real) {
   const k = scoped ? 0.12 : 1, breath = Math.sin(cam.t * 1.25) * 0.0011 * (0.4 + e) * (scoped ? 6 : 1);
   camera.rotateY((shake.yaw + Math.sin(cam.t * 0.8) * 0.0007 * (0.4 + e)) * k);
   camera.rotateX((shake.pitch + breath) * k);
-  camera.rotateZ((shake.roll + Math.sin(cam.t * 8.5) * 0.0016 * sprintK) * k);
+  camera.rotateZ((shake.roll + Math.sin(cam.t * 8.5) * 0.0016 * sprintK) * k - LEAN.w * 0.07 * (scoped ? 0.3 : 1));
   const h = castWorld(camera.position, fwd, 9000, scoped ? 20 : dist + 30);   // skip anything between the camera and the player
   aim.point.copy(h.kind !== 'none' ? h.point : camera.position.clone().addScaledVector(fwd, 5000));
   if (aim.point.distanceTo(charPos) < 150) aim.point.copy(camera.position).addScaledVector(fwd, 600);
