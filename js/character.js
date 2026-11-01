@@ -10,6 +10,8 @@ import { LADDER, charPos, mm, retargetFrame, stepLocomotion, updateLadder } from
 import { CLIP_GUIDE, KA, M4, RL, SG_PUMP, TRIGGER_PULL, W, chainOf, fingerFix, fromGun, gunState, karHandR, lerpM, poseHandFrom, reloadGunPose, reloadLeftHand, setGunMatrix, slideOffset, stepKar, stepReload, stepShotgunPump, stepSwap, updateKarParts, weaponTrigger } from './weapons.js';
 import { game, tps } from './game.js';
 import { ANIM_T0 } from './main.js';
+import { dampW } from './anim/curves.js';
+import { SEC, stepSecondary } from './anim/secondary.js';
 
 // Player Crouch State
 export const playerCrouch = { on: false, w: 0 };
@@ -147,11 +149,12 @@ function captureAimHandRel(poseOut) {
   STATE.NORMAL_W = keep;
   return { l: handRel.l.clone(), r: handRel.r.clone() };
 }
+const _crS = { x: 0, v: 0 }, _aimS = { x: 0, v: 0 };   // critically-damped blend states (no start/stop pop)
 export function updateCharacter(dt) {
   updateRlTimeline(dt);
-  playerCrouch.w += ((playerCrouch.on ? 1 : 0) - playerCrouch.w) * Math.min(1, dt * 10);
+  playerCrouch.w = dampW(_crS, playerCrouch.on ? 1 : 0, 10, dt);
   const wantAim = isAiming() || RL.on || KA.on || RLT.on || SG_PUMP.on;
-  playerAim.w += ((wantAim ? 1 : 0) - playerAim.w) * Math.min(1, dt * 12);
+  playerAim.w = dampW(_aimS, wantAim ? 1 : 0, 14, dt);
   for (const k of ['flip', 'back', 'up', 'yaw', 'roll', 'cam', 'hx', 'hy', 'hz']) rec[k].step(dt);
   const shK = W.cur.shK ?? 0.4;
   rec.hips.target = 0.8 * rec.back.x + 0.05 * rec.flip.x;
@@ -174,6 +177,8 @@ export function updateCharacter(dt) {
   stepLocomotion(dt);
   const poseOut = mm.out.slice();
   const nw = 1 - playerAim.w; // 1 = Normal Idle (can run), 0 = Aiming ADS (no run)
+  stepSecondary(dt, { vel: mm.vel, speed: mm.speed, yaw: STATE.charYaw, phase: mm.phase, aimW: playerAim.w, crouchW: playerCrouch.w, nw });
+  poseOut[0] += SEC.dx; poseOut[1] += SEC.dy; poseOut[3] += SEC.roll; poseOut[4] += SEC.lean; poseOut[15] += SEC.yaw;
   const wIdle = 1 - sstep(5, 60, mm.speed);
   STATE.NORMAL_W = nw;
   if (nw > 0.001) {
@@ -215,6 +220,19 @@ export function updateCharacter(dt) {
   if (W.blend > 0) rotateWorld(bones.spine_03, X, -0.5 * Math.sin(STATE.simTime * 1.7) * W.blend * DEG);   // rifle pose is one frame: breathe
   if (W.blend > 0 && playerAim.w > 0.01) rotateWorld(bones.head, X, -4.5 * W.blend * playerAim.w * DEG);   // level chin along rifle sightline
   if (W.dip > 0) { rotateWorld(bones.spine_02, X, 10 * W.dip * DEG); rotateWorld(bones.spine_03, X, 16 * W.dip * DEG); }
+  {
+    // Secondary motion: breathing, torso counter-rotation, level head, clavicle follow-through (before aim so the muzzle stays on target)
+    const aw = 1 - 0.5 * playerAim.w;
+    rotateWorld(bones.spine_01, V(0, 1, 0), SEC.spineYaw * 0.3 * DEG);
+    rotateWorld(bones.spine_02, V(0, 1, 0), SEC.spineYaw * 0.4 * DEG);
+    rotateWorld(bones.spine_03, V(0, 1, 0), SEC.spineYaw * 0.3 * DEG);
+    rotateWorld(bones.spine_03, X, SEC.breath * 0.35 * aw * DEG);
+    rotateWorld(bones.neck_01, V(0, 1, 0), SEC.headYaw * 0.4 * DEG);
+    rotateWorld(bones.head, V(0, 1, 0), SEC.headYaw * 0.6 * DEG);
+    rotateWorld(bones.head, X, SEC.headPitch * DEG);
+    rotateWorld(bones.clavicle_l, Z, SEC.clavL * DEG);
+    rotateWorld(bones.clavicle_r, Z, -SEC.clavR * DEG);
+  }
   applyBodyFX();
   if (playerAim.w > 0.01) applyAim();
 
@@ -279,8 +297,8 @@ export function updateCharacter(dt) {
   applyHeadLook(dt);
 
   const armBack = rec.armBack.x;
-  const e = new THREE.Euler(-(rec.flip.x + 0.35 * shBack) * DEG, (rec.yaw.x - 0.30 * shBack) * DEG, rec.roll.x * DEG, 'YXZ'), pv = cur.pivot;
-  recM.makeTranslation(-0.18 * armBack, rec.up.x + 0.15 * shBack, -(rec.back.x + 0.85 * armBack))
+  const e = new THREE.Euler(-(rec.flip.x + 0.35 * shBack) * DEG, (rec.yaw.x - 0.30 * shBack + SEC.swayYaw) * DEG, (rec.roll.x + SEC.swayRoll) * DEG, 'YXZ'), pv = cur.pivot;
+  recM.makeTranslation(-0.18 * armBack + SEC.swayX, rec.up.x + 0.15 * shBack + SEC.swayY, -(rec.back.x + 0.85 * armBack))
     .multiply(tmpM.makeTranslation(pv.x, pv.y, pv.z))
     .multiply(tmpM.makeRotationFromEuler(e))
     .multiply(tmpM.makeTranslation(-pv.x, -pv.y, -pv.z));
