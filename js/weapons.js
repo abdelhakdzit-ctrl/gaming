@@ -12,6 +12,7 @@ import { playerAim, tmpM } from './character.js';
 import { motionPreview } from './motion-studio.js';
 import { AI, onPlayerGunshot } from './ai.js';
 import { game, setAimStage, shootRay } from './game.js';
+import { addTrauma, bloomKick, spreadMul } from './gameplay/juice.js';
 import { capsuleMeshes, restAcross } from './main.js';
 
 // ======================================================================
@@ -1177,6 +1178,8 @@ export function fire() {
   rec.armBack.kick(k.back * shK * 1.15 * v());
   rec.elbow.kick(k.back * shK * 1.45 * v());
   const muzzleW = toWorld(fromGun(cur.muzzle)), fwd = toWorldDir(V(0, 0, 1).applyQuaternion(gunState.q));
+  const spread = cur.spread * (game.active ? spreadMul() : 1);
+  if (game.active) { addTrauma(cur.isRocket ? 0.55 : Math.min(0.3, 0.03 + 0.04 * (k.cam || 0))); bloomKick(cur.pellets ? 0.35 : cur.auto ? 0.07 : 0.2); }
   spawnMuzzleFX(muzzleW, new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), STATE.charYaw).multiply(gunState.q), fwd, cur.flashS * (0.9 + Math.random() * 0.2));
   if (cur.isRocket) {
     launchRocket(muzzleW, fwd);
@@ -1184,13 +1187,13 @@ export function fire() {
   } else if (cur.pellets) {
     if (game.active) {
       for (let p = 0; p < cur.pellets; p++) {
-        const spreadVec = V((Math.random() - 0.5) * cur.spread, (Math.random() - 0.5) * cur.spread, (Math.random() - 0.5) * cur.spread);
+        const spreadVec = V((Math.random() - 0.5) * spread, (Math.random() - 0.5) * spread, (Math.random() - 0.5) * spread);
         shootRay(muzzleW, fwd.clone().add(spreadVec).normalize(), cur.dmg);
       }
     }
   } else {
     if (cur.auto) for (const k of ['hx', 'hy', 'hz']) rec[k].kick((Math.random() - 0.5) * (k === 'hx' ? 9 : 6));
-    if (game.active) shootRay(muzzleW, fwd.clone().add(V(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(cur.spread)).normalize(), cur.dmg);
+    if (game.active) shootRay(muzzleW, fwd.clone().add(V(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(spread)).normalize(), cur.dmg);
   }
   playShot(STATE.timeScale < 1 ? 0.55 : 1, cur);
   if (AI.on) onPlayerGunshot();
