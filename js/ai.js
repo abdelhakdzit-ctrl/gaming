@@ -8,7 +8,7 @@ import { bones, rotateWorld, worldPos } from './skeleton.js';
 import { impactFX, muzzleFlashAt, radialTexture, tracerFX } from './fx.js';
 import { ikFromJson, ikToJson } from './ik.js';
 import { charPos, charVelW, footRoll, gaitParams, gaitPose, mm, retargetFrame } from './locomotion.js';
-import { M4, RIFLE_MUZZLE, W, chainOf, dropped, playClick, poseHandFrom, setGunMatrix } from './weapons.js';
+import { KA, M4, RIFLE_MUZZLE, RL, W, chainOf, dropped, playClick, poseHandFrom, setGunMatrix } from './weapons.js';
 import { AIM_SPLIT, playerCrouch, tmpM, tmpQ } from './character.js';
 import { TGROUP, endRound, game, hitMarker, hittables, playDing, popup, ray, tps } from './game.js';
 import { ANIM_T0 } from './main.js';
@@ -261,7 +261,8 @@ export function buildEnemyPool() {
 function aiDifficulty() {
   const w = AI.wave;
   return { sigma: Math.max(0.015, 0.034 - 0.0028 * (w - 1)) * (IS_TOUCH ? 1.25 : 1), react: Math.max(0.3, 0.75 - 0.06 * (w - 1)) * (IS_TOUCH ? 1.2 : 1),
-    maxAlive: Math.min(2 + w, IS_TOUCH ? 4 : 5), shooters: w < 3 ? 2 : 3, toKill: 3 + 2 * w };
+    maxAlive: Math.min(2 + w, IS_TOUCH ? 4 : 5), shooters: w < 3 ? 2 : 3, toKill: 3 + 2 * w,
+    stagger: Math.max(0.25, 0.95 - 0.07 * (w - 1)), missShots: w < 3 ? 3 : w < 6 ? 2 : 1 };
 }
 function banner(text) {
   const b = document.getElementById('banner'); b.textContent = text; b.classList.add('on');
@@ -273,7 +274,7 @@ export function startAI() {
   AI.drops.length = 0;
   for (const p of ARENA.pts) p.owner = null;
   Object.assign(AI, { on: true, hp: 100, lastHit: -9, wave: 1, killed: 0, spawned: 0, kills: 0, heads: 0, spawnT: 1.0, breakT: 0,
-    lastSeen: STATE.simTime - 3.5, heardAt: -9, flash: 0, hitT: -9 });
+    lastSeen: STATE.simTime - 3.5, heardAt: -9, flash: 0, hitT: -9, tokenAt: 0, roleT: 0, bb: null });
   AI.knownPos.copy(charPos); AI.knownVel.set(0, 0, 0);
   AI.diff = aiDifficulty(); AI.toKill = AI.diff.toKill;
   ARENA.group.visible = true;
@@ -290,6 +291,34 @@ function despawn(e) {
   Object.assign(e, { active: false, alive: false, state: 'off', cp: null, badgeT: 0 });
   e.root.visible = e.gun.visible = false;
   if (e.badge) e.badge.visible = false;
+}
+function playerReloading() { return RL.on || (KA.on && KA.kind === 'reload'); }
+// Attack-slot tokens: cap simultaneous shooters, stagger their starts, ease off when the player is nearly dead.
+function tokenOk(e) {
+  let cap = AI.diff.shooters;
+  if (AI.hp < 40) cap = 1; else if (playerReloading()) cap++;
+  return AI.shooting < cap && STATE.simTime >= AI.tokenAt;
+}
+// Squad roles on a shared blackboard: one flanker per ~3 enemies, one suppressor, the rest anchor. Sticky to avoid flip-flopping.
+function assignRoles() {
+  const live = AI.enemies.filter(e => e.alive && e.active && e.alert >= 0.85);
+  const P = AI.knownPos;
+  AI.bb = { n: live.length, seen: AI.lastSeen, heard: AI.heardAt, reloading: playerReloading(), hurt: AI.hp < 50 };
+  if (!live.length) return;
+  const sc = (e, st) => (e.role === st ? 1.4 : 0) + (e.hp >= 60 ? 0.8 : -1) + (e.ammo > 8 ? 0.4 : 0) + Math.min(e.pos.distanceTo(P), 2400) / 2400 + (e.seed % 1) * 0.3;
+  const used = new Set();
+  const nFl = live.length >= 5 ? 2 : live.length >= 2 ? 1 : 0;
+  for (let i = 0; i < nFl; i++) {
+    let b = null, bs = -Infinity;
+    for (const e of live) if (!used.has(e)) { const v = sc(e, 'flanker'); if (v > bs) { bs = v; b = e; } }
+    if (b) { b.role = 'flanker'; used.add(b); }
+  }
+  if (live.length >= 3 || (live.length === 2 && !nFl)) {
+    let b = null, bs = -Infinity;
+    for (const e of live) if (!used.has(e)) { const v = sc(e, 'support') - e.pos.distanceTo(P) / 2400 * 2; if (v > bs) { bs = v; b = e; } }
+    if (b) { b.role = 'support'; used.add(b); }
+  }
+  for (const e of live) if (!used.has(e)) e.role = 'assault';
 }
 function targetPosFor(e) {
   return (STATE.simTime - AI.lastSeen < 2.8 || e.state === 'peek' && e.vis) ? charPos : e.lastKnown;
@@ -312,7 +341,7 @@ function pickPatrolPoint(e) {
 }
 function enterPatrol(e) {
   if (e.cp) { e.cp.owner = null; e.cp = null; }
-  e.state = 'patrol'; e.alert = 0.2; e.patrolWait = 0; e.t = 0;
+  e.state = 'patrol'; e.alert = 0.2; e.detect = 0; e.patrolWait = 0; e.t = 0;
   const wp = pickPatrolPoint(e);
   e.path = planPath(e.pos, wp);
   setEnemyBadge(e, 'patrol', 2.4);
@@ -328,7 +357,7 @@ function enterPlan(e, dur = rnd(0.85, 1.4)) {
 }
 function enterSearch(e) {
   if (e.cp) { e.cp.owner = null; e.cp = null; }
-  e.state = 'search'; e.t = 0; e.alert = 0.65;
+  e.state = 'search'; e.t = 0; e.alert = 0.65; e.detect = Math.min(e.detect || 0, 0.4);
   // Fan squadmates out across different angles around the player's last known position + predicted drift
   const ang = e.seed * 1.9 + e.searchCount * 2.1;
   const rad = e.searchCount === 0 ? rnd(140, 340) : rnd(340, 650);
@@ -347,7 +376,7 @@ function spotPlayer(e, vis) {
   AI.knownPos.copy(charPos);
   AI.knownVel.copy(charVelW);
   e.lastKnown.copy(charPos);
-  e.alert = 1; e.searchCount = 0; e.vis = vis;
+  e.alert = 1; e.detect = 1; e.searchCount = 0; e.vis = vis;
   if (wasUnaware) setEnemyBadge(e, 'alert', 0.95);
   // Radio nearby squadmates with fresh target coordinates
   for (const o of AI.enemies) {
@@ -369,6 +398,7 @@ export function onPlayerGunshot() {
     const d = e.pos.distanceTo(charPos);
     if (d > 3200) continue;
     e.lastKnown.copy(AI.knownPos);
+    e.detect = Math.max(e.detect, d < 1350 ? 1 : 0.6);
     if (e.state === 'patrol') {
       if (d < 1350) { e.alert = 1; setEnemyBadge(e, 'alert', 0.9); if (!reposition(e, 'advance')) enterSearch(e); }
       else { e.alert = 0.6; enterHesitate(e, 'search', rnd(0.8, 1.3)); }
@@ -377,19 +407,42 @@ export function onPlayerGunshot() {
     }
   }
 }
-function enemySees(e) {
+function enemySees(e) {   // LOS is re-cast at ~11 Hz per enemy (callers are per-frame)
+  const now = STATE.simTime;
+  if (now - e.seeAt < 0.09) return e.seeVal;
   const eye = _cd.setFromMatrixPosition(e.B.head.matrixWorld).clone();
-  return losClear(eye, AI.chest) ? 'chest' : losClear(eye, AI.head) ? 'head' : null;
+  e.seeVal = losClear(eye, AI.chest) ? 'chest' : losClear(eye, AI.head) ? 'head' : null;
+  e.seeAt = now;
+  return e.seeVal;
 }
+// Unaware enemies fill a detection meter instead of spotting instantly: faster when close, running, or after gunfire.
 function enemyCanDetect(e) {
-  const dP = Math.hypot(e.pos.x - charPos.x, e.pos.z - charPos.z);
+  const dP = Math.hypot(e.pos.x - charPos.x, e.pos.z - charPos.z), dt = e.dtc || 0.016;
   const vis = enemySees(e);
-  if (!vis) return null;
-  if (dP < 360) return vis;   // close-quarters footsteps / peripheral awareness
   const toP = Math.atan2(charPos.x - e.pos.x, charPos.z - e.pos.z);
-  const gaze = e.yaw + AI.yaw0 + e.lookYaw;
-  const halfFov = e.state === 'patrol' ? 1.22 : 1.62;
-  return Math.abs(angWrap(toP - gaze)) <= halfFov ? vis : null;
+  let inView = null;
+  if (vis) {
+    const halfFov = e.state === 'patrol' ? 1.22 : 1.62;
+    if (dP < 360 || Math.abs(angWrap(toP - (e.yaw + AI.yaw0 + e.lookYaw))) <= halfFov) inView = vis;
+  }
+  const unaware = e.alert < 0.85 && (e.state === 'patrol' || e.state === 'search' || e.state === 'hesitate');
+  if (!unaware) return inView;
+  const spd = Math.hypot(charVelW.x, charVelW.z);
+  e.heard = false;
+  if (inView) {
+    let rate = 0.55 + 2.4 * Math.pow(clamp(1 - dP / 2600, 0.12, 1), 2);
+    rate *= spd > 250 ? 1.5 : (spd < 40 || playerCrouch.w > 0.5) ? 0.65 : 1;
+    if (STATE.simTime - AI.heardAt < 1.2) rate *= 1.8;
+    if (dP < 360) rate = 9;
+    e.detect = Math.min(1, e.detect + rate * dt);
+  } else if (spd > 260 && playerCrouch.w < 0.5 && dP < 900) {   // footsteps through cover
+    e.detect = Math.min(0.9, e.detect + 0.45 * (1 - dP / 900) * dt + 0.1 * dt); e.heard = true;
+  } else e.detect = Math.max(0, e.detect - 0.28 * dt);
+  if (e.detect > 0.2 && (inView || e.heard)) {   // readable tell: turn the head toward the source
+    e.wantLookYaw = clamp(angWrap(toP - (e.yaw + AI.yaw0)), -1.1, 1.1);
+    if (e.detect > 0.5 && e.badgeT < 0.3) setEnemyBadge(e, 'hesitate', 0.5);
+  }
+  return e.detect >= 1 ? inView : null;
 }
 function spawnEnemy() {
   const e = AI.enemies.find(x => !x.active); if (!e) return;
@@ -399,7 +452,7 @@ function spawnEnemy() {
   Object.assign(e, { active: true, alive: true, hp: 100, state: 'move', t: 0, dur: 1.2, cp: null, path: [], ammo: 30, peeks: 0, peekLimit: 2, aimT: 0, lostT: 0,
     suppress: 0, burstLeft: 0, burstIdx: 0, bursts: 0, burstLimit: 1, nextShot: 0, wWalk: 0, wRun: startPatrol ? 0 : 1, wCrouch: 0, wStr: 0, speed: 0, deadT: 0, fallX: 0, yOff: 0,
     lookYaw: 0, lookPitch: 0, headTilt: 0, wantLookYaw: 0, wantLookPitch: 0, wantTilt: 0, alert: startPatrol ? 0.2 : 1, searchCount: 0, patrolWait: 0,
-    landed: false, crouch: false, strafing: false, exposed: 0, vis: null, sigma: AI.diff.sigma * rnd(0.85, 1.2), react: AI.diff.react * rnd(0.8, 1.25) });
+    landed: false, crouch: false, strafing: false, exposed: 0, vis: null, detect: startPatrol ? 0 : 1, seeAt: -9, seeVal: null, cur: 0, movedFlag: false, reposAt: -9, unprotN: 0, heard: false, shotsPeek: 0, dtc: 0.016, sigma: AI.diff.sigma * rnd(0.85, 1.2), react: AI.diff.react * rnd(0.8, 1.25) });
   e.lastKnown.copy(AI.knownPos);
   e.yaw = e.moveYaw = Math.atan2(e.lastKnown.x - e.pos.x, e.lastKnown.z - e.pos.z);
   e.flinch.x = e.flinch.v = 0;
@@ -410,7 +463,7 @@ function spawnEnemy() {
   else if (!reposition(e, e.role === 'flanker' ? 'flank' : 'advance')) { e.state = 'cover'; e.t = 0.8; }
 }
 function pickCover(e, mode) {
-  const P = targetPosFor(e), pref = mode === 'advance' ? 1020 : mode === 'retreat' ? 2550 : mode === 'ambush' ? 1450 : 1580;
+  const P = targetPosFor(e), pref = (mode === 'advance' ? 1020 : mode === 'retreat' ? 2550 : mode === 'ambush' ? 1450 : 1580) + (e.role === 'support' ? 250 : e.role === 'flanker' ? -200 : 0);
   let best = null, bs = -Infinity;
   for (const cp of ARENA.pts) {
     if (cp.owner && cp.owner !== e) continue;
@@ -429,6 +482,8 @@ function pickCover(e, mode) {
       else if (mode === 'flank' && angDiff > 0.55) sc += Math.min(1.3, angDiff * 0.85);
     }
     if (e.cp && cp.cover === e.cp.cover) sc -= 1.5;
+    if (e.cp === cp) sc += 0.9;   // hysteresis: keep the current spot unless clearly beaten
+    if (mode !== 'advance' && losClear(V((cp.pos.x + e.pos.x) / 2, 135, (cp.pos.z + e.pos.z) / 2), V(P.x, 135, P.z))) sc -= 1.1;   // dash would cross the player's line of fire
     if (mode === 'flank' && e.cp) sc += Math.min(1.2, Math.abs(angWrap(Math.atan2(e.cp.pos.x - P.x, e.cp.pos.z - P.z) - a2)) / 0.55);
     if (sc > bs) { bs = sc; best = cp; }
   }
@@ -438,13 +493,14 @@ function reposition(e, mode) {
   const cp = pickCover(e, mode);
   if (!cp) return false;
   if (e.cp) e.cp.owner = null;
-  e.cp = cp; cp.owner = e;
+  e.cp = cp; cp.owner = e; e.reposAt = STATE.simTime; e.unprotN = 0;
   e.path = planPath(e.pos, cp.pos); e.state = 'move'; e.t = 0; e.peeks = 0; e.peekLimit = 2 + (Math.random() * 2 | 0);
   return true;
 }
 function aiMode(e) {
   if (e.hp < 45) return 'retreat';
   if (STATE.simTime - AI.lastSeen > 3.4) return 'search';
+  if (playerReloading() && e.role !== 'support' && STATE.simTime - AI.lastSeen < 2.5) return 'advance';
   if (e.role === 'flanker' || Math.random() < 0.5) return 'flank';
   if (Math.hypot(e.pos.x - e.lastKnown.x, e.pos.z - e.lastKnown.z) > 2200) return 'advance';
   return 'any';
@@ -462,7 +518,7 @@ function executePlan(e) {
   // Coordinated pincer: ask a squadmate in cover to lay suppressing fire while this unit flanks wide
   const ally = AI.enemies.find(o => o !== e && o.alive && o.state === 'cover' && o.cp && o.ammo > 5 && o.suppress < 0.8);
   if (ally && (e.role === 'flanker' || Math.random() < 0.6)) {
-    if (AI.shooting < AI.diff.shooters && canPeek(ally.cp, targetPosFor(ally))) startPeek(ally);
+    if (tokenOk(ally) && canPeek(ally.cp, targetPosFor(ally))) startPeek(ally);
     if (reposition(e, 'flank')) return;
   }
   // Overwatch ambush: hold a good sightline cover and pre-aim for the player's peek
@@ -474,14 +530,26 @@ function executePlan(e) {
   if (mode === 'search') { enterSearch(e); return; }
   if (!reposition(e, mode)) { e.state = 'cover'; e.t = 0.5; e.peeks = 0; }
 }
-function moveAlong(e, dt, speed) {
-  const cyc = speed < 240 ? AI.walkCycle : AI.runCycle;
+function moveAlong(e, dt, speed) {   // accel/turn-rate limited steering with ally separation
   while (e.path.length) {
-    const tg = e.path[0], dx = tg.x - e.pos.x, dz = tg.z - e.pos.z, d = Math.hypot(dx, dz);
-    if (d < 22) { e.path.shift(); continue; }
-    const st = Math.min(d, speed * dt);
-    e.pos.x += dx / d * st; e.pos.z += dz / d * st; e.speed = speed; e.moveYaw = Math.atan2(dx, dz);
-    e.phase = (e.phase + st / cyc) % 1;
+    const tg = e.path[0], dx = tg.x - e.pos.x, dz = tg.z - e.pos.z, d = Math.hypot(dx, dz), last = e.path.length === 1;
+    if (d < (last ? 22 : 40)) { e.path.shift(); continue; }
+    const want = Math.atan2(dx, dz), turn = angWrap(want - e.moveYaw);
+    e.moveYaw += clamp(turn, -11 * dt, 11 * dt);
+    let tgt = speed * (1 - 0.55 * Math.min(1, Math.abs(turn) / 1.2));
+    if (last && d < 140) tgt = Math.min(tgt, Math.max(110, speed * d / 140));
+    if (!e.movedFlag) e.cur = Math.min(speed, 60);
+    e.movedFlag = true;
+    e.cur += clamp(tgt - e.cur, -1500 * dt, 1000 * dt);
+    let vx = Math.sin(e.moveYaw) * e.cur, vz = Math.cos(e.moveYaw) * e.cur;
+    for (const o of AI.enemies) {
+      if (o === e || !o.alive) continue;
+      const ox = e.pos.x - o.pos.x, oz = e.pos.z - o.pos.z, od = Math.hypot(ox, oz);
+      if (od < 150 && od > 1e-3) { const k = (150 - od) / 150 * 0.6 * e.cur / od; vx += ox * k; vz += oz * k; }
+    }
+    const sp = Math.hypot(vx, vz), st = Math.min(sp * dt, last ? d : Infinity), kk = sp > 1e-3 ? st / sp : 0;
+    e.pos.x += vx * kk; e.pos.z += vz * kk;
+    e.speed = Math.max(e.cur, 25); e.phase = (e.phase + st / (e.cur < 240 ? AI.walkCycle : AI.runCycle)) % 1;
     return false;
   }
   return true;
@@ -496,8 +564,8 @@ function sideStep(e, x, z, dt) {   // strafe while facing the target (stepping o
   return d - st < 6;
 }
 function startPeek(e) {
-  Object.assign(e, { state: 'peek', t: 0, aimT: e.aimT > 0 ? Math.min(e.aimT, e.react * 0.45) : 0, lostT: 0, bursts: 0, burstIdx: 0, burstLeft: 3 + (Math.random() * 3 | 0), burstLimit: 1 + (Math.random() * 2.5 | 0), nextShot: 0 });
-  AI.shooting++;
+  Object.assign(e, { state: 'peek', t: 0, aimT: e.aimT > 0 ? Math.min(e.aimT, e.react * 0.45) : 0, lostT: 0, bursts: 0, burstIdx: 0, burstLeft: 3 + (Math.random() * 3 | 0), burstLimit: AI.hp < 40 ? 1 : 1 + (Math.random() * 2.5 | 0), nextShot: 0, shotsPeek: 0 });
+  AI.shooting++; AI.tokenAt = STATE.simTime + AI.diff.stagger * rnd(0.7, 1.3);
 }
 function endPeek(e) { e.state = 'cover'; e.t = rnd(0.75, 1.65) + e.suppress; e.peeks++; e.aimT = 0; }
 function stepEnemy(e, dt) {
@@ -508,6 +576,8 @@ function stepEnemy(e, dt) {
     e.badgeT -= dt;
     if (e.badgeT <= 0 && e.badge) e.badge.visible = false;
   }
+  if (!e.movedFlag) e.cur = 0;
+  e.movedFlag = false; e.dtc = dt;
   e.speed = 0; e.strafing = false; e.crouch = false;
   e.wantLookYaw = 0; e.wantLookPitch = 0; e.wantTilt = 0;
   if (STATE.simTime - AI.lastSeen < 1.2) e.lastKnown.copy(AI.knownPos);
@@ -530,6 +600,7 @@ function stepEnemy(e, dt) {
         }
         break;
       }
+      if (e.heard && e.detect > 0.55) { e.lastKnown.copy(charPos); e.alert = 0.6; enterHesitate(e, 'search', rnd(0.7, 1.1)); break; }
       if (e.patrolWait > 0) {
         e.patrolWait -= dt;
         e.wantLookYaw = 0.65 * Math.sin(e.t * 2.1 + e.seed);
@@ -607,7 +678,10 @@ function stepEnemy(e, dt) {
       e.t += dt;
       const vis = dReal < 950 ? enemyCanDetect(e) : null;
       if (vis) spotPlayer(e, vis);
-      if (cp && Math.floor(e.t / 0.6) !== Math.floor((e.t - dt) / 0.6) && !isProtected(cp, P)) reposition(e, 'any');
+      if (cp && Math.floor(e.t / 0.6) !== Math.floor((e.t - dt) / 0.6)) {
+        if (isProtected(cp, P)) e.unprotN = 0;
+        else if (++e.unprotN >= 2 && STATE.simTime - e.reposAt > 1.2) reposition(e, 'any');
+      }
       if (moveAlong(e, dt, 380)) { e.state = 'cover'; e.t = rnd(0.35, 0.9); }
       break;
     }
@@ -630,6 +704,7 @@ function stepEnemy(e, dt) {
       e.t -= dt;
       if (e.state === 'reload') { if (e.t <= 0) { e.ammo = 30; e.state = 'cover'; e.t = rnd(0.2, 0.55); } break; }
       if (dReal < 520 && visDirect && e.t > 0.18) e.t = 0.18;
+      else if (visDirect && playerReloading() && e.t > 0.3) e.t = 0.3;   // punish the reload
       if (e.t > 0 || away) break;
       if (e.ammo <= 0) { e.state = 'reload'; e.t = 2.3; break; }
       // Player vanished behind cover for a while -> pause to plan / search instead of staring at walls forever
@@ -638,7 +713,7 @@ function stepEnemy(e, dt) {
         enterPlan(e, dReal < 520 ? 0.35 : rnd(0.75, 1.25));
         break;
       }
-      if ((AI.shooting < AI.diff.shooters || (dReal < 520 && visDirect)) && e.suppress < 0.65) startPeek(e);
+      if ((tokenOk(e) || (dReal < 520 && visDirect && AI.hp >= 40)) && e.suppress < 0.65) startPeek(e);
       else e.t = rnd(0.25, 0.65);
       break;
     }
@@ -655,14 +730,15 @@ function stepEnemy(e, dt) {
         e.lostT += dt; e.aimT = Math.max(0, e.aimT - 2 * dt);
         e.wantLookYaw = 0.32 * Math.sin(e.lostT * 5.0 + e.seed);
       }
-      if (e.lostT > 0.85) {
+      const supp = !vis && e.role === 'support' && STATE.simTime - AI.lastSeen < 3.2 && e.ammo > 6 && AI.hp >= 40;
+      if (e.lostT > (supp ? 2.2 : 0.85)) {
         // Player disappeared from sightline! Look puzzled briefly, then plan a search or flank
         endPeek(e); e.peeks = e.peekLimit;
         if (STATE.simTime - AI.lastSeen > 1.6) enterHesitate(e, 'plan', rnd(0.95, 1.45));
         break;
       }
-      if (vis && e.aimT >= e.react && STATE.simTime >= e.nextShot && e.ammo > 0) {
-        enemyShoot(e); e.ammo--; e.burstIdx++;
+      if (((vis && e.aimT >= e.react) || (supp && e.lostT > 0.35)) && STATE.simTime >= e.nextShot && e.ammo > 0) {
+        enemyShoot(e, vis ? null : AI.knownPos); e.ammo--; e.burstIdx++;
         if (--e.burstLeft > 0) e.nextShot = STATE.simTime + rnd(0.095, 0.13);
         else { e.bursts++; e.burstIdx = 0; e.burstLeft = 3 + (Math.random() * 3 | 0); e.nextShot = STATE.simTime + rnd(0.45, 0.85); }
       }
@@ -775,10 +851,17 @@ function blendSnaps(e, src) {
   const pel = e.B.pelvis.position.set(0, 0, 0);
   for (const s of src) pel.addScaledVector(s[0].pel, s[1] / tw);
 }
-function enemyShoot(e) {
-  const m = e.muzzle.clone(), tgt = (e.vis === 'head' || Math.random() < 0.12 ? AI.head : AI.chest).clone().add(V(rnd(-6, 6), rnd(-10, 10), rnd(-6, 6)));
+function enemyShoot(e, blind = null) {
+  const m = e.muzzle.clone(), aim = blind ? blind.clone().setY(95) : (e.vis === 'head' || Math.random() < 0.12 ? AI.head : AI.chest).clone();
+  const tgt = aim.add(V(rnd(-6, 6), rnd(-10, 10), rnd(-6, 6)));
+  if (!blind && e.shotsPeek < AI.diff.missShots) {   // telegraph: opening rounds land beside the player
+    const dd = tgt.distanceTo(m), side = V(tgt.z - m.z, 0, m.x - tgt.x).normalize();
+    tgt.addScaledVector(side, (e.seed % 2 < 1 ? 1 : -1) * clamp(dd * 0.06, 70, 150)).y += rnd(-20, 20);
+  }
+  e.shotsPeek++;
   const d = tgt.sub(m).normalize();
-  const sig = e.sigma * (1 + 1.8 * Math.exp(-e.aimT / 0.9)) * (1 + mm.speed / 320) * (1 + 0.15 * e.burstIdx);
+  let sig = e.sigma * (1 + 1.8 * Math.exp(-e.aimT / 0.9)) * (1 + mm.speed / 320) * (1 + 0.15 * e.burstIdx);
+  sig *= (1 + 0.35 * playerCrouch.w) * (e.vis === 'head' ? 1.35 : 1) * (AI.hp < 40 ? 1.6 : 1) * (blind ? 3.5 : 1);
   d.x += gauss() * sig; d.y += gauss() * sig; d.z += gauss() * sig; d.normalize();
   const h = castEnemyShot(m, d);
   muzzleFlashAt(m, d, 1.35);
@@ -865,6 +948,7 @@ export function updateAI(dt) {
   AI.shooting = 0; for (const e of AI.enemies) if (e.active && e.state === 'peek') AI.shooting++;
   if (game.state === 'play') {
     waveStep(dt);
+    if ((AI.roleT -= dt) <= 0) { AI.roleT = 1.2; assignRoles(); }
     for (const e of AI.enemies) if (e.active) stepEnemy(e, dt);
     if (STATE.simTime - AI.lastHit > 3.5 && AI.hp > 0) AI.hp = Math.min(100, AI.hp + 22 * dt);
   }
