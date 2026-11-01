@@ -748,7 +748,22 @@ export function stepLocomotion(dt) {
   const moveFade = 1 - Math.max(sstep(15, 85, mm.speed), m > 0.01 ? 0.92 : 0);
   const targetAimYawOff = (AI.yaw0 || 0) * W.blend * playerAim.w * moveFade;
   mm.aimYawOff = lerp(mm.aimYawOff || 0, targetAimYawOff, 1 - Math.exp(-9 * dt));
-  const dTurn = game.active ? angWrap(tps.yaw - mm.aimYawOff - STATE.charYaw) * (1 - Math.exp(-12 * dt)) : inp.turn * dt;
+  let dTurn;
+  if (game.active) {
+    const err = angWrap(tps.yaw - mm.aimYawOff - STATE.charYaw), ts = mm.ts ||= { on: false, t: 0, sw: -1, u: 0, from: 0, yaw: [0, 0] };
+    const standing = m < 0.01 && mm.speed < 12 && !LADDER.active;
+    if (standing && !ts.on && Math.abs(err) > TURN_START) ts.on = true;
+    if (!standing || Math.abs(err) < TURN_END) ts.on = false;
+    if (ts.on) {
+      // Eased stepped turn: ramp in, speed proportional to remaining angle, capped.
+      ts.t = Math.min(1, ts.t + dt / 0.18);
+      const ramp = ts.t * ts.t * (3 - 2 * ts.t), rate = clamp(Math.abs(err) * 6, 0.9, 4.2) * ramp;
+      dTurn = Math.sign(err) * Math.min(Math.abs(err), rate * dt);
+    } else {
+      ts.t = 0;
+      dTurn = err * (1 - Math.exp(-(standing ? 7 : 12) * dt));
+    }
+  } else dTurn = inp.turn * dt;
   STATE.charYaw += dTurn;
 
   let des = [0, 0];
@@ -772,7 +787,10 @@ export function stepLocomotion(dt) {
 
   // Smooth exponential + rate-bounded velocity filter: zero corner jerk when starting, stopping, or curving across 360°
   const desSpd = Math.hypot(des[0], des[1]);
-  const resp = desSpd > mm.speed ? 8.5 : (desSpd < 5 ? 10.5 : 9.5);
+  // Start-up anticipation: the first ~0.15 s of a push-off ramps in with a smootherstep so the body commits before the feet go.
+  mm.moveT = desSpd > 5 ? Math.min(1, (mm.moveT || 0) + dt / 0.18) : 0;
+  const ramp = mm.speed < 60 ? lerp(0.5, 1, mm.moveT * mm.moveT * (3 - 2 * mm.moveT)) : 1;
+  const resp = (desSpd > mm.speed ? 8.5 * ramp : (desSpd < 5 ? 10.5 : 9.5));
   const kv = 1 - Math.exp(-resp * dt);
   const maxStep = (desSpd > mm.speed ? 820 : 1080) * dt;
   const ex = (des[0] - mm.vel[0]) * kv, ez = (des[1] - mm.vel[1]) * kv, el = Math.hypot(ex, ez);
