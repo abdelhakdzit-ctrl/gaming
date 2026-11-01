@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { V, rnd, sstep } from './math.js';
+import { V, clamp, rnd, sstep } from './math.js';
 import { IS_TOUCH, STATE, rec } from './state.js';
 import { GROUND_Y, camera, renderer, scene } from './scene.js';
 import { audio, noiseBuf } from './audio.js';
@@ -8,6 +8,7 @@ import { W, fromGun, gunState, updateMags } from './weapons.js';
 import { tmpM, tmpQ } from './character.js';
 import { AI, ARENA, castWorld, killEnemy } from './ai.js';
 import { game, hitMarker, playDing, popup } from './game.js';
+import { addTrauma } from './gameplay/juice.js';
 
 // Rocket projectiles & ballistics
 const ACTIVE_ROCKETS = [];
@@ -108,6 +109,7 @@ function playExplosionSound() {
 }
 
 function explodeRocket(point, dir) {
+  addTrauma(clamp(1.1 - point.distanceTo(camera.position) / 1800, 0.25, 0.95));
   rec.cam.kick(2.4);
   rec.back.kick(3.2);
   rec.flip.kick(4.0);
