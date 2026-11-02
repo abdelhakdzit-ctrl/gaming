@@ -4,25 +4,25 @@ import { STATE } from '../state.js';
 import { bones, setWorldQuat, twoBoneIK, worldPos, worldQuat } from '../skeleton.js';
 import { smoother } from './curves.js';
 import { applyXfade, captureXfade } from './xfade.js';
-import { charPos, mm, retargetFrame, slingWeaponOnBack } from '../locomotion.js';
-import { placeCharacter } from '../character.js';
+import { charPos, keys, mm, retargetFrame, slingWeaponOnBack } from '../locomotion.js';
+import { isAiming, placeCharacter } from '../character.js';
 import { getMotionProfile } from '../motion-studio.js';
 import { ARENA } from '../ai.js';
 import { W, playClick } from '../weapons.js';
 
 // ======================================================================
 //  TRAVERSAL — height-selected mocap mantles with phase-based motion warping, plus drop/dodge rolls.
-//  Clip metadata was measured from the FBX root/hand/foot tracks (cm, clip root space, +Z forward):
-//   ledge = surface height the clip was authored for, face = wall face distance ahead of the start root,
-//   tPlant = hands land on the edge, tRel = hands leave, tLift = feet leave the ground, tTop = first foot on top,
-//   tEnd = handed back to locomotion (the rest of the clip is a held pose).
+//  Timings read from the FBX hand/foot tracks (s): tPlant/tRel = hands on/off the edge, vUp/vDown = window in which a
+//  higher/lower real ledge is absorbed by the root, tOut = earliest exit when the player moves or aims, tEnd = clip done.
+//  The authored ledge height and face distance are measured from the clip itself at load (see measureEdge).
 // ======================================================================
 const CLIPS = {
-  low:  { id: 'climb-low',   ledge: 86,  face: 68, tPlant: 0.45, tRel: 1.40, tLift: 0.42, tTop: 0.68, tEnd: 1.80, hMin: 55,  hMax: 150, standIn: 40 },
-  mid:  { id: 'climb-up-03', ledge: 258, face: 50, tPlant: 0.06, tRel: 1.02, tLift: 0.00, tTop: 1.75, tEnd: 2.20, hMin: 150, hMax: 215, standIn: 26 },
-  high: { id: 'climb-up-02', ledge: 258, face: 50, tPlant: 0.86, tRel: 1.82, tLift: 0.60, tTop: 2.55, tEnd: 3.00, hMin: 215, hMax: 300, standIn: 26 },
-  roll: { id: 'jump-roll', tTake: 0.55, tHands: 0.82, tEnd: 1.95 },
+  low:  { id: 'climb-low',   tPlant: 0.40, tRel: 0.80, vUp: [0.40, 0.78], vDown: [0.40, 0.78], tOut: 1.25, tEnd: 1.75, hMin: 55,  hMax: 150, standIn: 40 },
+  mid:  { id: 'climb-up-03', tPlant: 0.00, tRel: 1.48, vUp: [0.00, 1.40], vDown: [0.00, 0.30], tOut: 1.72, tEnd: 2.15, hMin: 150, hMax: 215, standIn: 26 },
+  high: { id: 'climb-up-02', tPlant: 0.80, tRel: 2.28, vUp: [0.80, 2.20], vDown: [0.55, 0.80], tOut: 2.52, tEnd: 2.95, hMin: 215, hMax: 300, standIn: 26 },
+  roll: { id: 'jump-roll', tTake: 0.55, tHands: 0.82, tOut: 1.45, tEnd: 1.90 },
 };
+const ARM_ROOTS = ['clavicle_l', 'clavicle_r'];
 
 export const TRAV = {
   active: false, kind: '', clip: null, src: null, t: 0, rate: 1,
@@ -40,6 +40,7 @@ export function preloadTraversal() {
       await new Promise(r => idle(r));
       c.src = await getMotionProfile(c.id);
       c.pz = sampleRootZ(c.src);   // pelvis forward track, sampled once, for phase-matched entry and roll scaling
+      if (c.tRel) measureEdge(c);
     }
     TRAV.ready = true;
   })().catch(e => { console.warn('Traversal clips unavailable:', e); _load = null; });
@@ -52,6 +53,18 @@ function sampleRootZ(src) {
     out.push(src.mPelvis0.z + (worldPos(ab.pelvis).z - src.aPelvis0.z) * src.ratio);
   }
   return out;
+}
+// Authored ledge = standing pelvis height on top minus rest pelvis height; authored face = wrists at first contact minus a
+// small grip inset. Warping to these (not hand-typed guesses) is what puts the real edge under the mocap fingers.
+function measureEdge(c) {
+  const src = c.src, ab = src.abones, at = (b, t) => {
+    src.mixer.setTime(t); src.anim.updateMatrixWorld(true);
+    return src.mPelvis0.clone().addScaledVector(worldPos(ab[b]).sub(src.aPelvis0), src.ratio);
+  };
+  c.ledge = at('pelvis', c.tEnd).y - src.mPelvis0.y;
+  let z = 1e9;
+  for (let t = c.tPlant; t <= c.tPlant + 0.25; t += 1 / 30) z = Math.min(z, at('hand_l', t).z, at('hand_r', t).z);
+  c.face = z - 4;
 }
 const pzAt = (c, t) => { const f = clamp(t * 30, 0, c.pz.length - 1), i = Math.floor(f), j = Math.min(i + 1, c.pz.length - 1); return lerp(c.pz[i], c.pz[j], f - i); };
 
@@ -138,9 +151,32 @@ export function tryTraverse() {
   return false;
 }
 
+const _arm = { bones: [], q: [], gunRel: new THREE.Matrix4(), ok: false };
+const _mA = new THREE.Matrix4(), _mB = new THREE.Matrix4();
+function captureArms() {
+  // Weapon-holding arms in parent space (relative to the chest) + gun relative to the right hand, from the last frame.
+  if (!_arm.bones.length) for (const r of ARM_ROOTS) bones[r].traverse(b => { if (b.isBone) { _arm.bones.push(b); _arm.q.push(new THREE.Quaternion()); } });
+  _arm.bones.forEach((b, i) => _arm.q[i].copy(b.quaternion));
+  const g = W.cur?.obj; _arm.ok = !!g;
+  if (!g) return;
+  const root = g.parent; root.updateMatrixWorld(true);
+  _mA.copy(root.matrixWorld).invert().multiply(bones.hand_r.matrixWorld);   // hand in the gun's parent space
+  _arm.gunRel.copy(_mA.invert()).multiply(g.matrix);
+}
+function holdWeapon(w) {
+  _arm.bones.forEach((b, i) => b.quaternion.slerp(_arm.q[i], w));
+  STATE.mannequinRoot.updateMatrixWorld(true);
+  const g = W.cur?.obj;
+  if (!_arm.ok || !g) return;
+  g.matrixAutoUpdate = false;
+  g.matrix.multiplyMatrices(bones.hand_r.matrixWorld, _arm.gunRel);   // charRoot is identity while solving
+  g.matrixWorldNeedsUpdate = true;
+}
+
 function begin(kind, c, fwd) {
-  captureXfade(kind === 'roll' ? 0.2 : 0.24, W.cur?.obj);
-  Object.assign(TRAV, { active: true, kind, clip: c, src: c.src, base: charPos.clone(), fwd: fwd.clone(), yaw0: STATE.charYaw, yaw1: Math.atan2(fwd.x, fwd.z), dz: 0, dy: 0 });
+  if (kind === 'roll') captureArms();
+  captureXfade(kind === 'roll' ? 0.12 : 0.16, W.cur?.obj);
+  Object.assign(TRAV, { active: true, kind, clip: c, src: c.src, base: charPos.clone(), fwd: fwd.clone(), yaw0: STATE.charYaw, yaw1: Math.atan2(fwd.x, fwd.z), dz: 0, dy: 0, vz: 0, lastZ: null });
   TRAV.fallV = 0;
   mm.vel[0] = mm.vel[1] = mm.speed = 0;
 }
@@ -168,15 +204,17 @@ function startRoll(fwd, free, drop, edgeDist) {
 // ---- per-frame ----
 function finish() {
   const pel = worldPos(bones.pelvis);
-  captureXfade(0.42, W.cur?.obj);   // back to the weapon stance, gun crossfades from the back to the hands
+  captureXfade(TRAV.kind === 'roll' ? 0.18 : 0.26, W.cur?.obj);   // back to the weapon stance (climbs: gun from the back to the hands)
   const off = V(pel.x, 0, pel.z).applyAxisAngle(V(0, 1, 0), STATE.charYaw);
   charPos.add(off);
   charPos.y = TRAV.kind === 'climb' ? TRAV.base.y + TRAV.top : TRAV.base.y + TRAV.dy;
   TRAV.active = false;
-  mm.vel[0] = mm.vel[1] = mm.speed = 0;
+  mm.vel[0] = 0; mm.vel[1] = moveHeld() ? clamp(TRAV.vz, 0, 330) : 0;   // keep the momentum when the player keeps moving
+  mm.gaitVel[0] = 0; mm.gaitVel[1] = mm.vel[1]; mm.speed = mm.vel[1];
   if (STATE.IDLE) { mm.out.set(STATE.IDLE); mm.prev.set(STATE.IDLE); }
   return false;
 }
+const moveHeld = () => ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].some(k => keys.has(k));
 
 export function updateTraverse(dt, fast = false) {
   if (!TRAV.active) return false;
@@ -186,7 +224,7 @@ export function updateTraverse(dt, fast = false) {
   if (TRAV.kind === 'roll' && TRAV.top > 0 && TRAV.t > c.tTake - 0.05 && TRAV.t < c.tHands)
     rate *= clamp((c.tHands - c.tTake + 0.05) / Math.sqrt(2 * TRAV.top / 981), 0.35, 1);
   TRAV.t += dt * rate;
-  if (TRAV.t >= c.tEnd) return finish();
+  if (TRAV.t >= c.tEnd || (TRAV.t >= c.tOut && (moveHeld() || isAiming()))) return finish();   // input cancels the settle
   const t = TRAV.t;
 
   retargetFrame(t, null, TRAV.src, true);
@@ -196,19 +234,21 @@ export function updateTraverse(dt, fast = false) {
     // forward warp lands the hands on the edge exactly at tPlant; vertical warp is spread over the airborne/pull phase
     const tA = Math.max(c.tPlant, TRAV.t0 + 0.22);
     TRAV.dz = -TRAV.pelZ0 + (TRAV.dn - c.face + TRAV.pelZ0) * smoother((t - TRAV.t0) / (tA - TRAV.t0));
-    const dH = TRAV.top - c.ledge;
-    const tB = dH < 0 ? Math.max(c.tPlant, c.tLift + 0.15) : c.tTop;
-    TRAV.dy = dH * smoother((t - c.tLift) / (tB - c.tLift));
+    const dH = TRAV.top - c.ledge, [va, vb] = dH < 0 ? c.vDown : c.vUp;
+    TRAV.dy = dH * smoother((t - va) / Math.max(1e-3, vb - va));
     yaw = TRAV.yaw0 + angWrap(TRAV.yaw1 - TRAV.yaw0) * smoother((t - TRAV.t0) / Math.max(0.2, (tA - TRAV.t0) * 0.8));
   } else {
     TRAV.dz = -TRAV.pelZ0 - (1 - TRAV.k) * (pelZ - TRAV.pelZ0);   // compress the dive to the free space
     const s = clamp((t - (c.tTake - 0.05)) / (c.tHands - c.tTake + 0.05), 0, 1);
     TRAV.dy = -TRAV.top * s * s;   // accelerating fall from the edge
   }
-  if (TRAV.kind === 'climb') solveContacts(t);
-  slingWeaponOnBack(W.cur);
+  if (TRAV.kind === 'climb') { solveContacts(t); slingWeaponOnBack(W.cur); }
+  else holdWeapon(sstep(0, 0.08, t - TRAV.t0) * (1 - sstep(c.tOut - 0.1, c.tEnd, t)) * 0.85 + 0.15);   // roll keeps the gun in a tucked ready pose
 
   charPos.copy(TRAV.base).addScaledVector(TRAV.fwd, TRAV.dz); charPos.y += TRAV.dy;
+  const zNow = TRAV.dz + pelZ;
+  if (TRAV.lastZ !== null && dt > 0) TRAV.vz += ((zNow - TRAV.lastZ) / dt - TRAV.vz) * Math.min(1, dt * 12);
+  TRAV.lastZ = zNow;
   STATE.charYaw = yaw;
   const pel = worldPos(bones.pelvis);
   TRAV.track.copy(charPos).add(V(pel.x, pel.y - 97.4, pel.z).applyAxisAngle(V(0, 1, 0), yaw));
@@ -217,16 +257,23 @@ export function updateTraverse(dt, fast = false) {
   return true;
 }
 
-// Hands pinned on the real edge while in contact; hands/feet never inside the wall; feet on the top surface.
+// Hand-to-edge IK: the hands keep exactly the relation to the REAL edge that the mocap had to its authored edge
+// (hang -> re-grip -> push all preserved), so the correction is only the part of the warp still in progress.
+// Then hard guards: never inside the wall, never below the top once over it; feet on the face or on the top.
 function solveContacts(t) {
-  const c = TRAV.clip, top = TRAV.top - TRAV.dy, face = TRAV.dn - TRAV.dz;   // ledge in current root space
-  const wH = sstep(c.tPlant - 0.12, c.tPlant, t) * (1 - sstep(c.tRel - 0.1, c.tRel + 0.12, t));
+  const c = TRAV.clip, top = TRAV.top - TRAV.dy, face = TRAV.dn - TRAV.dz;   // real ledge in current root space
+  const dY = top - c.ledge, dZ = face - c.face;
+  const wH = sstep(c.tPlant - 0.1, c.tPlant + 0.02, t) * (1 - sstep(c.tRel - 0.06, c.tRel + 0.1, t));
   for (const s of ['l', 'r']) {
     const up = bones['upperarm_' + s], lo = bones['lowerarm_' + s], hand = bones['hand_' + s];
     const hp = worldPos(hand), hq = worldQuat(hand), tg = hp.clone();
-    if (wH > 0.001) tg.lerp(V(hp.x, top + 3.5, Math.max(hp.z, face + 7)), wH);
-    if (tg.y < top - 2 && tg.z > face - 4) tg.z = face - 4;
-    if (tg.distanceToSquared(hp) > 0.01) { twoBoneIK(up, lo, hand, tg, worldPos(lo).sub(worldPos(up))); setWorldQuat(hand, hq); }
+    tg.y += dY * wH; tg.z += dZ * wH;
+    if (tg.z > face - 3 && tg.y < top + 3) { if (tg.y > top - 8 && wH > 0.3) tg.y = top + 3; else tg.z = face - 3; }
+    if (tg.distanceToSquared(hp) > 0.01) {
+      // keep the elbow from flipping when the reach shortens: pole = current elbow direction
+      twoBoneIK(up, lo, hand, tg, worldPos(lo).sub(worldPos(up)));
+      setWorldQuat(hand, hq);
+    }
   }
   for (const s of ['l', 'r']) {
     const th = bones['thigh_' + s], ca = bones['calf_' + s], ft = bones['foot_' + s];
