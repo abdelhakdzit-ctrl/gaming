@@ -6,6 +6,7 @@ import { updateFX } from './fx.js';
 import { ikDbg, ikEdit, ikState, setIKMode, toggleIKEdit } from './ik.js';
 import { RLT, rlClearKeys, rlDeleteKey, rlJump, rlSetKey, rlSetU, startRlTimeline, stopRlTimeline } from './reload-timeline.js';
 import { charPos, keys, mm, toWorld, toggleLadder, turnOff } from './locomotion.js';
+import { tryTraverse } from './anim/traverse.js';
 import { KA, RL, W, fire, fromGun, gunState, nextWeapon, pressFire, pullTrigger, releaseFire, startKarAction, startReload, switchWeapon } from './weapons.js';
 import { aim, isAiming, lastPlaced, placeCharacter, playerAim, playerCrouch, setAimMode, toggleAimMode, toggleCrouch, updateCharacter } from './character.js';
 import { motionPreview, previewMotionSelection, renderMotionFrame, stopMotionPreview } from './motion-studio.js';
@@ -187,6 +188,7 @@ addEventListener('keydown', e => {
     if (!e.repeat) {
       if (RLT.on) document.getElementById('rlPlay').click();
       else if (!game.active || isAiming()) pressFire();
+      else if (game.state === 'play') tryTraverse();
     }
   }
   if (e.code.startsWith('Arrow')) e.preventDefault();
