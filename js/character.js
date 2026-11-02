@@ -188,12 +188,16 @@ function applyWeaponBlock(dt, cur) {
   const ps = Math.max(0, damp(_wbS, pen, pen > _wbS.x ? 22 : 8, dt));   // quick in (never clip), slow out
   BLOCK.pen = ps; BLOCK.w = sstep(2, 20, ps);
   if (ps < 0.15) return;
-  const pull = Math.min(ps * 0.5, cur.long ? 24 : 16), rem = ps - pull;
-  const tilt = Math.min(Math.acos(clamp(1 - rem / Math.max(reach, 30), -1, 1)), (cur.long ? 62 : 50) * DEG);
-  const piv = worldPos(bones.hand_r), ax = V().crossVectors(fwd, V(0, 1, 0)).normalize();
-  const fh = V(fwd.x, 0, fwd.z).normalize();
-  G.premultiply(_wbM1.makeTranslation(-piv.x, -piv.y, -piv.z)).premultiply(_wbM2.makeRotationFromQuaternion(_wbQ.setFromAxisAngle(ax, tilt)))
-    .premultiply(_wbM1.makeTranslation(piv.x - fh.x * pull, piv.y, piv.z - fh.z * pull));
+  // Blocked pose: short pull toward the chest, then a capped rotation about the grip split into a raise and an inward
+  // (across-chest) turn. A single large pitch stood long guns vertical and dragged the support arm/clavicle overhead.
+  const piv = worldPos(bones.hand_r), lever = Math.max(M.distanceTo(piv), 15);
+  const pull = Math.min(ps * 0.45, cur.long ? 12 : 14), rem = ps - pull;
+  const theta = Math.min(Math.acos(clamp(1 - rem / lever, -1, 1)), (cur.long ? 48 : 42) * DEG);
+  const pitch = Math.min(theta * 0.78, (cur.long ? 34 : 36) * DEG), yaw = Math.sqrt(Math.max(0, theta * theta - pitch * pitch));
+  const fh = V(fwd.x, 0, fwd.z).normalize(), ax = V().crossVectors(fh, V(0, 1, 0)).normalize();
+  _wbQ.setFromAxisAngle(V(0, 1, 0), yaw).multiply(_wbQ2.setFromAxisAngle(ax, pitch));
+  G.premultiply(_wbM1.makeTranslation(-piv.x, -piv.y, -piv.z)).premultiply(_wbM2.makeRotationFromQuaternion(_wbQ))
+    .premultiply(_wbM1.makeTranslation(piv.x - fh.x * pull, piv.y + pull * 0.25, piv.z - fh.z * pull));
 }
 const _crS = { x: 0, v: 0 }, _aimS = { x: 0, v: 0 };   // critically-damped blend states (no start/stop pop)
 export function updateCharacter(dt) {
@@ -399,13 +403,17 @@ export const AIM_SPLIT = [['spine_01', 0.2], ['spine_02', 0.35], ['spine_03', 0.
 function applyAim() {
   if (!game.active) return;
   const P = aim.smooth.clone().sub(charPos).applyAxisAngle(V(0, 1, 0), -STATE.charYaw);   // character space
+  // When the gun is raised off a wall the spine stops chasing the target; the total correction is bounded so it can never wrench.
+  const wA = 1 - 0.85 * BLOCK.w;
+  let yawT = 0, pitchT = 0;
   for (let it = 0; it < 2; it++) {
     bones.hand_r.updateWorldMatrix(true, false);
     const M = new THREE.Matrix4().multiplyMatrices(bones.hand_r.matrixWorld, W.cur.inHand);
     const muzzle = W.cur.muzzle.clone().applyMatrix4(M), B = V(0, 0, 1).transformDirection(M);
     const D = P.clone().sub(muzzle).normalize();
-    const yawE = clamp(angWrap(Math.atan2(D.x, D.z) - Math.atan2(B.x, B.z)), -1.2, 1.2);
-    const pitchE = clamp(Math.asin(clamp(D.y, -1, 1)) - Math.asin(clamp(B.y, -1, 1)), -1, 1);
+    const yawE = clamp(angWrap(Math.atan2(D.x, D.z) - Math.atan2(B.x, B.z)) * wA, -0.7 - yawT, 0.7 - yawT);
+    const pitchE = clamp((Math.asin(clamp(D.y, -1, 1)) - Math.asin(clamp(B.y, -1, 1))) * wA, -0.8 - pitchT, 0.8 - pitchT);
+    yawT += yawE; pitchT += pitchE;
     const ax = new THREE.Vector3().crossVectors(V(D.x, 0, D.z).normalize(), V(0, 1, 0));
     for (const [n, k] of AIM_SPLIT) { rotateWorld(bones[n], V(0, 1, 0), yawE * k); rotateWorld(bones[n], ax, pitchE * k); }
   }
