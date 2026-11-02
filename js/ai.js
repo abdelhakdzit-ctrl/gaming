@@ -12,6 +12,7 @@ import { KA, M4, RIFLE_MUZZLE, RL, W, chainOf, dropped, playClick, poseHandFrom,
 import { AIM_SPLIT, playerCrouch, tmpM, tmpQ } from './character.js';
 import { TGROUP, endRound, game, hitMarker, hittables, playDing, popup, ray, tps } from './game.js';
 import { ANIM_T0 } from './main.js';
+import { AGENT_R, findPath, navInit, pathClear, resolveCircle } from './ai/nav.js';
 
 // ======================================================================
 //  COMBAT  arena with cover + AI squad. Enemies are clones of the mannequin posed from snapshots of the
@@ -65,6 +66,7 @@ export function buildArena() {
       }
     }
   }
+  navInit(ARENA.covers, ARENA.pts);
 }
 // Ray vs. a yawed box (x/z half extents, y 0..h): { t, n } or null.
 export function pushOutOfCover(p, r) {
@@ -91,28 +93,8 @@ function isProtected(cp, P) {
   return !!rayBox(a, _ld, cp.cover, L);
 }
 function canPeek(cp, P) { const q = cp.tall ? cp.peek : cp.pos; return losClear(V(q.x, 150, q.z), V(P.x, 135, P.z)); }
-function planPath(from, to) {   // straight line with detours around the corners of blocking cover
-  const path = []; let cur = from.clone();
-  for (let it = 0; it < 5; it++) {
-    let blk = null, bt = 2;
-    for (const cv of ARENA.covers) {
-      if (insideBox2(cur.x, cur.z, cv, 38)) continue;
-      const t = segBox2(cur.x, cur.z, to.x, to.z, cv, 38);
-      if (t >= 0 && t < bt) { bt = t; blk = cv; }
-    }
-    if (!blk) break;
-    let bc = null, bl = Infinity;
-    for (const [sx, sz] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) {
-      const c = cvWorld(blk, sx * (blk.hx + 62), sz * (blk.hz + 62));
-      if (segBox2(cur.x, cur.z, c.x, c.z, blk, 38) >= 0) continue;
-      const l = cur.distanceTo(c) + c.distanceTo(to);
-      if (l < bl) { bl = l; bc = c; }
-    }
-    if (!bc) break;
-    path.push(bc); cur = bc;
-  }
-  path.push(to.clone());
-  return path;
+function planPath(from, to) {   // A* over the cover-corner visibility graph, string-pulled; ends exactly at `to` unless it is inside cover
+  return findPath(from.x, from.z, to.x, to.z, ARENA.covers).map(p => V(p.x, 0, p.z));
 }
 const ENEMY_CAPS = [['head', 'head', 'head', 13], ['torso', 'pelvis', 'neck_01', 18], ['limb', 'thigh_l', 'calf_l', 9], ['limb', 'thigh_r', 'calf_r', 9],
   ['limb', 'calf_l', 'foot_l', 7], ['limb', 'calf_r', 'foot_r', 7], ['limb', 'upperarm_l', 'lowerarm_l', 7], ['limb', 'upperarm_r', 'lowerarm_r', 7],
@@ -326,7 +308,7 @@ function targetPosFor(e) {
 function pickPatrolPoint(e) {
   let best = null, bs = -Infinity;
   for (const cp of ARENA.pts) {
-    if (cp.owner && cp.owner !== e) continue;
+    if (cp.bad || (cp.owner && cp.owner !== e)) continue;
     const dE = Math.hypot(cp.pos.x - e.pos.x, cp.pos.z - e.pos.z);
     if (dE < 420 || dE > 1950) continue;
     let sc = -Math.abs(dE - 980) / 500 + rnd(0, 1.3);
@@ -452,7 +434,7 @@ function spawnEnemy() {
   Object.assign(e, { active: true, alive: true, hp: 100, state: 'move', t: 0, dur: 1.2, cp: null, path: [], ammo: 30, peeks: 0, peekLimit: 2, aimT: 0, lostT: 0,
     suppress: 0, burstLeft: 0, burstIdx: 0, bursts: 0, burstLimit: 1, nextShot: 0, wWalk: 0, wRun: startPatrol ? 0 : 1, wCrouch: 0, wStr: 0, speed: 0, deadT: 0, fallX: 0, yOff: 0,
     lookYaw: 0, lookPitch: 0, headTilt: 0, wantLookYaw: 0, wantLookPitch: 0, wantTilt: 0, alert: startPatrol ? 0.2 : 1, searchCount: 0, patrolWait: 0,
-    landed: false, crouch: false, strafing: false, exposed: 0, vis: null, detect: startPatrol ? 0 : 1, seeAt: -9, seeVal: null, cur: 0, movedFlag: false, stuckT: 0, lpx: 0, lpz: 0, reposAt: -9, unprotN: 0, heard: false, shotsPeek: 0, dtc: 0.016, sigma: AI.diff.sigma * rnd(0.85, 1.2), react: AI.diff.react * rnd(0.8, 1.25) });
+    landed: false, crouch: false, strafing: false, exposed: 0, vis: null, detect: startPatrol ? 0 : 1, seeAt: -9, seeVal: null, cur: 0, movedFlag: false, stuckT: 0, stuckN: 0, nudgeT: 0, vx: 0, vz: 0, spd: 0, yawRate: 0, lpx: 0, lpz: 0, reposAt: -9, unprotN: 0, heard: false, shotsPeek: 0, dtc: 0.016, sigma: AI.diff.sigma * rnd(0.85, 1.2), react: AI.diff.react * rnd(0.8, 1.25) });
   e.lastKnown.copy(AI.knownPos);
   e.yaw = e.moveYaw = Math.atan2(e.lastKnown.x - e.pos.x, e.lastKnown.z - e.pos.z);
   e.flinch.x = e.flinch.v = 0;
@@ -466,7 +448,7 @@ function pickCover(e, mode) {
   const P = targetPosFor(e), pref = (mode === 'advance' ? 1020 : mode === 'retreat' ? 2550 : mode === 'ambush' ? 1450 : 1580) + (e.role === 'support' ? 250 : e.role === 'flanker' ? -200 : 0);
   let best = null, bs = -Infinity;
   for (const cp of ARENA.pts) {
-    if (cp.owner && cp.owner !== e) continue;
+    if (cp.bad || (cp.owner && cp.owner !== e)) continue;
     const dP = Math.hypot(cp.pos.x - P.x, cp.pos.z - P.z);
     if (dP < 620 || !isProtected(cp, P)) continue;
     const dE = Math.hypot(cp.pos.x - e.pos.x, cp.pos.z - e.pos.z);
@@ -530,48 +512,76 @@ function executePlan(e) {
   if (mode === 'search') { enterSearch(e); return; }
   if (!reposition(e, mode)) { e.state = 'cover'; e.t = 0.5; e.peeks = 0; }
 }
-function moveAlong(e, dt, speed) {   // accel/turn-rate limited steering with ally separation
-  if (e.path.length && e.cur > 30) {   // stuck on cover (steering drift): step clear of it and re-plan around its corner
-    const prog = Math.hypot(e.pos.x - e.lpx, e.pos.z - e.lpz);
-    e.stuckT = prog < 0.3 * e.cur * dt ? e.stuckT + dt : Math.max(0, e.stuckT - dt);
-    if (e.stuckT > 0.3) {
-      e.stuckT = 0;
-      const dest = e.path[e.path.length - 1], from = e.pos.clone(); pushOutOfCover(from, 78);
-      e.path = [from, ...planPath(from, dest)]; e.cur = 0;
-    }
-  }
-  e.lpx = e.pos.x; e.lpz = e.pos.z;
+// Critically damped velocity toward (wx, wz) with an acceleration cap.
+function steerVel(e, wx, wz, dt) {
+  let dx = wx - e.vx, dz = wz - e.vz;
+  const k = 1 - Math.exp(-dt / 0.1); dx *= k; dz *= k;
+  const m = Math.hypot(dx, dz), lim = 1700 * dt;
+  if (m > lim) { dx *= lim / m; dz *= lim / m; }
+  e.vx += dx; e.vz += dz;
+}
+// Integrate velocity, slide along cover, and report the real displacement (drives gait speed and phase).
+function advanceAgent(e, dt) {
+  const px = e.pos.x, pz = e.pos.z, vel = { x: e.vx, z: e.vz };
+  e.pos.x += vel.x * dt; e.pos.z += vel.z * dt;
+  resolveCircle(e.pos, vel, ARENA.covers, AGENT_R);
+  e.vx = vel.x; e.vz = vel.z;
+  const moved = Math.hypot(e.pos.x - px, e.pos.z - pz);
+  e.spd = lerp(e.spd || 0, moved / dt, 1 - Math.exp(-dt / 0.06));
+  e.movedFlag = true;
+  return moved;
+}
+function moveAlong(e, dt, speed) {   // lookahead path following: smoothed velocity, wall sliding, ally separation, stuck replan
+  if (e.vx === undefined) { e.vx = e.vz = 0; e.spd = 0; }
+  const pos = e.pos, covers = ARENA.covers;
+  const look = clamp(e.spd * 0.4, 50, 150);
   while (e.path.length) {
-    const tg = e.path[0], dx = tg.x - e.pos.x, dz = tg.z - e.pos.z, d = Math.hypot(dx, dz), last = e.path.length === 1;
-    if (d < (last ? 22 : 40)) { e.path.shift(); continue; }
-    const want = Math.atan2(dx, dz), turn = angWrap(want - e.moveYaw);
-    e.moveYaw += clamp(turn, -11 * dt, 11 * dt);
-    let tgt = speed * (1 - 0.55 * Math.min(1, Math.abs(turn) / 1.2));
-    if (last && d < 140) tgt = Math.min(tgt, Math.max(110, speed * d / 140));
-    if (e.cur < 60) e.cur = Math.min(speed, 60);
-    e.movedFlag = true;
-    e.cur += clamp(tgt - e.cur, -1500 * dt, 1000 * dt);
-    let vx = Math.sin(e.moveYaw) * e.cur, vz = Math.cos(e.moveYaw) * e.cur;
-    for (const o of AI.enemies) {
-      if (o === e || !o.alive) continue;
-      const ox = e.pos.x - o.pos.x, oz = e.pos.z - o.pos.z, od = Math.hypot(ox, oz);
-      if (od < 150 && od > 1e-3) { const k = (150 - od) / 150 * 0.6 * e.cur / od; vx += ox * k; vz += oz * k; }
-    }
-    const sp = Math.hypot(vx, vz), st = Math.min(sp * dt, last ? d : Infinity), kk = sp > 1e-3 ? st / sp : 0;
-    e.pos.x += vx * kk; e.pos.z += vz * kk;
-    e.speed = Math.max(e.cur, 25); e.phase = (e.phase + st / (e.cur < 240 ? AI.walkCycle : AI.runCycle)) % 1;
-    return false;
+    const tg = e.path[0], d = Math.hypot(tg.x - pos.x, tg.z - pos.z), last = e.path.length === 1;
+    if (d < (last ? 14 : 36)) { e.path.shift(); continue; }
+    if (!last && d < look && pathClear(pos.x, pos.z, e.path[1].x, e.path[1].z, covers)) { e.path.shift(); continue; }
+    break;
   }
-  return true;
+  if (!e.path.length) { e.vx = e.vz = 0; e.stuckN = 0; return true; }
+  const tg = e.path[0], dx = tg.x - pos.x, dz = tg.z - pos.z, d = Math.hypot(dx, dz), last = e.path.length === 1;
+  const want = Math.atan2(dx, dz), turn = Math.abs(angWrap(want - e.moveYaw));
+  let tgt = speed * (1 - 0.45 * Math.min(1, turn / 1.4));
+  if (last) tgt = Math.min(tgt, Math.max(50, Math.sqrt(2 * 900 * Math.max(0, d - 8))));
+  let wx = dx / d * tgt, wz = dz / d * tgt;
+  if (e.nudgeT > 0) { e.nudgeT -= dt; wx += dz / d * e.nudgeDir * 0.6 * tgt; wz -= dx / d * e.nudgeDir * 0.6 * tgt; }
+  for (const o of AI.enemies) {
+    if (o === e || !o.alive) continue;
+    const ox = pos.x - o.pos.x, oz = pos.z - o.pos.z, od = Math.hypot(ox, oz);
+    if (od < 160 && od > 1e-3) { const k = (160 - od) / 160 * 0.7 * speed / od; wx += ox * k; wz += oz * k; }
+  }
+  const wm = Math.hypot(wx, wz); if (wm > speed) { wx *= speed / wm; wz *= speed / wm; }
+  e.cur = tgt;
+  steerVel(e, wx, wz, dt);
+  const moved = advanceAgent(e, dt);
+  const sp = Math.hypot(e.vx, e.vz);
+  const h = sp > 70 ? Math.atan2(e.vx, e.vz) : want;
+  e.moveYaw += clamp(angWrap(h - e.moveYaw) * (1 - Math.exp(-dt / 0.07)), -12 * dt, 12 * dt);
+  e.speed = e.spd;
+  e.phase = (e.phase + moved / (e.spd < 240 ? AI.walkCycle : AI.runCycle)) % 1;
+  // stuck: real progress far below what was asked -> push clear, replan, sidestep; give up after repeated failures
+  e.stuckT = tgt > 60 && moved < 0.25 * tgt * dt ? e.stuckT + dt : Math.max(0, e.stuckT - dt);
+  if (e.stuckT > 0.6) {
+    e.stuckT = 0;
+    if (++e.stuckN > 3) { e.path.length = 0; e.stuckN = 0; e.vx = e.vz = 0; return true; }
+    const dest = e.path[e.path.length - 1];
+    e.path = planPath(pos, dest); e.nudgeT = 0.5; e.nudgeDir = Math.random() < 0.5 ? 1 : -1;
+  }
+  return false;
 }
 function sideStep(e, x, z, dt) {   // strafe while facing the target (stepping out of / back behind a wall)
+  if (e.vx === undefined) { e.vx = e.vz = 0; e.spd = 0; }
   const dx = x - e.pos.x, dz = z - e.pos.z, d = Math.hypot(dx, dz);
-  if (d < 6) return true;
-  const st = Math.min(d, 210 * dt);
-  e.pos.x += dx / d * st; e.pos.z += dz / d * st; e.strafing = true;
+  if (d < 6) { e.vx = e.vz = 0; return true; }
+  const sp = Math.min(210, Math.max(45, 7 * d));
+  steerVel(e, dx / d * sp, dz / d * sp, dt);
+  const moved = advanceAgent(e, dt); e.strafing = true;
   e.strDir = dx * Math.cos(e.yaw) - dz * Math.sin(e.yaw) >= 0 ? 1 : -1;   // body +X = left
-  e.sPhase = (e.sPhase + st / AI.strCycle) % 1;
-  return d - st < 6;
+  e.sPhase = (e.sPhase + moved / AI.strCycle) % 1;
+  return d - moved < 6;
 }
 function startPeek(e) {
   Object.assign(e, { state: 'peek', t: 0, aimT: e.aimT > 0 ? Math.min(e.aimT, e.react * 0.45) : 0, lostT: 0, bursts: 0, burstIdx: 0, burstLeft: 3 + (Math.random() * 3 | 0), burstLimit: AI.hp < 40 ? 1 : 1 + (Math.random() * 2.5 | 0), nextShot: 0, shotsPeek: 0 });
@@ -586,7 +596,7 @@ function stepEnemy(e, dt) {
     e.badgeT -= dt;
     if (e.badgeT <= 0 && e.badge) e.badge.visible = false;
   }
-  if (!e.movedFlag) e.cur = 0;
+  if (!e.movedFlag) { e.cur = 0; e.vx = e.vz = 0; e.spd = 0; }
   e.movedFlag = false; e.dtc = dt;
   e.speed = 0; e.strafing = false; e.crouch = false;
   e.wantLookYaw = 0; e.wantLookPitch = 0; e.wantTilt = 0;
@@ -690,7 +700,7 @@ function stepEnemy(e, dt) {
       if (vis) spotPlayer(e, vis);
       if (cp && Math.floor(e.t / 0.6) !== Math.floor((e.t - dt) / 0.6)) {
         if (isProtected(cp, P)) e.unprotN = 0;
-        else if (++e.unprotN >= 2 && STATE.simTime - e.reposAt > 1.2) reposition(e, 'any');
+        else if (++e.unprotN >= 2 && STATE.simTime - e.reposAt > 2 && Math.hypot(cp.pos.x - e.pos.x, cp.pos.z - e.pos.z) > 220) reposition(e, 'any');
       }
       if (moveAlong(e, dt, 380)) { e.state = 'cover'; e.t = rnd(0.35, 0.9); }
       break;
@@ -699,7 +709,10 @@ function stepEnemy(e, dt) {
       if (!cp) { enterPlan(e, rnd(0.55, 0.95)); break; }
       e.crouch = !cp.tall;
       const away = Math.hypot(cp.pos.x - e.pos.x, cp.pos.z - e.pos.z) > 8;
-      if (away) sideStep(e, cp.pos.x, cp.pos.z, dt);
+      if (away) {
+        if (Math.hypot(cp.pos.x - e.pos.x, cp.pos.z - e.pos.z) > 70 || !pathClear(e.pos.x, e.pos.z, cp.pos.x, cp.pos.z, ARENA.covers, AGENT_R + 2)) { e.path = planPath(e.pos, cp.pos); e.state = 'move'; e.t = 0; break; }
+        sideStep(e, cp.pos.x, cp.pos.z, dt);
+      }
       const visDirect = enemyCanDetect(e);
       if (visDirect) spotPlayer(e, visDirect);
       if (!isProtected(cp, visDirect ? charPos : P)) {   // flanked: hesitate briefly if surprised, then relocate or fight back
@@ -756,13 +769,13 @@ function stepEnemy(e, dt) {
       break;
     }
   }
-  pushOutOfCover(e.pos, 34);
   if (dReal < 70) { const k = (70 - dReal) / (dReal || 1); e.pos.x += (e.pos.x - charPos.x) * k; e.pos.z += (e.pos.z - charPos.z) * k; }
   for (const o of AI.enemies) {
     if (o === e || !o.alive) continue;
     const dx = e.pos.x - o.pos.x, dz = e.pos.z - o.pos.z, d = Math.hypot(dx, dz);
     if (d < 65 && d > 1e-3) { const k = (65 - d) / d * 0.5; e.pos.x += dx * k; e.pos.z += dz * k; }
   }
+  resolveCircle(e.pos, null, ARENA.covers, AGENT_R);
 }
 function deadStep(e, dt) {
   e.deadT += dt;
@@ -790,7 +803,9 @@ function poseEnemy(e, dt) {
     const moving = (e.wRun + e.wWalk) > 0.45;
     const want = moving ? e.moveYaw : Math.atan2(faceP.x - e.pos.x, faceP.z - e.pos.z) - AI.yaw0;
     const turnSpd = e.state === 'patrol' ? 4.8 : e.state === 'search' ? 6.2 : 8.5;
-    e.yaw += clamp(angWrap(want - e.yaw), -turnSpd * dt, turnSpd * dt);
+    const rate = clamp(angWrap(want - e.yaw) * 7, -turnSpd, turnSpd);   // critically damped, rate-capped
+    e.yawRate = lerp(e.yawRate || 0, rate, 1 - Math.exp(-dt / 0.04));
+    e.yaw += e.yawRate * dt;
   }
   e.root.position.set(e.pos.x, e.yOff, e.pos.z);
   e.root.rotation.set(e.fallX, e.yaw, 0, 'YXZ');
