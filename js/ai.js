@@ -69,8 +69,9 @@ export function buildArena() {
   navInit(ARENA.covers, ARENA.pts);
 }
 // Ray vs. a yawed box (x/z half extents, y 0..h): { t, n } or null.
-export function pushOutOfCover(p, r) {
+export function pushOutOfCover(p, r, y = -1) {
   for (const cv of ARENA.covers) {
+    if (y >= 0 && cv.h <= y + 25) continue;   // standing on top of (or above) this cover
     const ox = p.x - cv.c.x, oz = p.z - cv.c.z, c = cv.cos, s = cv.sin;
     let lx = ox * c - oz * s, lz = ox * s + oz * c;
     const px = cv.hx + r - Math.abs(lx), pz = cv.hz + r - Math.abs(lz);

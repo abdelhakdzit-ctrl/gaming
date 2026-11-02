@@ -9,6 +9,7 @@ import { NAME_MAP, REF_CHILD, bones, makeSource, orient, report, restWorldPos, r
 import { caseGeo, flash, prepMuzzleFX, rifleCaseGeo, updateFX } from './fx.js';
 import { CLIP_GUIDE, EJECT_PORT, FINGERS, KAR_COLS, KAR_EYE, KAR_GRIP_FRAME, KAR_L_SHIFT, KAR_MUZZLE, KAR_TRIG, LREF_HAND, LREF_SOCK, M4, M4_COLS, M4_GRIP_FRAME, MUZZLE, PMAG_AXIS, RIFLE_EJECT, RIFLE_EYE, RIFLE_MUZZLE, RIFLE_TRIG, RL, RPG_EYE, RPG_MUZZLE, RPG_TRIG, SHOTGUN_EYE, SHOTGUN_MUZZLE, SHOTGUN_TRIG, SLIDE_TRAVEL, TRIGGER_PIVOT, TRIGGER_PULL, W, buildCapsules, ccdReach, chainOf, chainPoints, equip, eyePos, fingerClearance, fire, fitGrip, fitGunToHand, fitLong, frameM, fromGun, gripReport, gunState, initHandRetarget, karCaseGeo, loadM4, makeKar, makePistol, makeRPG7, makeShotgun, placeShape, poseHandFrom, pullTrigger, restLocalPos, restLocalQ, restLocalScale, shotgunCaseGeo, solveFingerFix, tipLocal, toGun } from './weapons.js';
 import { buildDB, captureIdle, loadLadderAnims, mm, retargetFrame } from './locomotion.js';
+import { preloadTraversal } from './anim/traverse.js';
 import './ik.js';
 import './reload-timeline.js';
 import { playerCrouch, tmpM, updateCharacter } from './character.js';
@@ -235,6 +236,7 @@ Promise.all([fbx.loadAsync('model/Mannequin.FBX'), fbx.loadAsync('anim/MF_Pistol
   STATE.ready = true;
   window.READY = true;
   loadLadderAnims();
+  preloadTraversal();   // idle-time, one clip at a time
   if (!document.getElementById('motionPanel').classList.contains('hidden')) previewMotionSelection();
 }).catch((e) => { document.getElementById('status').textContent = 'Failed to load: ' + e; console.error(e); });
 
