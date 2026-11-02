@@ -1,0 +1,32 @@
+import * as THREE from 'three';
+import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js';
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
+import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
+const b64=window.GLB_B64;const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0)).buffer;
+const r=new THREE.WebGLRenderer({antialias:true});r.setPixelRatio(devicePixelRatio);r.setSize(innerWidth,innerHeight);r.shadowMap.enabled=true;document.body.appendChild(r.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x20242b);
+const cam=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,0.1,5000);
+scene.environment=new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(),0.04).texture;scene.add(new THREE.HemisphereLight(0xffffff,0x445566,1.5));
+const d=new THREE.DirectionalLight(0xffffff,2);d.position.set(3,6,4);d.castShadow=true;scene.add(d);
+const ctl=new OrbitControls(cam,r.domElement);
+let mixer,action,clock=new THREE.Clock(),grid;
+new GLTFLoader().parse(bin,'',g=>{
+ const m=g.scene;scene.add(m);
+ const box=new THREE.Box3().setFromObject(m),s=box.getSize(new THREE.Vector3()),c=box.getCenter(new THREE.Vector3());
+ const h=Math.max(s.x,s.y,s.z);
+ cam.position.set(c.x+h*1.4,c.y+h*0.3,c.z+h*1.4);ctl.target.copy(c);ctl.update();
+ grid=new THREE.GridHelper(h*4,40,0x667,0x445);grid.position.y=box.min.y;scene.add(grid);
+ m.traverse(o=>{if(o.isMesh)o.castShadow=true});
+ d.shadow.camera.left=d.shadow.camera.bottom=-h*2;d.shadow.camera.right=d.shadow.camera.top=h*2;d.shadow.camera.far=h*10;
+ if(g.animations.length){mixer=new THREE.AnimationMixer(m);action=mixer.clipAction(g.animations[0]);action.play();
+  const sl=document.getElementById('t');sl.max=g.animations[0].duration;window.dur=g.animations[0].duration;
+  document.getElementById('info').textContent=`${g.animations[0].name} · ${g.animations[0].duration.toFixed(2)}s`}
+});
+let playing=true,speed=1;
+const $=id=>document.getElementById(id);
+$('play').onclick=()=>{playing=!playing;$('play').textContent=playing?'Pause':'Play'};
+$('spd').oninput=e=>speed=+e.target.value;
+$('t').oninput=e=>{playing=false;$('play').textContent='Play';if(mixer){mixer.setTime(+e.target.value)}};
+$('wire').onchange=e=>scene.traverse(o=>{if(o.isMesh)[].concat(o.material).forEach(m=>m.wireframe=e.target.checked)});
+addEventListener('resize',()=>{r.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()});
+r.setAnimationLoop(()=>{const dt=clock.getDelta();if(mixer&&playing){mixer.update(dt*speed);$('t').value=mixer.time%(window.dur||1)}ctl.update();r.render(scene,cam)});
