@@ -56,17 +56,28 @@ function sampleRootZ(src) {
   }
   return out;
 }
-// Authored ledge = standing pelvis height on top minus rest pelvis height; authored face = wrists at first contact minus a
-// small grip inset. Warping to these (not hand-typed guesses) is what puts the real edge under the mocap fingers.
+// Authored ledge/face measured from the clip's legs (cm, mannequin space): ledge = soles at the end of the clip; face = the
+// plane every leg point that is still below the top stays in front of (toes/knees pressed on the wall), capped by where
+// the feet and wrists first land on top. Warping to these puts the real wall where the mocap's wall was.
+const LEG_R = { ball_l: 6, ball_r: 6, foot_l: 7, foot_r: 7, calf_l: 8, calf_r: 8 };
 function measureEdge(c) {
   const src = c.src, ab = src.abones, at = (b, t) => {
     src.mixer.setTime(t); src.anim.updateMatrixWorld(true);
     return src.mPelvis0.clone().addScaledVector(worldPos(ab[b]).sub(src.aPelvis0), src.ratio);
   };
-  c.ledge = at('pelvis', c.tEnd).y - src.mPelvis0.y;
-  let z = 1e9;
-  for (let t = c.tPlant; t <= c.tPlant + 0.25; t += 1 / 30) z = Math.min(z, at('hand_l', t).z, at('hand_r', t).z);
-  c.face = z - 4;
+  c.ledge = Math.min(at('foot_l', c.tEnd).y, at('foot_r', c.tEnd).y) - STATE.ANKLE_H;
+  let lo = -1e9, hi = 1e9;
+  for (let t = 0; t <= c.tEnd; t += 1 / 30) {
+    for (const b in LEG_R) {
+      if (!ab[b]) continue;
+      const p = at(b, t), r = LEG_R[b];
+      if (p.y < c.ledge - 3) lo = Math.max(lo, p.z + r);   // joint centre below the top: still on the wall side
+      else if (b.startsWith('foot') && p.y < c.ledge + STATE.ANKLE_H + 6) hi = Math.min(hi, p.z - 8);
+    }
+    if (t >= c.tPlant && t <= c.tRel) for (const b of ['hand_l', 'hand_r']) { const p = at(b, t); if (p.y > c.ledge - 4) hi = Math.min(hi, p.z + 4); }
+  }
+  c.face = lo <= hi ? lo : (lo + hi) / 2;
+  c.faceLo = lo; c.faceHi = hi;
 }
 const pzAt = (c, t) => { const f = clamp(t * 30, 0, c.pz.length - 1), i = Math.floor(f), j = Math.min(i + 1, c.pz.length - 1); return lerp(c.pz[i], c.pz[j], f - i); };
 
