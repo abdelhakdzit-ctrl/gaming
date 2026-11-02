@@ -204,7 +204,7 @@ export function updateGameCamera(real) {
   const arena = ARENA.group.visible;
   if (arena) for (const cv of ARENA.covers) { const h = rayBox(_head, latDir, cv, lat); if (h) lat = Math.max(0, h.t - 10); }   // shoulder never inside cover
   const pivot = _head.clone().addScaledVector(latDir, lat);
-  const wantDist = lerp(IS_TOUCH ? 210 : lerp(165, 180, longW), lerp(92, 108, longW), e);
+  const wantDist = lerp(IS_TOUCH ? 210 : lerp(165, 180, longW), lerp(92, 108, longW), e) + (TRAV.active && TRAV.kind === 'roll' ? 70 : 0);   // frame the whole tumble
   let limit = wantDist;
   if (arena) {
     const back = fwd.clone().negate();
