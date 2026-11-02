@@ -128,7 +128,7 @@ export function updateDirector(real, game) {
   if (game.state === 'play') {
     if (AI.wave !== D.lastWave) {
       const first = D.lastWave === 0; D.lastWave = AI.wave; D.flawless = true;
-      waveIntro(`WAVE ${AI.wave}`, `${AI.toKill} hostiles`); playWaveHorn(true);
+      waveIntro(`WAVE ${AI.wave}`, `${AI.toKill} hostiles · ${AI.diff?.label || ''}${AI.diff?.intro ? ' · NEW: ' + AI.diff.intro.toUpperCase() : ''}${AI.diff?.grenade < Infinity && AI.wave === 4 ? ' · GRENADES' : ''}`); playWaveHorn(true);
       if (first) toast('Survive. Chain kills for a combo multiplier.', '#fff'); else placeArenaPickups();
     }
     const brk = AI.breakT > 0;
