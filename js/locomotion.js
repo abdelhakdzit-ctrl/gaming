@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { DEG, V, angWrap, clamp, ease, lerp, sstep } from './math.js';
+import { damp, smoother } from './anim/curves.js';
 import { LEAN, STATE, rec } from './state.js';
-import { scene } from './scene.js';
+import { charRoot, scene } from './scene.js';
 import { STANCE, bones, restWorldPos, restWorldQ, rt, setWorldQuat, twoBoneIK, worldPos, worldQuat } from './skeleton.js';
 import { GAIT_HIP, HEEL_BACK, ikBase, ikState, solveLegs, userIK } from './ik.js';
 import { RLT, stopRlTimeline } from './reload-timeline.js';
@@ -12,6 +13,7 @@ import { AI, ARENA, pushOutOfCover } from './ai.js';
 import { game, tps } from './game.js';
 import { touch } from './ui.js';
 import { ANIM_T0 } from './main.js';
+import { RIG, applyGun, backMatrix, blendToSnapshot, climbWeight, handMatrix, idleMicro, ladderRigReset, slingBlend, snapshotPose, solveRig } from './anim/ladder.js';
 
 // ======================================================================
 //  LADDER CLIMBING & 4-LIMB RUNG/RAIL IK SYSTEM
@@ -28,6 +30,7 @@ export const LADDER = {
   climbY: 86.49,
   slideY: 168.91,
   auto: true,
+  autoDir: 1,
   onPlatform: false,
   pos: V(-95, 0, 40),
   yaw: 0,
@@ -44,6 +47,11 @@ export const LADDER = {
   clips: {},
   group: new THREE.Group(),
   worldTrackPos: V(),
+  grip: null,
+  gripW: { l: 0, r: 0 },
+  zS: { x: 0, v: 0 },
+  from: null,
+  enterT: 1,
   lastRungSfx: -1,
   toWorld(localP) {
     return localP.clone().applyAxisAngle(V(0, 1, 0), this.yaw).add(this.pos);
@@ -156,7 +164,8 @@ function buildLadderMesh() {
 buildLadderMesh();
 
 export async function loadLadderAnims() {
-  if (LADDER.ready || LADDER.loading) return;
+  if (LADDER.ready) return;
+  if (LADDER.loading) { while (LADDER.loading) await new Promise(r => setTimeout(r, 50)); return; }   // F pressed while the clips are still loading
   LADDER.loading = true;
   const map = [
     ['upStart', 'ladder-up-start'],
@@ -198,99 +207,40 @@ export function slingWeaponOnBack(cur) {
   cur.obj.matrixWorldNeedsUpdate = true;
 }
 
-export function solveLadderIK(state, u, anchorPos, anchorYaw, paused = false) {
+// ---- Rung climbing (see anim/ladder.js for the limb schedule) ----
+const LADDER_RATE = 74;   // cm/s climbing speed (about 2 rungs per second)
+let ladDt = 1 / 60;
+const ZS_TARGET = 6;      // spine_03 depth in front of the rung plane: chest, belly and thighs clear the rungs
+
+// Body shift that puts the climb clip's chest at ZS_TARGET (sampled once over the loop clip).
+function ensureRigZ() {
+  if (RIG.zoff !== null || !LADDER.ready) return;
+  const src = LADDER.clips.upLoop, N = 24;
+  let sum = 0;
+  for (let i = 0; i < N; i++) { retargetFrame(i / N * src.dur, null, src, true); sum += worldPos(bones.spine_03).z; }
+  RIG.zoff = ZS_TARGET - sum / N;
+}
+
+export function solveLadderIK(state, u, anchorPos, anchorYaw, paused = false, fade = 1) {
   const charToLad = p => p.clone().applyAxisAngle(V(0, 1, 0), anchorYaw).add(anchorPos);
   const ladToChar = p => p.clone().sub(anchorPos).applyAxisAngle(V(0, 1, 0), -anchorYaw);
-
-  // 1. Rung Climbing IK (Up_Start, Up_Loop, Up_End)
-  if (state === 'up_start' || state === 'up_loop' || state === 'up_end') {
-    const wClimb = state === 'up_start' ? sstep(0.20, 0.45, u)
-                 : state === 'up_loop'  ? 1.0
-                 : (1 - sstep(0.08, 0.32, u));
-    if (wClimb > 0.001) {
-      for (const s of ['l', 'r']) {
-        const up = bones['upperarm_' + s], lo = bones['lowerarm_' + s], hand = bones['hand_' + s], kn = bones['middle_01_' + s];
-        const hp = worldPos(hand), hq = worldQuat(hand), kp = worldPos(kn);
-        const kLad = charToLad(kp), hLad = charToLad(hp);
-        const ry = LADDER.nearestRung(kLad.y);
-        const wHand = wClimb * (paused ? 0.92 : sstep(20.0, 25.5, hLad.z) * (1 - sstep(7.0, 14.5, Math.abs(kLad.y - ry))));
-        if (wHand > 0.001) {
-          const tKLad = V(clamp(kLad.x, s === 'l' ? 8 : -22, s === 'l' ? 22 : -8), ry, LADDER.rungZ - 0.8);
-          const tWChar = ladToChar(tKLad).add(hp.clone().sub(kp));
-          const ikW = hp.clone().lerp(tWChar, wHand * 0.9);
-          twoBoneIK(up, lo, hand, ikW, worldPos(lo).sub(worldPos(up)));
-          setWorldQuat(hand, hq);
-        }
-      }
-      for (const s of ['l', 'r']) {
-        const thigh = bones['thigh_' + s], calf = bones['calf_' + s], foot = bones['foot_' + s], ball = bones['ball_' + s];
-        const fp = worldPos(foot), fq = worldQuat(foot), bp = ball ? worldPos(ball) : fp;
-        const bLad = charToLad(bp), fLad = charToLad(fp);
-        const ry = LADDER.nearestRung(bLad.y - 2.2);
-        const wFoot = wClimb * (paused ? 0.92 : sstep(13.5, 18.5, fLad.z) * (1 - sstep(7.5, 15.0, Math.abs((bLad.y - 2.2) - ry))));
-        if (wFoot > 0.001) {
-          const tBLad = V(clamp(bLad.x, s === 'l' ? 4 : -16, s === 'l' ? 16 : -4), ry + 2.2, LADDER.rungZ - 0.5);
-          const tFChar = ladToChar(tBLad).add(fp.clone().sub(bp));
-          const ikF = fp.clone().lerp(tFChar, wFoot * 0.9);
-          twoBoneIK(thigh, calf, foot, ikF, worldPos(calf).sub(worldPos(thigh)));
-          setWorldQuat(foot, fq);
-        }
-        ikState.foot[s].copy(worldPos(foot));
-      }
-    }
-    // Top platform foot grounding at the end of Up_End
-    if (state === 'up_end' && u > 0.62) {
-      const wPlat = sstep(0.62, 0.82, u);
-      for (const s of ['l', 'r']) {
-        const thigh = bones['thigh_' + s], calf = bones['calf_' + s], foot = bones['foot_' + s];
-        const fp = worldPos(foot), fq = worldQuat(foot), fLad = charToLad(fp);
-        if (fLad.y < LADDER.topY + STATE.ANKLE_H) {
-          fLad.y = lerp(fLad.y, LADDER.topY + STATE.ANKLE_H, wPlat);
-          twoBoneIK(thigh, calf, foot, ladToChar(fLad), worldPos(calf).sub(worldPos(thigh)));
-          setWorldQuat(foot, fq);
-        }
-        ikState.foot[s].copy(worldPos(foot));
-      }
-    }
-    return;
-  }
-
-  // 2. Rail Sliding IK (Dawn_Start, Dawn_Loop, Dawn_End)
-  const wSlide = state === 'down_start' ? sstep(0.75, 0.95, u)
-               : state === 'down_loop'  ? 1.0
-               : (1 - sstep(0.04, 0.22, u));
-  if (wSlide > 0.001) {
-    for (const s of ['l', 'r']) {
-      const up = bones['upperarm_' + s], lo = bones['lowerarm_' + s], hand = bones['hand_' + s];
-      const hp = worldPos(hand), hq = worldQuat(hand), hLad = charToLad(hp);
-      const tHLad = V(s === 'l' ? LADDER.railX - 0.6 : -LADDER.railX + 0.6, hLad.y, LADDER.rungZ);
-      const ikW = hp.clone().lerp(ladToChar(tHLad), wSlide * 0.88);
-      twoBoneIK(up, lo, hand, ikW, worldPos(lo).sub(worldPos(up)));
-      setWorldQuat(hand, hq);
-    }
+  const wClimb = climbWeight(state, u) * fade;
+  if (wClimb > 0.001) solveRig({ L: LADDER, anchorPos, anchorYaw, wClimb, paused, dt: ladDt });
+  // Top platform foot grounding at the end of Up_End
+  if (state === 'up_end' && u > 0.62) {
+    const wPlat = sstep(0.62, 0.82, u);
     for (const s of ['l', 'r']) {
       const thigh = bones['thigh_' + s], calf = bones['calf_' + s], foot = bones['foot_' + s];
       const fp = worldPos(foot), fq = worldQuat(foot), fLad = charToLad(fp);
-      const tFLad = V(s === 'l' ? LADDER.railX - 0.6 : -LADDER.railX + 0.6, fLad.y, LADDER.rungZ + 3.5);
-      const ikF = fp.clone().lerp(ladToChar(tFLad), wSlide * 0.88);
-      twoBoneIK(thigh, calf, foot, ikF, worldPos(calf).sub(worldPos(thigh)));
-      setWorldQuat(foot, fq);
-      ikState.foot[s].copy(worldPos(foot));
-    }
-  }
-  // Bottom ground foot clamping during Dawn_End
-  if (state === 'down_end' && u > 0.24) {
-    const wGnd = sstep(0.24, 0.36, u);
-    for (const s of ['l', 'r']) {
-      const thigh = bones['thigh_' + s], calf = bones['calf_' + s], foot = bones['foot_' + s];
-      const fp = worldPos(foot), fq = worldQuat(foot), fLad = charToLad(fp);
-      if (fLad.y < STATE.ANKLE_H) {
-        fLad.y = lerp(fLad.y, STATE.ANKLE_H, wGnd);
+      if (fLad.y < LADDER.topY + STATE.ANKLE_H) {
+        fLad.y = lerp(fLad.y, LADDER.topY + STATE.ANKLE_H, wPlat);
         twoBoneIK(thigh, calf, foot, ladToChar(fLad), worldPos(calf).sub(worldPos(thigh)));
         setWorldQuat(foot, fq);
       }
-      ikState.foot[s].copy(worldPos(foot));
     }
+  }
+  if (state.startsWith('up') || state === 'down_start' || state === 'down_loop' || state === 'down_end') {
+    for (const s of ['l', 'r']) ikState.foot[s].copy(worldPos(bones['foot_' + s]));
   }
 }
 
@@ -304,8 +254,14 @@ async function startLadder(dir = 'auto', autoClimb = true) {
   const goDown = dir === 'down' || (dir === 'auto' && (LADDER.onPlatform || charPos.y > LADDER.topY * 0.5));
   LADDER.active = true;
   LADDER.auto = autoClimb;
+  LADDER.autoDir = goDown ? -1 : 1;
   LADDER.t = 0;
   LADDER.lastRungSfx = -1;
+  LADDER.from = { pos: charPos.clone(), yaw: STATE.charYaw }; LADDER.enterT = 0;   // walk-in blend instead of a teleport
+  LADDER.zS.x = LADDER.zS.v = 0;
+  LADDER.drop = null;
+  ladderRigReset();
+  RIG.exit = null; RIG.xf = null; RIG.mountT = 0; RIG.pendingMount = true;
   if (goDown) {
     LADDER.state = 'down_start';
     LADDER.slideY = LADDER.topY - 284.15;
@@ -317,50 +273,70 @@ async function startLadder(dir = 'auto', autoClimb = true) {
   if (btn) btn.classList.add('active');
 }
 
+// F on the ladder: climbing up -> climbing down (dismount at the bottom) -> hold still -> climbing up again.
 export function toggleLadder() {
   if (LADDER.active) {
-    // Toggle auto-climb or reverse direction if already on the ladder
     if (LADDER.state === 'up_loop') {
-      LADDER.state = 'down_loop';
-      LADDER.slideY = clamp(LADDER.climbY, 58.92, LADDER.topY - 284.15);
-      LADDER.auto = true;
-    } else {
-      LADDER.auto = !LADDER.auto;
-    }
+      if (LADDER.auto && LADDER.autoDir > 0) LADDER.autoDir = -1;
+      else if (LADDER.auto) LADDER.auto = false;
+      else { LADDER.auto = true; LADDER.autoDir = 1; }
+    } else LADDER.auto = !LADDER.auto;
     return;
   }
   startLadder('auto', true);
 }
 
+// Leave the ladder: the pose, the weapon and the root are blended into the normal pipeline by ladderExitPost().
+function exitLadder(pos, yaw, onPlatform) {
+  RIG.exit = { snap: snapshotPose(charPos, STATE.charYaw), t: 0 };
+  charPos.copy(pos);
+  STATE.charYaw = yaw;
+  LADDER.active = false;
+  LADDER.onPlatform = onPlatform;
+  mm.vel[0] = mm.vel[1] = mm.speed = 0;
+  if (STATE.IDLE) { mm.out.set(STATE.IDLE); mm.prev.set(STATE.IDLE); }
+  document.getElementById('ladderBtn')?.classList.remove('active');
+}
+// Let go mid-climb: limbs release, the body falls away from the rungs and lands at the foot of the ladder.
+export function dropFromLadder() {
+  const L = LADDER;
+  if (!L.active || L.state !== 'up_loop') return;
+  const relY = clamp(L.climbY - L.startH, 0, L.loops * L.loopH - 0.001), cyc = Math.floor(relY / L.loopH);
+  L.drop = { t: 0, vy: 0, z0: L.zS.x, y: L.startH + cyc * L.loopH, u: (relY - cyc * L.loopH) / L.loopH };
+  L.state = 'drop';
+}
+
 export function updateLadder(dt) {
   if (!LADDER.active || !LADDER.ready) return false;
+  ladDt = dt;
+  ensureRigZ();
   const C = LADDER.clips;
   const vz = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0);
   if (vz !== 0) LADDER.auto = false;
+  RIG.mountT += dt;
 
-  let src = C.upStart, clipTime = 0, u = 0, anchorPos = V(0, 0, 0), anchorYaw = 0, paused = false;
+  const st = LADDER.state;   // state this frame's pose belongs to (the branches below may advance it)
+  let ikSt = st, fade = 1, src = C.upStart, clipTime = 0, u = 0, anchorPos = V(0, 0, 0), anchorYaw = 0, paused = false, done = null;
 
-  if (LADDER.state === 'up_start') {
+  if (st === 'up_start') {
     src = C.upStart;
     LADDER.t += dt;
     clipTime = Math.min(LADDER.t, src.dur);
     u = clipTime / src.dur;
-    anchorPos.set(0, 0, 0); anchorYaw = 0;
     if (LADDER.t >= src.dur) {
       LADDER.state = 'up_loop';
       LADDER.climbY = LADDER.startH;
       LADDER.t = 0;
       playClick(420, 0.04, 0.25);
     }
-  } else if (LADDER.state === 'up_loop') {
+  } else if (st === 'up_loop') {
     src = C.upLoop;
-    const dir = LADDER.auto ? 1 : vz;
+    const dir = LADDER.auto ? LADDER.autoDir : vz;
     paused = Math.abs(dir) < 0.01;
     const fast = keys.has('ShiftLeft') || keys.has('ShiftRight') ? 1.35 : 1.0;
-    const climbRate = (LADDER.loopH / src.dur) * fast;
-    LADDER.climbY += dir * climbRate * dt;
+    LADDER.climbY += dir * LADDER_RATE * fast * dt;
     const maxClimbY = LADDER.startH + LADDER.loops * LADDER.loopH;
-    const rungIdx = Math.floor((LADDER.climbY - LADDER.startH) / (LADDER.loopH * 0.5));
+    const rungIdx = Math.floor((LADDER.climbY - LADDER.startH) / LADDER.rungStep);
     if (rungIdx !== LADDER.lastRungSfx && !paused) {
       LADDER.lastRungSfx = rungIdx;
       playClick(440 + (rungIdx & 1) * 60, 0.04, 0.22);
@@ -370,88 +346,100 @@ export function updateLadder(dt) {
       LADDER.state = 'up_end';
       LADDER.t = 0;
     } else if (LADDER.climbY <= LADDER.startH && dir < 0) {
-      LADDER.state = 'down_end';
-      LADDER.t = 0;
+      LADDER.climbY = LADDER.startH;
+      LADDER.state = 'dismount';
+      LADDER.t = C.upStart.dur;
     }
     const relY = clamp(LADDER.climbY - LADDER.startH, 0, LADDER.loops * LADDER.loopH - 0.001);
     const cyc = Math.floor(relY / LADDER.loopH);
     u = (relY - cyc * LADDER.loopH) / LADDER.loopH;
     clipTime = u * src.dur;
-    anchorPos.set(0, LADDER.startH + cyc * LADDER.loopH, 0); anchorYaw = 0;
-  } else if (LADDER.state === 'up_end') {
+    anchorPos.set(0, LADDER.startH + cyc * LADDER.loopH, 0);
+  } else if (st === 'up_end') {
     src = C.upEnd;
     LADDER.t += dt;
     clipTime = Math.min(LADDER.t, src.dur);
     u = clipTime / src.dur;
-    anchorPos.set(0, LADDER.startH + LADDER.loops * LADDER.loopH, 0); anchorYaw = 0;
-    if (LADDER.t >= src.dur) {
-      charPos.copy(LADDER.toWorld(V(-10.82, LADDER.topY, 70.18)));
-      STATE.charYaw = LADDER.yaw;
-      LADDER.active = false;
-      LADDER.onPlatform = true;
-      mm.vel[0] = mm.vel[1] = mm.speed = 0;
-      if (STATE.IDLE) { mm.out.set(STATE.IDLE); mm.prev.set(STATE.IDLE); }
-      document.getElementById('ladderBtn')?.classList.remove('active');
-      return false;
-    }
-  } else if (LADDER.state === 'down_start') {
+    anchorPos.set(0, LADDER.startH + LADDER.loops * LADDER.loopH, 0);
+    if (LADDER.t >= src.dur) done = { pos: LADDER.toWorld(V(-10.82, LADDER.topY, 70.18)), yaw: LADDER.yaw, platform: true };
+  } else if (st === 'down_start') {
     src = C.downStart;
     LADDER.t += dt;
     clipTime = Math.min(LADDER.t, src.dur);
     u = clipTime / src.dur;
     anchorPos.set(0, LADDER.topY, 62.78); anchorYaw = Math.PI;
     if (LADDER.t >= src.dur) {
-      LADDER.state = 'down_loop';
-      LADDER.slideY = LADDER.topY - 284.15;
+      LADDER.state = 'up_loop';
+      LADDER.climbY = LADDER.topY - 284.15;
+      LADDER.auto = true; LADDER.autoDir = -1;
       LADDER.t = 0;
+      RIG.xf = { snap: snapshotPose(charPos, STATE.charYaw), t: 0, dur: 0.45 };
     }
-  } else if (LADDER.state === 'down_loop') {
-    src = C.downLoop;
-    const dir = LADDER.auto ? -1 : vz;
-    paused = Math.abs(dir) < 0.01;
-    const slideRate = 190 * (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 1.35 : 1.0);
-    LADDER.slideY += dir * slideRate * dt;
-    if (!paused) LADDER.t = (LADDER.t + dt) % src.dur;
-    clipTime = LADDER.t;
+  } else if (st === 'dismount') {
+    // bottom dismount: the mount clip played backwards, the climber steps off the first rung and away
+    src = C.upStart;
+    LADDER.t -= dt;
+    clipTime = Math.max(LADDER.t, 0);
     u = clipTime / src.dur;
-    if (LADDER.slideY <= 58.92 && dir < 0) {
-      LADDER.slideY = 58.92;
-      LADDER.state = 'down_end';
-      LADDER.t = 0;
-      playClick(340, 0.07, 0.35);
-    } else if (LADDER.slideY >= LADDER.startH + LADDER.loops * LADDER.loopH && dir > 0) {
-      LADDER.state = 'up_end';
-      LADDER.t = 0;
-    }
-    anchorPos.set(0, LADDER.slideY, 0); anchorYaw = 0;
-  } else if (LADDER.state === 'down_end') {
-    src = C.downEnd;
-    LADDER.t += dt;
-    const endDur = Math.min(4.2, src.dur);
-    clipTime = Math.min(LADDER.t, endDur);
-    u = clipTime / src.dur;
-    anchorPos.set(0, 0, 0); anchorYaw = 0;
-    if (LADDER.t >= endDur) {
-      charPos.copy(LADDER.toWorld(V(5.87, 0, -37.45)));
-      STATE.charYaw = angWrap(LADDER.yaw + Math.PI);
-      LADDER.active = false;
-      LADDER.onPlatform = false;
-      mm.vel[0] = mm.vel[1] = mm.speed = 0;
-      if (STATE.IDLE) { mm.out.set(STATE.IDLE); mm.prev.set(STATE.IDLE); }
-      document.getElementById('ladderBtn')?.classList.remove('active');
-      return false;
-    }
+    ikSt = 'up_start';
+    if (LADDER.t <= 0) done = { pos: LADDER.toWorld(V(5.87, 0, -37.45)), yaw: LADDER.yaw, platform: false };
+  } else if (st === 'drop') {
+    const d = LADDER.drop;
+    src = C.upLoop; u = d.u; clipTime = u * src.dur; paused = true; d.t += dt; d.vy -= 980 * dt; d.y += d.vy * dt;
+    ikSt = 'up_loop';
+    fade = 1 - sstep(0, 0.2, d.t);
+    anchorPos.set(0, d.y, lerp(d.z0, -42, sstep(0, 0.4, d.t)));
   }
 
-  // Retarget ladder frame in character space (charRoot at identity)
-  retargetFrame(clipTime, null, src, true);
-  solveLadderIK(LADDER.state, u, anchorPos, anchorYaw, paused);
-  slingWeaponOnBack(W.cur);
+  // Move the body in until the chest sits at the right distance in front of the rungs; eased so state changes never pop
+  const zo = RIG.zoff ?? 0;
+  if (st !== 'drop') {
+    const zT = (st === 'up_start' || st === 'dismount') ? zo * sstep(0, 0.45, u) : st === 'up_loop' ? zo
+      : st === 'up_end' ? zo * (1 - sstep(0.15, 0.7, u)) : st === 'down_start' ? zo * sstep(0.6, 1, u) : 0;
+    damp(LADDER.zS, zT, 16, dt);
+    anchorPos.z = LADDER.zS.x;
+  } else LADDER.zS.x = anchorPos.z;
+  if (st === 'down_start' && LADDER.state === 'up_loop') LADDER.zS.x = zo;
 
-  // Place character at the ladder anchor and compute live world tracking position for the camera
+  // Retarget the ladder frame in character space (charRoot at identity)
+  retargetFrame(clipTime, null, src, true);
+  idleMicro(anchorPos);
+
+  // Root placement (walk-in blend instead of a teleport)
+  const aw = LADDER.toWorld(anchorPos), ay = angWrap(LADDER.yaw + anchorYaw), f0 = LADDER.from;
+  LADDER.enterT += dt;
+  const bIn = f0 ? sstep(0, 0.45, LADDER.enterT) : 1;
+  const rootPos = f0 ? f0.pos.clone().lerp(aw, bIn) : aw;
+  const rootYaw = f0 ? angWrap(f0.yaw + angWrap(ay - f0.yaw) * bIn) : ay;
+  if (RIG.pendingMount) { RIG.pendingMount = false; RIG.xf = { snap: snapshotPose(f0.pos, f0.yaw), t: 0, dur: 0.45 }; }
+  if (RIG.xf) {
+    RIG.xf.t += dt;
+    const w = 1 - smoother(RIG.xf.t / RIG.xf.dur);
+    blendToSnapshot(RIG.xf.snap, w, rootPos, rootYaw);
+    if (w <= 0) RIG.xf = null;
+  }
+  charPos.copy(rootPos); STATE.charYaw = rootYaw;
+  if (bIn >= 1) LADDER.from = null;
+
+  solveLadderIK(ikSt, u, anchorPos, anchorYaw, paused, fade);
+
+  // Weapon: hand -> back while mounting
+  const cur = W.cur;
+  if (cur?.obj) {
+    Object.values(W.list).forEach(w => { w.obj.visible = (w === cur); });
+    const s = smoother((RIG.mountT - 0.06) / 0.55);
+    applyGun(cur, slingBlend(handMatrix(cur), backMatrix(), s));
+  }
+
+  if (st === 'drop') {
+    const d = LADDER.drop;
+    d.fy ??= Math.min(worldPos(bones.foot_l).y, worldPos(bones.foot_r).y);
+    if (d.t > 0.1 && anchorPos.y + d.fy <= STATE.ANKLE_H) done = { pos: LADDER.toWorld(V(0, 0, anchorPos.z)), yaw: LADDER.yaw, platform: false };
+  }
+  if (done) { exitLadder(done.pos, done.yaw, done.platform); return false; }
+
+  // Live world tracking position for the camera
   const pelChar = worldPos(bones.pelvis);
-  charPos.copy(LADDER.toWorld(anchorPos));
-  STATE.charYaw = angWrap(LADDER.yaw + anchorYaw);
   LADDER.worldTrackPos.copy(charPos).add(
     V(pelChar.x, pelChar.y - 97.4, pelChar.z).applyAxisAngle(V(0, 1, 0), STATE.charYaw)
   );
