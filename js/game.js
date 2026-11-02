@@ -179,6 +179,7 @@ const fmtTime = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStar
 
 // Third-person camera over the shoulder: critically damped follow/offsets, collision against cover, FOV curves, shake.
 const cam = { px: new Damp(), py: new Damp(), pz: new Damp(), side: new Damp(1), sideOff: new Damp(48), up: new Damp(160), dist: new Damp(170), fov: new Damp(50), z: new Damp(0), shoulder: 1, init: false, t: 0 };
+const _aimD = new THREE.Vector3();
 export function resetCamera() { cam.init = false; cam.dist.snap(170); }
 export function swapShoulder() { cam.shoulder = -cam.shoulder; }
 const _head = V(), _lat = V();
@@ -236,8 +237,11 @@ export function updateGameCamera(real) {
   camera.rotateX((shake.pitch + breath) * k);
   camera.rotateZ((shake.roll + Math.sin(cam.t * 8.5) * 0.0016 * sprintK) * k - LEAN.w * 0.07 * (scoped ? 0.3 : 1));
   const h = castWorld(camera.position, fwd, 9000, scoped ? 20 : dist + 30);   // skip anything between the camera and the player
-  aim.point.copy(h.kind !== 'none' ? h.point : camera.position.clone().addScaledVector(fwd, 5000));
-  if (aim.point.distanceTo(charPos) < 150) aim.point.copy(camera.position).addScaledVector(fwd, 600);
+  // The body aims at a point kept well beyond the player along the view ray: a wall right in front would otherwise put
+  // the target beside/behind the muzzle and wrench the spine. Continuous (no threshold jump). Bullets still use the real muzzle.
+  const tHit = h.kind !== 'none' ? camera.position.distanceTo(h.point) : 5000;
+  const tMin = Math.max(0, _aimD.subVectors(charPos, camera.position).dot(fwd)) + 450;
+  aim.point.copy(camera.position).addScaledVector(fwd, Math.max(tHit, tMin));
   aim.smooth.lerp(aim.point, 1 - Math.exp(-25 * real));
 }
 const fb = { hp: 100, hitT: 0, low: 0, queued: null };   // feedback bookkeeping between frames
