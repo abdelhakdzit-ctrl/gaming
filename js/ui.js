@@ -49,6 +49,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && gam
   btn('tLeanL', () => { LEAN.touch = -1; }, () => { if (LEAN.touch < 0) LEAN.touch = 0; });
   btn('tLeanR', () => { LEAN.touch = 1; }, () => { if (LEAN.touch > 0) LEAN.touch = 0; });
   btn('tLadder', () => { setAimStage(0); toggleLadder(); });
+  btn('tRoll', () => { if (!isAiming()) tryTraverse(); });
   btn('tPause', () => pauseGame());
   document.getElementById('tFull').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); document.fullscreenElement ? leaveFullscreen() : goFullscreen(); });
   el.addEventListener('pointerdown', e => {

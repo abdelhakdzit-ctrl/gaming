@@ -8,6 +8,8 @@ import { charPos, keys, mm, retargetFrame, slingWeaponOnBack } from '../locomoti
 import { isAiming, placeCharacter } from '../character.js';
 import { getMotionProfile } from '../motion-studio.js';
 import { ARENA } from '../ai.js';
+import { game, tps } from '../game.js';
+import { touch } from '../ui.js';
 import { W, playClick } from '../weapons.js';
 
 // ======================================================================
@@ -142,10 +144,12 @@ export function tryTraverse() {
     startRoll(fwd, free, charPos.y, de);
     return true;
   }
-  if (mm.speed > 200) {
-    const free = freeAhead(V(charPos.x, 30, charPos.z), fwd, 600, null);
-    if (free < 320) return false;
-    startRoll(fwd, free, 0, -1);
+  // Directional dodge roll: 8-way from the held movement keys relative to the camera (or the sprint direction).
+  const dir = inputDir();
+  if (dir || mm.speed > 200) {
+    const d = dir || fwd, free = freeAhead(V(charPos.x, 30, charPos.z), d, 600, null);
+    if (free < 200) return false;
+    startRoll(d, free, 0, -1);
     return true;
   }
   return false;
@@ -173,6 +177,15 @@ function holdWeapon(w) {
   g.matrixWorldNeedsUpdate = true;
 }
 
+function inputDir() {
+  const k = (...c) => c.some(x => keys.has(x)) ? 1 : 0;
+  let x = k('KeyA', 'ArrowLeft') - k('KeyD', 'ArrowRight'), z = k('KeyW', 'ArrowUp') - k('KeyS', 'ArrowDown');
+  if (touch.mv.id !== null && touch.mv.m > 0.25) { x = -touch.mv.x; z = -touch.mv.y; }
+  if (Math.hypot(x, z) < 0.2) return null;
+  const y = tps.yaw;   // +x = left: left vector is (cos y, 0, -sin y)
+  return V(Math.sin(y) * z + Math.cos(y) * x, 0, Math.cos(y) * z - Math.sin(y) * x).normalize();
+}
+
 function begin(kind, c, fwd) {
   if (kind === 'roll') captureArms();
   captureXfade(kind === 'roll' ? 0.12 : 0.16, W.cur?.obj);
@@ -197,7 +210,7 @@ function startRoll(fwd, free, drop, edgeDist) {
   let t0 = 0.32;
   if (edgeDist >= 0) { t0 = 0.2; for (let t = 0.2; t <= 0.5; t += 1 / 30) if (pzAt(c, c.tTake) - pzAt(c, t) >= edgeDist) t0 = t; }
   const travel = pzAt(c, c.tEnd) - pzAt(c, t0);
-  TRAV.k = clamp((free - 60) / travel, 0.55, edgeDist >= 0 ? 1 : 0.8);
+  TRAV.k = clamp((free - 60) / travel, edgeDist >= 0 ? 0.55 : 0.4, edgeDist >= 0 ? 1 : 0.8);
   TRAV.top = drop; TRAV.t0 = TRAV.t = t0; TRAV.pelZ0 = pzAt(c, t0); TRAV.rate = 1.05;
 }
 
@@ -209,8 +222,12 @@ function finish() {
   charPos.add(off);
   charPos.y = TRAV.kind === 'climb' ? TRAV.base.y + TRAV.top : TRAV.base.y + TRAV.dy;
   TRAV.active = false;
-  mm.vel[0] = 0; mm.vel[1] = moveHeld() ? clamp(TRAV.vz, 0, 330) : 0;   // keep the momentum when the player keeps moving
-  mm.gaitVel[0] = 0; mm.gaitVel[1] = mm.vel[1]; mm.speed = mm.vel[1];
+  // Rolls come out facing the aim again (side/back rolls turned the body); the pose crossfade turns it smoothly.
+  if (TRAV.kind === 'roll' && game.active) STATE.charYaw = tps.yaw;
+  const sp = moveHeld() ? clamp(TRAV.vz, 0, 330) : 0, y = STATE.charYaw;   // keep the momentum when the player keeps moving
+  mm.vel[0] = sp * (TRAV.fwd.x * Math.cos(y) - TRAV.fwd.z * Math.sin(y));
+  mm.vel[1] = sp * (TRAV.fwd.x * Math.sin(y) + TRAV.fwd.z * Math.cos(y));
+  mm.gaitVel[0] = mm.vel[0]; mm.gaitVel[1] = mm.vel[1]; mm.speed = sp;
   if (STATE.IDLE) { mm.out.set(STATE.IDLE); mm.prev.set(STATE.IDLE); }
   return false;
 }
@@ -238,6 +255,8 @@ export function updateTraverse(dt, fast = false) {
     TRAV.dy = dH * smoother((t - va) / Math.max(1e-3, vb - va));
     yaw = TRAV.yaw0 + angWrap(TRAV.yaw1 - TRAV.yaw0) * smoother((t - TRAV.t0) / Math.max(0.2, (tA - TRAV.t0) * 0.8));
   } else {
+    // body swings into the roll direction during the crouch of the wind-up (crossfade hides the first frames)
+    yaw = TRAV.yaw0 + angWrap(TRAV.yaw1 - TRAV.yaw0) * smoother((t - TRAV.t0) / 0.14);
     TRAV.dz = -TRAV.pelZ0 - (1 - TRAV.k) * (pelZ - TRAV.pelZ0);   // compress the dive to the free space
     const s = clamp((t - (c.tTake - 0.05)) / (c.tHands - c.tTake + 0.05), 0, 1);
     TRAV.dy = -TRAV.top * s * s;   // accelerating fall from the edge
