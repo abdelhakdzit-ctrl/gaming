@@ -197,14 +197,15 @@ export function updateGameCamera(real) {
   if (!cam.init || Math.hypot(basePos.x - cam.px.x, basePos.z - cam.pz.x) > 250) { cam.px.snap(basePos.x); cam.py.snap(basePos.y); cam.pz.snap(basePos.z); cam.side.snap(cam.shoulder); cam.init = true; }
   const fx = cam.px.step(basePos.x, 0.06, real), fy = cam.py.step(basePos.y, 0.1, real), fz = cam.pz.step(basePos.z, 0.06, real);
   const sideOff = cam.sideOff.step(lerp(lerp(48, 56, longW), lerp(38, 46, longW), e), 0.14, real) * cam.side.step(LEAN.dir && LEAN.free > 0.3 ? LEAN.dir : cam.shoulder, 0.16, real);
-  const upOff = cam.up.step(lerp(160, 157, e) + 4 * longW + Math.max(0, p) * 16 - crouchDrop, 0.12, real);
+  const rollW = TRAV.active && TRAV.kind === 'roll' ? 1 : 0;
+  const upOff = cam.up.step(lerp(160, 157, e) + 4 * longW + Math.max(0, p) * 16 - crouchDrop - 40 * rollW, 0.12, real);
   _head.set(fx, fy + upOff, fz).addScaledVector(right, LEAN.off);   // camera travels with the leaning head
   _lat.copy(right).multiplyScalar(sideOff);
   let lat = _lat.length(), latDir = V(Math.sign(sideOff) * right.x, 0, Math.sign(sideOff) * right.z);
   const arena = ARENA.group.visible;
   if (arena) for (const cv of ARENA.covers) { const h = rayBox(_head, latDir, cv, lat); if (h) lat = Math.max(0, h.t - 10); }   // shoulder never inside cover
   const pivot = _head.clone().addScaledVector(latDir, lat);
-  const wantDist = lerp(IS_TOUCH ? 210 : lerp(165, 180, longW), lerp(92, 108, longW), e);
+  const wantDist = lerp(IS_TOUCH ? 210 : lerp(165, 180, longW), lerp(92, 108, longW), e) + 60 * rollW;   // lower and further back during rolls to frame the whole tumble
   let limit = wantDist;
   if (arena) {
     const back = fwd.clone().negate();
