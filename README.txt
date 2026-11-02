@@ -60,7 +60,7 @@ CONTROLS
 - R: reload
 - 1 / 2 / 3: switch weapon
 - Q / E: lean left / right (hold, in game; limited by walls beside you, slows movement)
-- Space (in game, not aiming): climb the obstacle ahead (clip chosen by its height, warped to fit), dive-roll off a high edge, or dodge-roll while sprinting
+- Space (in game, not aiming): climb the obstacle ahead (clip chosen by its height, warped to fit), dive-roll off a high edge, or dodge-roll in the held direction (W/A/S/D and diagonals, relative to the camera)
 - X: swap camera shoulder (in game)
 - Esc: pause game
 
