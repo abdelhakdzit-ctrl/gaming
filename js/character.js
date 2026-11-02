@@ -14,6 +14,7 @@ import { damp, dampW } from './anim/curves.js';
 import { ARENA } from './ai.js';
 import { SEC, stepSecondary } from './anim/secondary.js';
 import { applyXfade } from './anim/xfade.js';
+import { TRAV, stepLandingDip, updateTraverse } from './anim/traverse.js';
 
 // Player Crouch State
 export const playerCrouch = { on: false, w: 0 };
@@ -221,6 +222,7 @@ export function updateCharacter(dt) {
   // Solve in character space (charRoot at identity), place in the world at the end.
   charRoot.position.set(0, 0, 0); charRoot.rotation.set(0, 0, 0); charRoot.updateMatrixWorld(true);
   if (LADDER.active && updateLadder(dt)) return;
+  if (TRAV.active && updateTraverse(dt, keys.has('ShiftLeft') || keys.has('ShiftRight'))) return;
   if (W.cur?.obj && W.cur.obj.parent !== charRoot) charRoot.add(W.cur.obj);
   stepSwap(dt); stepReload(dt); stepKar(dt); stepShotgunPump(dt); stepBodyFX(dt);
   ikSyncContext(); ikTimelineApply();
@@ -230,7 +232,7 @@ export function updateCharacter(dt) {
   const nw = 1 - playerAim.w; // 1 = Normal Idle (can run), 0 = Aiming ADS (no run)
   stepSecondary(dt, { vel: mm.vel, speed: mm.speed, yaw: STATE.charYaw, phase: mm.phase, aimW: playerAim.w, crouchW: playerCrouch.w, nw });
   stepLean(dt);
-  poseOut[0] += SEC.dx - LEAN.w * 6; poseOut[1] += SEC.dy; poseOut[3] += SEC.roll + LEAN.w * 4; poseOut[4] += SEC.lean; poseOut[15] += SEC.yaw;
+  poseOut[0] += SEC.dx - LEAN.w * 6; poseOut[1] += SEC.dy - stepLandingDip(dt); poseOut[3] += SEC.roll + LEAN.w * 4; poseOut[4] += SEC.lean; poseOut[15] += SEC.yaw;
   const wIdle = 1 - sstep(5, 60, mm.speed);
   STATE.NORMAL_W = nw;
   if (nw > 0.001) {
