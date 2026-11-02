@@ -4,6 +4,7 @@ import { LEAN, STATE, rec } from './state.js';
 import { scene } from './scene.js';
 import { STANCE, bones, restWorldPos, restWorldQ, rotateWorld, rt, setWorldQuat, twoBoneIK, worldPos, worldQuat } from './skeleton.js';
 import { applyXfade, captureXfade } from './anim/xfade.js';
+import { stepGround } from './anim/traverse.js';
 import { GAIT_HIP, HEEL_BACK, ikBase, ikState, solveLegs, userIK } from './ik.js';
 import { RLT, stopRlTimeline } from './reload-timeline.js';
 import { KA, RL, W, box, gunState, playClick, setGunMatrix } from './weapons.js';
@@ -839,15 +840,15 @@ export function stepLocomotion(dt) {
     lp.z = clamp(lp.z, 36, 188);
     charPos.copy(LADDER.toWorld(lp));
   } else {
-    charPos.y = 0;
+    stepGround(dt);   // cover tops are walkable; walking off an edge falls with gravity
     const lp = LADDER.toLocal(charPos);
     // Walking into the ladder base on the ground triggers ascending
-    if (Math.abs(lp.x) < 36 && lp.z > -22 && lp.z < 28 && charVelW.z > 25 && LADDER.ready) {
+    if (charPos.y < 1 && Math.abs(lp.x) < 36 && lp.z > -22 && lp.z < 28 && charVelW.z > 25 && LADDER.ready) {
       startLadder('up', false);
       return;
     }
   }
-  if (ARENA.group.visible) pushOutOfCover(charPos, 32);
+  if (ARENA.group.visible) pushOutOfCover(charPos, 32, charPos.y);
 
   mm.searchT -= dt;
   if (mm.searchT <= 0) { mm.searchT = 0.06; mmSearch(des); }

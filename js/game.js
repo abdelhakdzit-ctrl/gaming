@@ -7,6 +7,7 @@ import { burst, impactFX, tracerFX } from './fx.js';
 import { ikEdit, toggleIKEdit } from './ik.js';
 import { RLT, stopRlTimeline } from './reload-timeline.js';
 import { LADDER, charPos, mm, toWorld, toWorldDir } from './locomotion.js';
+import { TRAV } from './anim/traverse.js';
 import { KA, RL, W, box, fromGun, gunState, pressFire, releaseFire, switchWeapon } from './weapons.js';
 import { aim, isAiming, lastPlaced, playerAim, playerCrouch, tmpM, tmpQ } from './character.js';
 import { motionPreview, stopMotionPreview } from './motion-studio.js';
@@ -191,7 +192,7 @@ export function updateGameCamera(real) {
   const fwd = V(Math.sin(tps.yaw) * Math.cos(p), Math.sin(p), Math.cos(tps.yaw) * Math.cos(p));
   const right = V(-Math.cos(tps.yaw), 0, Math.sin(tps.yaw));
   const crouchDrop = (playerCrouch?.w || 0) * 34;
-  const basePos = LADDER.active ? LADDER.worldTrackPos : charPos;
+  const basePos = LADDER.active ? LADDER.worldTrackPos : TRAV.active ? TRAV.track : charPos;
   const longW = W.blend || (W.cur?.long ? 1 : 0);
   if (!cam.init || Math.hypot(basePos.x - cam.px.x, basePos.z - cam.pz.x) > 250) { cam.px.snap(basePos.x); cam.py.snap(basePos.y); cam.pz.snap(basePos.z); cam.side.snap(cam.shoulder); cam.init = true; }
   const fx = cam.px.step(basePos.x, 0.06, real), fy = cam.py.step(basePos.y, 0.1, real), fz = cam.pz.step(basePos.z, 0.06, real);

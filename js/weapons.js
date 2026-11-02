@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { TRAV } from './anim/traverse.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DEG, V, clamp, ease, lerp, sstep } from './math.js';
 import { BLOCK, STATE, rec } from './state.js';
@@ -1154,7 +1155,7 @@ export function fitLong(eye) {
   return bones.hand_r.matrixWorld.clone().invert().multiply(gunState.mat);
 }
 export function fire() {
-  if (KA.on || SG_PUMP.on) return;
+  if (KA.on || SG_PUMP.on || TRAV.active) return;
   if (game.active && BLOCK.w > 0.7) { playClick(900, 0.03, 0.2); return; }   // muzzle against a wall: weapon is raised, no shot
   if (W.cur.ammo <= 0 || RL.on) { if (!RL.on) { playClick(1800, 0.03, 0.25); scheduleReload(0.25); } return; }
   STATE.fireTime = STATE.simTime; STATE.ejected = false;
