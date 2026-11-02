@@ -13,6 +13,7 @@ import { ANIM_T0 } from './main.js';
 import { damp, dampW } from './anim/curves.js';
 import { ARENA } from './ai.js';
 import { SEC, stepSecondary } from './anim/secondary.js';
+import { applyXfade } from './anim/xfade.js';
 
 // Player Crouch State
 export const playerCrouch = { on: false, w: 0 };
@@ -384,6 +385,7 @@ export function updateCharacter(dt) {
   if (!KA.on) chainOf('index', 'r').forEach((b, i) => b.quaternion.copy(cur.trig.rest[i]).slerp(cur.trig.pulled[i], tv));
 
   placeCharacter();
+  applyXfade(dt, cur.obj);   // blends out ladder dismount / mount pops
 
   const st = STATE.simTime - STATE.fireTime;
   if (cur.kar) updateKarParts();
