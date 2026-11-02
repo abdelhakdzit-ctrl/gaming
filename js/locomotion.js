@@ -155,8 +155,13 @@ function buildLadderMesh() {
 }
 buildLadderMesh();
 
-export async function loadLadderAnims() {
-  if (LADDER.ready || LADDER.loading) return;
+// Shared promise: pressing F while the clips are still preloading used to return early and silently drop the request.
+let _ladderLoad = null;
+export function loadLadderAnims() {
+  if (LADDER.ready) return Promise.resolve();
+  return (_ladderLoad ??= _loadLadderAnims().finally(() => { _ladderLoad = null; }));
+}
+async function _loadLadderAnims() {
   LADDER.loading = true;
   const map = [
     ['upStart', 'ladder-up-start'],
