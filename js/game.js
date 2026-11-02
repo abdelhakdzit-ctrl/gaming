@@ -178,7 +178,7 @@ export function playDing(delay, f) {
 const fmtTime = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
 // Third-person camera over the shoulder: critically damped follow/offsets, collision against cover, FOV curves, shake.
-const cam = { px: new Damp(), py: new Damp(), pz: new Damp(), side: new Damp(1), sideOff: new Damp(48), up: new Damp(160), dist: new Damp(170), fov: new Damp(50), z: new Damp(0), shoulder: 1, init: false, t: 0 };
+const cam = { px: new Damp(), py: new Damp(), pz: new Damp(), side: new Damp(1), sideOff: new Damp(48), up: new Damp(160), dist: new Damp(170), fov: new Damp(50), lad: new Damp(0), z: new Damp(0), shoulder: 1, init: false, t: 0 };
 export function resetCamera() { cam.init = false; cam.dist.snap(170); }
 export function swapShoulder() { cam.shoulder = -cam.shoulder; }
 const _head = V(), _lat = V();
@@ -186,7 +186,8 @@ export function updateGameCamera(real) {
   real = Math.min(real, 0.05); cam.t += real;
   tps.z = clamp(cam.z.step(tps.zoom ? 1 : 0, 0.11, real), 0, 1);
   const e = tps.z * tps.z * (3 - 2 * tps.z);   // smoothstep curve over the damped zoom
-  const p = tps.pitch + rec.cam.x * DEG;
+  const lad = cam.lad.step(LADDER.active ? 1 : 0, 0.4, real);   // ladder framing: pulled back, off to the side, looking a little upward
+  const p = tps.pitch + rec.cam.x * DEG + 0.09 * lad;
   const fwd = V(Math.sin(tps.yaw) * Math.cos(p), Math.sin(p), Math.cos(tps.yaw) * Math.cos(p));
   const right = V(-Math.cos(tps.yaw), 0, Math.sin(tps.yaw));
   const crouchDrop = (playerCrouch?.w || 0) * 34;
@@ -194,15 +195,15 @@ export function updateGameCamera(real) {
   const longW = W.blend || (W.cur?.long ? 1 : 0);
   if (!cam.init || Math.hypot(basePos.x - cam.px.x, basePos.z - cam.pz.x) > 250) { cam.px.snap(basePos.x); cam.py.snap(basePos.y); cam.pz.snap(basePos.z); cam.side.snap(cam.shoulder); cam.init = true; }
   const fx = cam.px.step(basePos.x, 0.06, real), fy = cam.py.step(basePos.y, 0.1, real), fz = cam.pz.step(basePos.z, 0.06, real);
-  const sideOff = cam.sideOff.step(lerp(lerp(48, 56, longW), lerp(38, 46, longW), e), 0.14, real) * cam.side.step(LEAN.dir && LEAN.free > 0.3 ? LEAN.dir : cam.shoulder, 0.16, real);
-  const upOff = cam.up.step(lerp(160, 157, e) + 4 * longW + Math.max(0, p) * 16 - crouchDrop, 0.12, real);
+  const sideOff = lerp(cam.sideOff.step(lerp(lerp(48, 56, longW), lerp(38, 46, longW), e), 0.14, real), 74, lad) * cam.side.step(LEAN.dir && LEAN.free > 0.3 ? LEAN.dir : cam.shoulder, 0.16, real);
+  const upOff = cam.up.step(lerp(160, 157, e) + 4 * longW + Math.max(0, p) * 16 - crouchDrop, 0.12, real) + 26 * lad;
   _head.set(fx, fy + upOff, fz).addScaledVector(right, LEAN.off);   // camera travels with the leaning head
   _lat.copy(right).multiplyScalar(sideOff);
   let lat = _lat.length(), latDir = V(Math.sign(sideOff) * right.x, 0, Math.sign(sideOff) * right.z);
   const arena = ARENA.group.visible;
   if (arena) for (const cv of ARENA.covers) { const h = rayBox(_head, latDir, cv, lat); if (h) lat = Math.max(0, h.t - 10); }   // shoulder never inside cover
   const pivot = _head.clone().addScaledVector(latDir, lat);
-  const wantDist = lerp(IS_TOUCH ? 210 : lerp(165, 180, longW), lerp(92, 108, longW), e);
+  const wantDist = lerp(IS_TOUCH ? 210 : lerp(165, 180, longW), lerp(92, 108, longW), e) + 95 * lad;
   let limit = wantDist;
   if (arena) {
     const back = fwd.clone().negate();
