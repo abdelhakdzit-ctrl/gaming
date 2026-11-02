@@ -15,6 +15,7 @@ function collect() {
   X.pelvis = X.bones.find(b => b.name === 'pelvis') ?? null;
 }
 
+export const xfadeBusy = () => X.pelvis && X.t < X.dur;
 export function captureXfade(dur, gunObj = null) {
   collect();
   if (!X.pelvis) return;
