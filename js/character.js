@@ -399,13 +399,17 @@ export const AIM_SPLIT = [['spine_01', 0.2], ['spine_02', 0.35], ['spine_03', 0.
 function applyAim() {
   if (!game.active) return;
   const P = aim.smooth.clone().sub(charPos).applyAxisAngle(V(0, 1, 0), -STATE.charYaw);   // character space
+  // When the gun is raised off a wall the spine stops chasing the target; the total correction is bounded so it can never wrench.
+  const wA = 1 - 0.85 * BLOCK.w;
+  let yawT = 0, pitchT = 0;
   for (let it = 0; it < 2; it++) {
     bones.hand_r.updateWorldMatrix(true, false);
     const M = new THREE.Matrix4().multiplyMatrices(bones.hand_r.matrixWorld, W.cur.inHand);
     const muzzle = W.cur.muzzle.clone().applyMatrix4(M), B = V(0, 0, 1).transformDirection(M);
     const D = P.clone().sub(muzzle).normalize();
-    const yawE = clamp(angWrap(Math.atan2(D.x, D.z) - Math.atan2(B.x, B.z)), -1.2, 1.2);
-    const pitchE = clamp(Math.asin(clamp(D.y, -1, 1)) - Math.asin(clamp(B.y, -1, 1)), -1, 1);
+    const yawE = clamp(angWrap(Math.atan2(D.x, D.z) - Math.atan2(B.x, B.z)) * wA, -0.7 - yawT, 0.7 - yawT);
+    const pitchE = clamp((Math.asin(clamp(D.y, -1, 1)) - Math.asin(clamp(B.y, -1, 1))) * wA, -0.8 - pitchT, 0.8 - pitchT);
+    yawT += yawE; pitchT += pitchE;
     const ax = new THREE.Vector3().crossVectors(V(D.x, 0, D.z).normalize(), V(0, 1, 0));
     for (const [n, k] of AIM_SPLIT) { rotateWorld(bones[n], V(0, 1, 0), yawE * k); rotateWorld(bones[n], ax, pitchE * k); }
   }
