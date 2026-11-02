@@ -190,4 +190,8 @@ export const READY_MOTIONS = [
   { id: 'ladder-down-start', label: 'Ladder — Slide Down Start (Top)', file: 'A_Ladder_Dawn_Start.FBX', dir: 'anim/ladder/', keepRoot: true, ladderState: 'down_start' },
   { id: 'ladder-down-loop', label: 'Ladder — Slide Down Loop', file: 'A_Ladder_Dawn_Loop.FBX', dir: 'anim/ladder/', keepRoot: true, ladderState: 'down_loop' },
   { id: 'ladder-down-end', label: 'Ladder — Slide Down End (Bottom)', file: 'A_Ladder_Dawn_End.FBX', dir: 'anim/ladder/', keepRoot: true, ladderState: 'down_end' },
+  { id: 'climb-low', label: 'Traversal — Climb Low (vault-up)', file: 'A_Climb_Low_01.FBX', dir: 'anim/climb/', keepRoot: true },
+  { id: 'climb-up-02', label: 'Traversal — Climb Up 02 (mantle)', file: 'A_Climb_Up_02.FBX', dir: 'anim/climb/', keepRoot: true },
+  { id: 'climb-up-03', label: 'Traversal — Climb Up 03 (high mantle)', file: 'A_Climb_Up_03.FBX', dir: 'anim/climb/', keepRoot: true },
+  { id: 'jump-roll', label: 'Traversal — Jump Roll (drop landing)', file: 'A_JumpRoll.FBX', dir: 'anim/climb/', keepRoot: true },
 ];
