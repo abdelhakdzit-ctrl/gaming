@@ -7,6 +7,7 @@ import { ejectShell } from './fx.js';
 import { _tq, applyUserHands, ikBase, ikDbg, ikEdit, ikState, ikSyncContext, syncIKHandles, userIK } from './ik.js';
 import { RLT, ikTimelineApply, updateRlTimeline } from './reload-timeline.js';
 import { LADDER, charPos, keys, mm, retargetFrame, stepLocomotion, toWorld, toWorldDir, updateLadder } from './locomotion.js';
+import { ladderExitPost } from './anim/ladder.js';
 import { CLIP_GUIDE, KA, M4, RL, SG_PUMP, TRIGGER_PULL, W, chainOf, fingerFix, fromGun, gunState, karHandR, lerpM, poseHandFrom, reloadGunPose, reloadLeftHand, setGunMatrix, slideOffset, stepKar, stepReload, stepShotgunPump, stepSwap, updateKarParts, weaponTrigger } from './weapons.js';
 import { game, tps } from './game.js';
 import { ANIM_T0 } from './main.js';
@@ -379,6 +380,7 @@ export function updateCharacter(dt) {
   cur.trigFn?.(tv);
   if (!KA.on) chainOf('index', 'r').forEach((b, i) => b.quaternion.copy(cur.trig.rest[i]).slerp(cur.trig.pulled[i], tv));
 
+  ladderExitPost(dt, charPos, STATE.charYaw);   // eases the pose and the weapon out of the ladder
   placeCharacter();
 
   const st = STATE.simTime - STATE.fireTime;

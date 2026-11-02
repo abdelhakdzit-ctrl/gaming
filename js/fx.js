@@ -149,7 +149,7 @@ function explodeRocket(point, dir) {
         if (blastDir.lengthSq() < 1e-4) blastDir.set(0, 0, 1);
         impactFX(e.pos.clone().add(V(0, 100, 0)), blastDir, 'blood');
         if (e.hp <= 0) {
-          killEnemy(e, blastDir);
+          killEnemy(e, blastDir, { blast: point.clone(), power: falloff });
           game.score += 150;
           AI.kills++;
           hitMarker(true);
@@ -518,4 +518,14 @@ export function updateFX(dt) {
     shellIM.setMatrixAt(i, tmpM.compose(s.p, s.q, s.sc));
   }
   shellIM.count = shells.length; shellIM.instanceMatrix.needsUpdate = true;
+}
+
+// Enemy grenade blast visuals/sound (no enemy damage; ai.js applies player damage).
+export function grenadeExplosionFX(point) {
+  addTrauma(clamp(1 - point.distanceTo(camera.position) / 1500, 0.1, 0.7));
+  flashLight.position.copy(point); flashLight.intensity = 110000; glow = 1.4;
+  burst(point, V(0, 1, 0), 0xff5500); burst(point, V(0, 1, 0), 0xffaa00);
+  for (let i = 0; i < 10; i++) spawnSmoke(point.clone().add(V(rnd(-20, 20), rnd(0, 30), rnd(-20, 20))), V(rnd(-160, 160), rnd(60, 220), rnd(-160, 160)), 30, 1.4, [0.22, 0.21, 0.21], 0.85);
+  for (let i = 0; i < 14; i++) { const e = embers[emberIdx++ % NE]; e.p.copy(point); e.v.set(rnd(-450, 450), rnd(100, 550), rnd(-450, 450)); e.age = 0; e.life = 0.6 + Math.random() * 0.7; }
+  impactFX(point, V(0, 1, 0), 'concrete'); playExplosionSound();
 }
